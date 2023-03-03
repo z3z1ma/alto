@@ -47,6 +47,7 @@ I might recommend `alto` if you need a simple codebase as a starting point to ex
     - We get `.env` support
     - We get unique ways to render vars with `'@format ` tokens
 
+- Encourages use of `bash` instead of `meltano run` commands. Bash is _already_ a fantastic glue code where you can run multiple extract load blocks, background them via `&` to parallelize loads, run utilities the way they have always been ran since everything is not wrapped in a venv with env vars injected by Meltano which is both a convenience and a constraint. `meltano run tap1 target1 tap2 target2` is functionally identical to `alto tap1:target1 && alto tap2:target2` except in the latter there is massive flexibility.
 
 ## Example
 
