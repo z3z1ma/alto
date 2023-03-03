@@ -1,20 +1,65 @@
-# Alto
+# Alto 👩‍🎤
 
-Alto is a versatile data integration tool that allows you to easily run Singer plugins, build and cache PEX files encapsulating those plugins, and create a data reservoir whereby you can extract once and replay to as many destinations as you want. With Alto, you can seamlessly connect to various data sources, store your data in a centralized reservoir (singerlake), and manage extract lean, efficient load flows. 
+Alto is a versatile data integration tool that allows you to easily run Singer plugins, build and cache PEX files encapsulating those plugins, and create a data reservoir whereby you can extract once and replay to as many destinations as you want. With Alto, you can seamlessly connect to various data sources, store your data in a centralized reservoir (singerlake), and manage extract lean, efficient load flows. Throw it into a `dbt` project, a data science project, or a passion project without fear of conflicting deps or a new paradigm.
+
+**Install:**
+```bash
+pipx install singer-alto  # install system wide
+pip install singer-alto   # or add it to your project!
+```
 
 Like [Meltano](https://github.com/meltano/meltano), Alto is driven entirely by configuration and the config structure drew much of its inspiration from Meltano. Alto supports YAML, TOML, and JSON leveraging [Dynaconf](https://github.com/dynaconf/dynaconf) for robust features and the structure is modeled similarly to Meltano making using one or the other, or just giving `alto` a whirl, a fairly straightforward process. 
 
-TODO: Document config spec
+**Example Config (see the bottom of the readme for the same thing as TOML):**
+
+```yaml
+# this key corresponds to the environment, default is a special key which applies to all environments.
+# name your environments whatever you want by having more keys
+default:
+  # each project has a unique project name
+  project_name: 4c167d53
+  # there is an extension system that lets you add doit tasks to alto
+  extensions: []
+  # the namespace is often used by targets, it is overwritten by a taps `namespace` during EL
+  namespace: raw
+  # taps, targets, and utilities are the 3 keys here
+  taps:
+    # name the tap whatever you want, but naming it after the executable saves us from specifying it
+    tap-carbon-intensity:
+      # this should all be almost identical to Meltano barring `namespace` which is explained above
+      pip_url: git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity
+      namespace: carbon_intensity
+      capabilities:
+        - state
+        - catalog
+      select:
+        - "*.*"
+      config: {}
+  targets:
+    target-jsonl:
+      pip_url: target-jsonl==0.1.4
+      config:
+        destination_path: output
+```
 
 Alto uses the popular [Singer](https://www.singer.io/) ETL framework to execute data extraction and transformation tasks, which means you can use any of the [hundreds](https://hub.meltano.com/) of existing Singer taps and targets to connect to the systems you need. Additionally, Alto provides a powerful and flexible way to build [PEX](https://github.com/pantsbuild/pex) files, which are self-contained executable files that encapsulate your code and dependencies, making it easy to distribute your data integration workflows to other systems. All of the existing ecosystem as well as all plugins built via the [Meltano SDK](https://sdk.meltano.com/en/latest/) are usable out of the box.
 
-One of the standout features of Alto is its data reservoir, which allows you to store and manage your data in a centralized location. This can be especially useful for teams that need to share data across multiple targets or replay loads when target plugins change. It provides a consistent and reliable source of truth for your data. It also allows you to run taps and targets independently even on different machines.
+Another standout features of Alto is its data reservoir, which allows you to store and manage your data in a centralized location. This can be especially useful for teams that need to share data across multiple targets or replay loads when target plugins change. It provides a consistent and reliable source of truth for your data. It also allows you to run taps and targets independently even on different machines. This persistence is powered by [fsspec](https://github.com/fsspec/filesystem_spec) and for the end user its as simple as `alto tap-github:reservoir` to send data in and `alto reservoir:tap-github-target-*` to send data out where `*` can be any configured target.
 
 Finally, Alto is scaffolded over [Doit](https://github.com/pydoit/doit), a Python-based task automation tool, to manage and execute your data integration workflows. This means it is more like Make and will build dependencies if they do not exist meaning data integrations are executed with a single command.
 
+
+## Comparison
+
 > How is this different than what exists today; namely Meltano?
 
-I might recommend `alto` if you need a simple codebase as a starting point to extend or if Meltano seems like overkill for what you are hoping to do (IE move data from A to B in a existing project that has dbt and other deps installed). Alto from the perspective of being able to run taps -> targets has more-or-less parity with Meltano since it is really the plugins that do most of the work. There are also some compelling features in `alto` in general around how it manages plugins as cached PEX files, the built in reservoir, and its light footprint. Using Meltano as the baseline of comparison, here are some noteworthy differences:
+### Pros
+
+I might recommend `alto` if Meltano seems like overkill for what you are doing. What does that mean? If you have a Python project where EL is one of many concerns and you want a dependency you can add that is lean, yet highly functional. You can use `alto` alongside [dbt](https://github.com/dbt-labs/dbt-core/) without conflict, along data science packages without conflict, and in general there is _very_ low risk for conflict in general. I would recommend `alto` if you don't want everything in your project running in different venvs because they would conflict with Meltano. 
+
+Alto is able to run taps -> targets with centralized environment-aware configuration, secret management, automatically managed state, automatic discovery, catalog caching to a remote backend, catalog manipulation via `select` & `metadata` keys, and all the things we love about Meltano. Given this, in most situations -- from a pure EL perspective, it stacks up fairly with Meltano since it is really the plugins that do most of the work once the previous conveniences are factored in. I don't claim `alto` does as much as Meltano but I do claim, in my experience, it does *enough*.
+
+Outside of the prior points, there are some compelling features in `alto` in general around how it manages plugins as cached PEX files, the built in reservoir, and its light footprint. Continuing to use Meltano as the baseline of comparison (since it was the inspiration), here are some noteworthy differences:
 
 - The CLI is extremely fast due to the lightness of the package.
 
@@ -28,15 +73,15 @@ I might recommend `alto` if you need a simple codebase as a starting point to ex
 
 - We use `PEX` (PythonEXecutable) for all plugins instead of loose venvs making plugins single files that are straightforward to cache.
 
-- We use a (simple) caching algorithm that makes the plugins re-usable across machines when combined with a remote filesystem and re-usable on the same system in general.
+- We use a (simple) caching algorithm that makes the plugins re-usable across machines when combined with a remote filesystem and re-usable on the same system in general. This means, most of the time, you will build a PEX artifact once and **never** build it again. This makes an already lightweight `alto` even more portable.
 
-- Docker containers do not require you to "install" the plugins during the build process since the plugins are instantly pulled from a remote cache.
+- Docker containers do not require you to "install" the plugins during the build process since the plugins are instantly pulled from a remote cache. This can **significantly** reduce image size if you are working with enough plugins.
 
-- Because of how plugins are handled it can be ran in `lambda` and serverless functions very easily.
+- Because of how plugins are handled it can be ran in `lambda` and serverless functions very easily. The time to spin up a pipeline is extremely quick.
 
-- We use `fsspec` to provide that filesystem abstraction layer that provides the exact same experience locally on a single machine as when plugged into a remote blob store such as `s3`, `gcs`, or any supported `fsspec` storage. We do not carry the dep but let the user specify.
+- We use `fsspec` to provide that filesystem abstraction layer that provides the exact same experience locally on a single machine as when plugged into a remote fsspec filesystem such as [s3](https://github.com/fsspec/s3fs), [gcs](https://github.com/fsspec/gcsfs), or [azure](https://github.com/fsspec/adlfs). We do not pin these remote backend dependencies, even as extras, but give the user the flexibility to include how they see fit.
 
-- An order of magnitude (`>85%`) less code which makes iteration/maintenance or forking easier (in theory) but of course less code != better
+- An order of magnitude (`>85%`) less code which makes iteration/maintenance, extending, or forking easier (in theory) due to less accumulated tech debt though the flip side is less robustness
 
 - Because it is scaffolded over a build system, never worry about running `install` again, run pipelines immediately and alto works out the rest.
 
@@ -47,24 +92,31 @@ I might recommend `alto` if you need a simple codebase as a starting point to ex
     - We get `.env` support
     - We get unique ways to render vars with `'@format ` tokens
 
-- Encourages use of `bash` instead of `meltano run` commands. Bash is _already_ a fantastic glue code where you can run multiple extract load blocks, background them via `&` to parallelize loads, run utilities the way they have always been ran since everything is not wrapped in a venv with env vars injected by Meltano which is both a convenience and a constraint. `meltano run tap1 target1 tap2 target2` is functionally identical to `alto tap1:target1 && alto tap2:target2` except in the latter there is massive flexibility.
+- Encourages use of `bash` instead of `meltano run` commands. Bash is _already_ a fantastic glue code where you can run multiple extract load blocks, background them via `&` to parallelize loads, run utilities the way they have always been ran since everything is not wrapped in a venv with env vars injected by Meltano which is both a convenience and a constraint. `meltano run tap1 target1 tap2 target2` is ~ functionally identical to `alto tap1:target1 && alto tap2:target2`.
+
+### Cons
+
+- No stream map support yet. This will change.
+
+- No commands equivalent to `config set` or `add`. This will not change. The goal is not 1:1 with Meltano but rather lighter weight alternative for the power user. Configuration will be managed via YAML/config exclusively.
 
 ## Example
 
 An entire timed end-to-end example can be carried out via the below script.
 
-From start to finish, it will:
+From start to finish, this script does:
 
-1. Create a directory
-2. Initialize an alto project (create the `alto.toml` file)
-3. Run an extract -> load of an open API to target jsonl
-    1. Build PEX plugins for `tap-carbon-intensity` and `target-jsonl`
-    2. Dynamically generate config for the Singer plugin based on the toml file (supports toml/yaml/json)
-    3. Run discovery and cache catalog to ~/.alto/(project-name)/catalog
-    4. Apply user configuration to the catalog
-    5. Run the pipeline
-    6. Clean up the staging directory
-    7. Manage and persist the state
+1. Creates a directory
+2. Initializes an alto project (creates the `alto.toml` file)
+3. Runs an extract -> load of an open API to target jsonl
+    1. Builds PEX plugins for `tap-carbon-intensity` and `target-jsonl` caching them so they won't be rebuilt again for this project
+    2. Dynamically generates config for the Singer plugin based on the toml file (supports toml/yaml/json)
+    3. Runs discovery and caches catalog to ~/.alto/(project-name)/catalog
+    4. Applies user configuration (`select` & `metadata`) to the catalog, ~ functionally equivalent to Meltano
+    5. Checks for state in the remote backend
+    6. Runs the pipeline
+    7. Cleans up the staging directory
+    8. Parses and persists the state to the remote backend
 
 ```bash
 # Create a dir
