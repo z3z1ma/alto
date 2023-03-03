@@ -1,0 +1,377 @@
+# The "default" key is the base configuration for all environments
+# You will see environment-specific configs below this section
+default:
+  # The name of your project
+  project_name: jaffle_shop
+
+  # Bucket to use if you're using a remote backend
+  bucket: jaffle_shop_staging
+
+  # A remote backend
+  filesystem: gcs
+  filesystem_kwargs:
+    project: your-gcp-project
+    # 👇 This is how you can use environment variables (see dynaconf docs)
+    token: "@format {env[GOOGLE_APPLICATION_CREDENTIALS]}"
+
+  # BYOE (bring your own extensions)
+  extensions:
+    - alto_ext/dbt.py
+
+  # Taps!
+  taps:
+    # ASANA (SINGER)
+    tap-asana:
+      pip_url: git+https://github.com/z3z1ma/tap-asana.git#egg=tap-asana
+      namespace: asana
+      capabilities: [catalog, state, about]
+      config:
+        client_id: "..."
+        redirect_uri: "urn:ietf:wg:oauth:2.0:oob"
+        refresh_token: "..."
+        start_date: "2021-01-01T00:00:00Z"
+      # 👇 Accents let you override target config for a specific tap:target combo
+      target-bigquery:
+        denormalized: true
+    # CONFLUENCE (SINGER)
+    tap-confluence:
+      pip_url: git+https://github.com/z3z1ma/tap-confluence.git#egg=tap-confluence
+      namespace: confluence
+      capabilities: [catalog, state, about, test]
+      config:
+        base_url: https://something.atlassian.net/wiki/rest/api
+        email: noone@email.com
+        user_agent: "Alto/0.1.0 Singer.io Tap for Confluence"
+    # GONG (SINGER)
+    tap-gong:
+      pip_url: git+https://github.com/z3z1ma/tap-gong.git#egg=tap-gong
+      namespace: gong
+      capabilities: [catalog, state, about, test]
+      config:
+        access_key: "..."
+        start_date: "2020-01-01T00:00:00Z"
+        end_date: "2025-01-01T00:00:00Z"
+    # MARKETO (SINGER)
+    tap-marketo:
+      pip_url: git+https://github.com/z3z1ma/tap-marketo.git#egg=tap-marketo
+      namespace: marketo
+      capabilities: [catalog, state, about]
+      select:
+        - "!leads.*"
+      config:
+        endpoint: https://123-123-123.mktorest.com/rest
+        client_id: "..."
+        identity: https://123-123-123.mktorest.com/identity
+        start_date: "2020-01-01T00:00:00Z"
+      target-bigquery:
+        denormalized: true
+    # SHOWPAD (SINGER)
+    tap-showpad:
+      pip_url: git+https://github.com/z3z1ma/tap-showpad.git#egg=tap-showpad
+      namespace: showpad
+      capabilities: [catalog, state, about, test]
+      config:
+        subdomain: yourdomain
+      # 👇 A more complex accent
+      target-bigquery:
+        batch_size: 500
+        method: "storage_write_api"
+        denormalized: true
+        overwrite: true
+    # SALESFORCE (SINGER)
+    tap-salesforce:
+      pip_url: git+https://github.com/z3z1ma/tap-salesforce.git#egg=tap-salesforce
+      namespace: salesforce
+      capabilities: [catalog, state]
+      select:
+        - Opportunity.*
+        - OpportunityLineItem.*
+        - OpportunityContactRole.*
+        - OpportunityTeamMember.*
+        - Account.*
+        - Contact.*
+        - Business_Value_Assessment__c.*
+        - Lead.*
+        - Campaign.*
+        - User.*
+        - UserRole.*
+        - Harness_Splits__c.*
+        - Renewal__c.*
+        - CampaignMember.*
+        - Module_Experience__c.*
+        - Product2.*
+        - Pricebook2.*
+        - PricebookEntry.*
+        - Services_Partner__c.*
+        - Task.*
+        - Event.*
+        - skilljar__Course__c.*
+        - skilljar__Course_Progress__c.*
+        - skilljar__Student__c.*
+        - Qualified_Lead__c.*
+        - "!Opportunity.CoolThing__Status_Info__c"
+        - "!Account.CoolThing__Status_Info__c"
+        - "!Contact.CoolThing__Status_Info__c"
+        - "!Lead.CoolThing__Status_Info__c"
+      config:
+        client_id: "..."
+        start_date: "2005-01-01T00:00:00Z"
+        quota_percent_total: 95
+        api_type: BULK
+        select_fields_by_default: true
+      target-bigquery:
+        denormalized: true
+    # QUALIFIED (SINGER)
+    tap-qualified:
+      pip_url: git+https://github.com/z3z1ma/tap-qualified.git#egg=tap-qualified
+      namespace: qualified
+      capabilities: [catalog, state, about, test]
+      # 👇 A more complex accent
+      target-bigquery:
+        batch_size: 500
+        method: "streaming_insert"
+        generate_view: true
+        overwrite: true
+    # GITHUB (AIRBYTE)
+    tap-github:
+      pip_url: git+https://github.com/MeltanoLabs/tap-airbyte-wrapper.git#egg=tap_airbyte
+      executable: tap-airbyte
+      namespace: github
+      capabilities: [catalog, state, about, test]
+      select:
+        - "*.*"
+        - "!*.*_url"
+        - "!collaborators.*"
+        - "!*comment*.*"
+        - "!deployments.performed_via_github_app"
+      metadata:
+        "*": { replication-method: "INCREMENTAL" }
+      # 👇 Airbyte connectors work too
+      config:
+        airbyte_spec:
+          image: "airbyte/source-github"
+          tag: "0.3.9"
+        airbyte_config:
+          repository: z3z1ma/alto dbt-labs/dbt-core meltano/meltano
+          start_date: "2020-01-01T00:00:00Z"
+          page_size_for_large_streams: 20
+    # JIRA (AIRBYTE)
+    tap-jira:
+      pip_url: git+https://github.com/MeltanoLabs/tap-airbyte-wrapper.git#egg=tap_airbyte
+      executable: tap-airbyte
+      namespace: jira
+      capabilities: [catalog, state, about, test]
+      select:
+        - issues.*
+        - projects.*
+        - project_types.*
+        - project_categories.*
+        - dashboards.*
+        - pull_requests.*
+      metadata:
+        "*": { replication-method: "INCREMENTAL" }
+      config:
+        airbyte_spec:
+          image: "airbyte/source-jira"
+          tag: "0.3.3"
+        airbyte_config:
+          domain: something.atlassian.net
+          email: noone@email.com
+          start_date: "2021-01-01T00:00:00Z"
+          enable_experimental_streams: true
+    # SLACK (AIRBYTE)
+    tap-slack:
+      pip_url: git+https://github.com/MeltanoLabs/tap-airbyte-wrapper.git#egg=tap_airbyte
+      executable: tap-airbyte
+      namespace: slack
+      capabilities: [catalog, state, about, test]
+      metadata:
+        "*": { replication-method: "INCREMENTAL" }
+      config:
+        airbyte_spec:
+          image: "airbyte/source-slack"
+          tag: "0.1.19"
+        airbyte_config:
+          start_date: "2017-01-01T00:00:00Z"
+          lookback_window: 7
+          join_channels: true
+          channel_filter: []
+          credentials:
+            option_title: "API Token Credentials"
+
+  # Targets!
+  targets:
+    # MAIN TARGET
+    target-bigquery:
+      pip_url: z3-target-bigquery==0.6.2
+      entrypoint: "target_bigquery.target:TargetBigQuery.cli"
+      config:
+        method: batch_job
+        project: segment-warehouse-236622
+        batch_size: 250000
+        # 👇 This is how you can use environment variables
+        credentials_path: "@format {env[GOOGLE_APPLICATION_CREDENTIALS]}"
+        denormalized: false
+        generate_view: false
+    # TEST TARGET
+    target-jsonl:
+      pip_url: target-jsonl==0.1.4
+
+  # Utilities!
+  utilities:
+    dbt-junitxml:
+      pip_url: dbt-junitxml==0.1.5
+    datahub:
+      pip_url: "acryl-datahub[datahub-rest,mongodb,dbt]==0.9.2.4"
+      config:
+        sources:
+          dbt:
+            manifest_path: "transform/target/manifest.json"
+            catalog_path: "transform/target/catalog.json"
+            test_results_path: "transform/target/run_results.json"
+            target_platform: bigquery
+        sinks:
+          datahub-rest:
+            server: "some_server:8080"
+            token: dummy
+
+# Dev Environment (these are merged into the "defaults" above) if ALTO_ENV=dev
+# 👇 Use submodules in dev mode overwriting the default pip_url with the local path
+dev:
+  namespace: testing
+  taps:
+    # Use submodules in dev mode
+    tap-asana:
+      pip_url: ./integrations/tap-asana
+    tap-confluence:
+      pip_url: ./integrations/tap-confluence
+    tap-gong:
+      pip_url: ./integrations/tap-gong
+    tap-marketo:
+      pip_url: ./integrations/tap-marketo
+    tap-showpad:
+      pip_url: ./integrations/tap-showpad
+    tap-salesforce:
+      pip_url: ./integrations/tap-salesforce
+    tap-qualified:
+      pip_url: ./integrations/tap-qualified
+    tap-github:
+      pip_url: ./integrations/tap-airbyte-wrapper
+    tap-jira:
+      pip_url: ./integrations/tap-airbyte-wrapper
+    tap-slack:
+      pip_url: ./integrations/tap-airbyte-wrapper
+  targets:
+    target-bigquery:
+      pip_url: ./integrations/target-bigquery
+      config:
+        dataset: raw_testing
+    target-jsonl:
+      config:
+        destination_path: "@format output/dev/{this.namespace}"
+
+# CI Environment (these are merged into the "defaults" above) if ALTO_ENV=ci
+# (note you can have as many envs as you want named whatever you want)
+ci:
+  namespace: ci
+  targets:
+    target-bigquery:
+      config:
+        dataset: "@format {env[CI_DATASET]}"
+    target-jsonl:
+      config:
+        # 👇 This is how you can use the current namespace
+        # this is very important since the namespace is dynamic
+        # based on the tap and almost always correlates to a delineatation
+        # in the destination such as a schema in a db or key in a bucket
+        destination_path: "@format output/ci/{this.namespace}"
+
+# Prod Environment (these are merged into the "defaults" above) if ALTO_ENV=prod
+prod:
+  namespace: prod
+  taps:
+    # MONGODB (SINGER) [BASE]
+    tap-mongodb:
+      pip_url: z3-tap-mongodb==0.4.3
+      namespace: mongodb
+      capabilities: [catalog, state, about, test]
+      config:
+        optional_replication_key: true
+        database_excludes: [admin, config, local, test]
+        user: some-mongo-user
+        infer_schema: false
+        infer_schema_max_docs: 10000
+        mongo:
+          retryWrites: true
+          readPreference: secondary
+          readPreferenceTags: nodeType:ANALYTICS
+          w: majority
+    # MONGODB (SINGER) [PROD1]
+    tap-mongodb--prod1:
+      # 👇 This shows inheritance, which is very useful
+      # it basically means that this tap will inherit all the config from tap-mongodb
+      inherit_from: tap-mongodb
+      select:
+        - yourdb_pipelines.*
+        - yourdb_environmentGroup.*
+        - yourdb_deploymentSummary.*
+        - yourdb_instanceDeploymentInfo.*
+        - yourdb_services.*
+        - yourdb_moduleLicenses.*
+        - yourdb_entityActivity.*
+        - yourdb_stageExecutionInfo.*
+        - yourdb_userMembershipsV2.*
+        - yourdb_userMetadata.*
+        - yourdb_feedbackForms.*
+      metadata:
+        "*":
+          replication-key: lastModifiedAt
+          replication-method: INCREMENTAL
+        yourdb_feedbackForms:
+          replication-key: createdAt
+          replication-method: INCREMENTAL
+        yourdb_moduleLicenses:
+          replication-key: lastUpdatedAt
+          replication-method: INCREMENTAL
+      config:
+        stream_prefix: ""
+        # 👇 This shows how you can reference anything in this config using `this`
+        # "user" is configured in the inherited tap and "password" would be in the alto.secrets.yaml
+        mongo:
+          host: >-
+            @format
+            mongodb+srv://{this.taps.tap_mongodb.config.user}:{this.taps.tap_mongodb.config.password}@something.mongodb.net/yourdb
+    # MONGODB (SINGER) [PROD2]
+    tap-mongodb--prod2:
+      inherit_from: tap-mongodb
+      select:
+        - anotherdb_accounts.*
+        - anotherdb_users.*
+        - anotherdb_pipelines.*
+        - anotherdb_featureFlag.*
+        - anotherdb_deploymentSummary.*
+        - anotherdb_serviceInstance.*
+        - anotherdb_services.*
+        - anotherdb_licenses.*
+      metadata:
+        "*":
+          replication-key: lastUpdatedAt
+          replication-method: INCREMENTAL
+      config:
+        stream_prefix: ""
+        mongo:
+          host: >-
+            @format
+            mongodb+srv://{this.taps.tap_mongodb.config.user}:{this.taps.tap_mongodb.config.password}@something.gcp.mongodb.net/anotherdb
+
+  targets:
+    target-bigquery:
+      config:
+        # 👇 This is how you can use the current namespace
+        # notice we do it in prod for BigQuery but not in the other envs
+        # this is so non prod data is written to a different dataset
+        dataset: "@format {this.namespace}"
+    target-jsonl:
+      config:
+        # 👇 This is how you can use the current namespace
+        destination_path: "@format output/prod/{this.namespace}"

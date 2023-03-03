@@ -10,7 +10,9 @@ pip install singer-alto   # or add it to your project!
 
 Like [Meltano](https://github.com/meltano/meltano), Alto is driven entirely by configuration and the config structure drew much of its inspiration from Meltano. Alto supports YAML, TOML, and JSON leveraging [Dynaconf](https://github.com/dynaconf/dynaconf) for robust features and the structure is modeled similarly to Meltano making using one or the other, or just giving `alto` a whirl, a fairly straightforward process. 
 
-**Example Config (see the bottom of the readme for the same thing as TOML):**
+**Small Example Config (see the bottom of the readme for the same thing as TOML):**
+
+> Also see the massive [alto.example.yaml](./alto.example.yaml) in this repo based on a real-world project.
 
 ```yaml
 # this key corresponds to the environment, default is a special key which applies to all environments.
