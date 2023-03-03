@@ -14,7 +14,7 @@ Finally, Alto is scaffolded over [Doit](https://github.com/pydoit/doit), a Pytho
 
 > How is this different than what exists today; namely Meltano?
 
-I might recommend `alto` if you need a simple codebase as a starting point to extend or if Meltano seems like overkill for what you are hoping to do (IE move data from A to B). Alto from the perspective of being able to run taps -> targets has more-or-less parity with Meltano since it is really the plugins that do most of the work. There are also some compelling features in `alto` in general around how it manages plugins as cached PEX files, the built in reservoir, and its light footprint. Using Meltano as the baseline of comparison, here are some noteworthy differences:
+I might recommend `alto` if you need a simple codebase as a starting point to extend or if Meltano seems like overkill for what you are hoping to do (IE move data from A to B in a existing project that has dbt and other deps installed). Alto from the perspective of being able to run taps -> targets has more-or-less parity with Meltano since it is really the plugins that do most of the work. There are also some compelling features in `alto` in general around how it manages plugins as cached PEX files, the built in reservoir, and its light footprint. Using Meltano as the baseline of comparison, here are some noteworthy differences:
 
 - The CLI is extremely fast due to the lightness of the package.
 
