@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "singer-alto"
+version = "0.1.4"
+description = "A package for managing singer.io taps and targets"
+authors = ["z3z1ma <butler.alex2010@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "alto" }]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+doit = ">=0.36.0"
+pex = ">=2"
+fsspec = "^2023.1.0"
+dynaconf = "^3.1.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+alto = "alto.main:main"
+
+[tool.black] # https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#configuration-via-a-file
+line-length = 100
+target-version = ["py39"]
+preview = true
+
+[tool.isort] # https://pycqa.github.io/isort/docs/configuration/options.html
+color_output = true
+line_length = 100
+profile = "black"
+src_paths = ["alto"]
+
+[tool.ruff] # https://beta.ruff.rs/docs/configuration/#using-pyprojecttoml
+line-length = 100

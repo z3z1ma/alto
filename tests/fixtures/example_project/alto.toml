@@ -1,0 +1,18 @@
+[default]
+project_name = "de7ecc1b"
+extensions = []
+namespace = "raw"
+
+[default.taps.tap-carbon-intensity]
+pip_url = "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
+namespace = "carbon_intensity"
+capabilities = ["state", "catalog"]
+select = ["*.*"]
+
+[default.taps.tap-carbon-intensity.config]
+
+[default.targets.target-jsonl]
+pip_url = "target-jsonl==0.1.4"
+
+[default.targets.target-jsonl.config]
+destination_path = "output"

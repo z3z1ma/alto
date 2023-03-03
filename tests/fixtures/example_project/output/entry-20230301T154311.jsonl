@@ -1,0 +1,833 @@
+{"id": "55f437fa-2a3a-4caf-9ee5-ef6321f06444", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 1, "forecast": 146, "index": "low"}
+{"id": "b1536f40-62a8-4842-83d8-d039acd68295", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 1, "forecast": 144, "index": "low"}
+{"id": "a3d8273d-b36a-4285-80f1-bd2d46d61bf5", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 1, "forecast": 142, "index": "low"}
+{"id": "6615a4ed-b02f-4f26-96e7-d38bf9983e1a", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 1, "forecast": 141, "index": "low"}
+{"id": "7a51e843-7946-436d-a11e-d0c802eaf211", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 1, "forecast": 140, "index": "low"}
+{"id": "2fd0299e-f131-4d8f-847f-f208b5e1a276", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 1, "forecast": 139, "index": "low"}
+{"id": "984b2d5f-3049-4ae8-b5dd-7a0ca40e4b69", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 1, "forecast": 135, "index": "low"}
+{"id": "76dec1b7-a861-4cda-ba3e-8e55a03eee51", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 1, "forecast": 130, "index": "low"}
+{"id": "5fad2675-4942-48e8-ad76-a196107f1126", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 1, "forecast": 124, "index": "low"}
+{"id": "9b614469-d19c-4031-92b6-8b41cadb8e04", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 1, "forecast": 121, "index": "low"}
+{"id": "6f32125c-7d00-44d6-8ddb-2fc2cc166ff9", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 1, "forecast": 120, "index": "low"}
+{"id": "d61dbc36-7565-469a-b7b2-b056b3e71969", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 1, "forecast": 120, "index": "low"}
+{"id": "1f44ffd0-2d36-4623-8b18-deb379cfa2ee", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 1, "forecast": 121, "index": "low"}
+{"id": "33cdbc88-aea7-4d91-8f97-9989801b2beb", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 1, "forecast": 122, "index": "low"}
+{"id": "fca8c5be-3afd-42ea-afbf-f71b3621d5db", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 1, "forecast": 122, "index": "low"}
+{"id": "91215ebe-e7b7-4361-8211-e19263d34646", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 1, "forecast": 121, "index": "low"}
+{"id": "a756b585-ea17-494b-b195-65c4991f1674", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 1, "forecast": 118, "index": "low"}
+{"id": "4ffa435a-b034-49a8-a30e-828133909262", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 1, "forecast": 114, "index": "low"}
+{"id": "705fd1af-f411-4667-9afe-c23f1aea5f32", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 1, "forecast": 112, "index": "low"}
+{"id": "b547f768-22f6-4e14-8272-f7e0a9db25f5", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 1, "forecast": 112, "index": "low"}
+{"id": "f00602c1-2843-4873-a4b7-a146d2331a22", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 1, "forecast": 114, "index": "low"}
+{"id": "56251a4a-95ba-476e-b7c4-02b4980c15da", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 1, "forecast": 118, "index": "low"}
+{"id": "1f044953-f889-4278-94c4-886463ebc410", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 1, "forecast": 127, "index": "low"}
+{"id": "208c4b21-b79d-4a0a-b027-4d779d319939", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 1, "forecast": 139, "index": "low"}
+{"id": "cfc1000a-53c4-481b-b7b9-c3f0ced55ca2", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 1, "forecast": 163, "index": "low"}
+{"id": "bf0aa913-f882-43c1-87a1-b77d50c816d6", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 1, "forecast": 162, "index": "low"}
+{"id": "f0921059-6fde-48e5-95e5-a8a77f039ce5", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 1, "forecast": 160, "index": "low"}
+{"id": "c8682ea1-f700-40f5-9691-a39a7fb11878", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 1, "forecast": 163, "index": "low"}
+{"id": "74f3a924-48fe-4110-b849-392ae616f5ed", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 1, "forecast": 123, "index": "low"}
+{"id": "4aac9f64-cc19-4df2-8643-0340b1f99c0a", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 1, "forecast": 124, "index": "low"}
+{"id": "d8679a30-8647-4118-a8a0-fda01a062bd1", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 1, "forecast": 124, "index": "low"}
+{"id": "d7322ba5-f549-4c74-ae57-631e2ca304a4", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 1, "forecast": 125, "index": "low"}
+{"id": "5f009f25-7ead-4f2d-a0fe-49cfefd75e75", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 1, "forecast": 125, "index": "low"}
+{"id": "4d521591-8f9e-4696-aa98-ae0dd31b2c1d", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 1, "forecast": 127, "index": "low"}
+{"id": "835d79ae-afb0-4825-9e59-469d5b11d0a5", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 1, "forecast": 130, "index": "low"}
+{"id": "19b0c158-18e0-4070-9b7b-62ba363f68ef", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 1, "forecast": 133, "index": "low"}
+{"id": "90e5b79d-0f25-42a1-826a-33767dc30873", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 1, "forecast": 136, "index": "low"}
+{"id": "d38bd138-613d-46a5-8351-6b6b96314db1", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 1, "forecast": 141, "index": "low"}
+{"id": "7e70bc29-0b11-43ba-b295-71de76fd7863", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 1, "forecast": 147, "index": "low"}
+{"id": "6afc5d79-767c-4883-a0a5-f5b7fa5e31e0", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 1, "forecast": 154, "index": "low"}
+{"id": "ce4a2313-65d6-49a0-8d37-4ec8dd8ca69f", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 1, "forecast": 160, "index": "low"}
+{"id": "777c7699-2e53-4fcb-a8fb-f95485d53314", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 1, "forecast": 167, "index": "low"}
+{"id": "4ca60703-af7a-48f3-84b8-2d082e050a53", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 1, "forecast": 170, "index": "low"}
+{"id": "60d54144-fbce-4acc-88d0-0d93d0330dbd", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 1, "forecast": 174, "index": "low"}
+{"id": "df304ef3-5cd9-495c-acfc-dc51d3cbfd9d", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 1, "forecast": 179, "index": "low"}
+{"id": "7653cb97-f5b4-4ef3-a46e-dda6564bc1a1", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 1, "forecast": 187, "index": "moderate"}
+{"id": "fe3eb7dd-f004-4758-9180-afef86e15b0f", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 1, "forecast": 194, "index": "moderate"}
+{"id": "b2457fc2-bcdb-4d15-8518-6f87220e98c0", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 1, "forecast": 199, "index": "moderate"}
+{"id": "df66c8bc-6d45-4fda-a7bc-169e4c94f3ee", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 1, "forecast": 203, "index": "moderate"}
+{"id": "bf542be9-86bd-49a1-830d-b2582e0190e9", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 2, "forecast": 25, "index": "very low"}
+{"id": "cb10eb8d-6fad-447c-ad3b-39826c6f3c6a", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 2, "forecast": 24, "index": "very low"}
+{"id": "d728a92a-4100-4cb4-97f8-3b269389ee8b", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 2, "forecast": 23, "index": "very low"}
+{"id": "6f6b51e9-b363-4db0-a4a3-09ba6e3e790a", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 2, "forecast": 22, "index": "very low"}
+{"id": "540bda9b-bec1-404f-9099-9aa46b2a4731", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 2, "forecast": 21, "index": "very low"}
+{"id": "066a74b0-4eaa-4315-9367-65937b387b2b", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 2, "forecast": 20, "index": "very low"}
+{"id": "9af0dd6f-0250-40c8-a3ee-1b49a5151742", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 2, "forecast": 20, "index": "very low"}
+{"id": "99ededaf-f76b-41b6-b72f-3c36c0891c9e", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 2, "forecast": 19, "index": "very low"}
+{"id": "41b33078-2893-442d-a417-62603360c300", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 2, "forecast": 18, "index": "very low"}
+{"id": "2ce957f7-dfde-479e-9d68-1fbae2925148", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 2, "forecast": 18, "index": "very low"}
+{"id": "74a8cbbd-61f6-47eb-b3c0-94a7859bc97e", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 2, "forecast": 17, "index": "very low"}
+{"id": "f8078245-bc4e-43b3-b5ec-8bfc41ccb8ad", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 2, "forecast": 17, "index": "very low"}
+{"id": "8529d800-75af-4874-9564-8d6c409cf3b2", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 2, "forecast": 17, "index": "very low"}
+{"id": "f363e0a3-045d-4b68-b085-3c8715a3ec08", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 2, "forecast": 17, "index": "very low"}
+{"id": "88d4e68f-1ff7-4a6e-9a33-7ab81ca87e89", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 2, "forecast": 17, "index": "very low"}
+{"id": "22d83af1-b106-4f8b-a375-3a8c69117c53", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 2, "forecast": 17, "index": "very low"}
+{"id": "82f65a9d-05f8-4418-ba7b-040904a5f614", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 2, "forecast": 18, "index": "very low"}
+{"id": "d91125d8-59b4-4cb2-90fe-79cdb9ab51d4", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 2, "forecast": 20, "index": "very low"}
+{"id": "0ccb4947-480c-4854-8456-548461d4f553", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 2, "forecast": 23, "index": "very low"}
+{"id": "c09b6cbb-7153-47c0-9101-8c41e6922236", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 2, "forecast": 28, "index": "very low"}
+{"id": "750eccfb-b104-4c8a-abf0-9b9aca96b75f", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 2, "forecast": 33, "index": "very low"}
+{"id": "04e2a660-9849-4dfe-b3f0-9b627ffc3eb4", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 2, "forecast": 36, "index": "very low"}
+{"id": "ace8b282-1c05-486c-bd95-2a14ace8984f", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 2, "forecast": 38, "index": "very low"}
+{"id": "3b412dd2-417b-45bd-89df-dbf8fa56e9f3", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 2, "forecast": 40, "index": "very low"}
+{"id": "7530f4a0-8a13-44ce-aeda-d85b050a072f", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 2, "forecast": 42, "index": "very low"}
+{"id": "f1657094-f9cd-4f2c-acb9-0a20f3166708", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 2, "forecast": 42, "index": "very low"}
+{"id": "82795132-dc65-4099-8114-f87723b42fc2", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 2, "forecast": 42, "index": "very low"}
+{"id": "b9aced68-6787-4ff0-bdfc-d71b75af226b", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 2, "forecast": 41, "index": "very low"}
+{"id": "5f624eab-60fe-42a7-8289-fce97a0fecef", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 2, "forecast": 29, "index": "very low"}
+{"id": "0ba7934f-dbb5-41b8-b0a3-536dcae357fe", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 2, "forecast": 29, "index": "very low"}
+{"id": "ba9e1a78-3bc9-4da0-818b-d721ead635ca", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 2, "forecast": 31, "index": "very low"}
+{"id": "d479d9ac-eb08-4d01-87df-6eda3b085710", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 2, "forecast": 34, "index": "very low"}
+{"id": "a5e33886-e770-422f-96db-aaa7e77f31e1", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 2, "forecast": 38, "index": "very low"}
+{"id": "20358a47-3cf1-42d0-bc85-73b69ce62943", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 2, "forecast": 41, "index": "very low"}
+{"id": "99927e79-47c8-421b-a5c3-73a5d9235289", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 2, "forecast": 43, "index": "very low"}
+{"id": "e397c90a-523a-433f-be9c-7ff9960ea656", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 2, "forecast": 44, "index": "very low"}
+{"id": "bd17f1c1-5837-44c7-a378-569ff24627c2", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 2, "forecast": 45, "index": "very low"}
+{"id": "8284b94f-822d-4f23-8f43-1cd06d5dbd4f", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 2, "forecast": 46, "index": "very low"}
+{"id": "b78d67ad-1849-4dd5-a89d-eb8f4b1c9134", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 2, "forecast": 45, "index": "very low"}
+{"id": "4460777b-2ff2-4d4f-86dc-615b44b94767", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 2, "forecast": 44, "index": "very low"}
+{"id": "18b5b9a8-2723-429f-aa06-9da91e26d2e5", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 2, "forecast": 43, "index": "very low"}
+{"id": "0f5946a5-f572-4b17-823a-861a04902f3a", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 2, "forecast": 41, "index": "very low"}
+{"id": "691d46d7-34b9-4241-ac9b-f8a2ae39bcae", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 2, "forecast": 38, "index": "very low"}
+{"id": "9588b69b-7a16-479d-9796-dd8a336e108a", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 2, "forecast": 34, "index": "very low"}
+{"id": "dda97dfb-5416-40d2-a3c6-697e4cd2ed41", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 2, "forecast": 29, "index": "very low"}
+{"id": "681b39b4-4994-4d4c-b7de-6a8dd14ca160", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 2, "forecast": 26, "index": "very low"}
+{"id": "ed70fa77-a3a3-41d3-886c-b8015b00f8d8", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 2, "forecast": 25, "index": "very low"}
+{"id": "6556f1a1-9c5a-4544-957c-6db8c1657af0", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 2, "forecast": 25, "index": "very low"}
+{"id": "db6e5977-3d7f-4135-a280-b1c29915e559", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 2, "forecast": 24, "index": "very low"}
+{"id": "b974e7dd-cf52-47dd-9eed-534c303cd7bc", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 3, "forecast": 111, "index": "low"}
+{"id": "9682c7c4-2b40-4237-9a80-632fc2395e96", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 3, "forecast": 108, "index": "low"}
+{"id": "cb6a2d43-bbc5-482f-a41c-a5a8ddbd1b4c", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 3, "forecast": 105, "index": "low"}
+{"id": "00f9fe9f-bddd-4c04-8d7f-b44a0204b31c", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 3, "forecast": 104, "index": "low"}
+{"id": "434d7988-1931-4246-8880-7c29a163d799", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 3, "forecast": 102, "index": "low"}
+{"id": "91bad805-7831-4a6b-9e90-fe41e8283dab", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 3, "forecast": 100, "index": "low"}
+{"id": "e538ecf0-9984-4086-8215-47f8dfed485d", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 3, "forecast": 98, "index": "low"}
+{"id": "51479baf-6139-4122-ab2f-17d2f8dd7efa", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 3, "forecast": 96, "index": "low"}
+{"id": "e10e3078-301e-43bc-9647-6a7a6390aa01", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 3, "forecast": 93, "index": "low"}
+{"id": "763c5f41-7af7-4e01-9788-a55969a0e02d", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 3, "forecast": 90, "index": "low"}
+{"id": "7f5fa164-edfd-4bbd-b4f8-28b01f8907b5", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 3, "forecast": 86, "index": "low"}
+{"id": "0bbd01e9-9026-4f20-968b-2f933de52737", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 3, "forecast": 82, "index": "low"}
+{"id": "a1d5449e-c2f8-4f0b-81ae-b2ba9e9fcf02", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 3, "forecast": 79, "index": "very low"}
+{"id": "1a1a4d2a-050a-45bd-81cc-7a4c19820200", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 3, "forecast": 77, "index": "very low"}
+{"id": "6a6c6088-13d4-4ada-80aa-5aac6de68d81", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 3, "forecast": 75, "index": "very low"}
+{"id": "c9a236f8-d406-46e0-a55b-5dcae50c85fd", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 3, "forecast": 74, "index": "very low"}
+{"id": "dccb7054-1aa4-4b51-8c54-bba5d335376e", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 3, "forecast": 74, "index": "very low"}
+{"id": "d3b3dd62-1936-40f4-827d-c53eb1d08d26", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 3, "forecast": 73, "index": "very low"}
+{"id": "ef8e486f-1821-4d7e-8ee4-d52a595a6b5a", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 3, "forecast": 71, "index": "very low"}
+{"id": "d71c2b5e-e324-4e00-b543-670b07450769", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 3, "forecast": 69, "index": "very low"}
+{"id": "f28ddc52-25ee-45bc-bacd-81ec69d05b0b", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 3, "forecast": 66, "index": "very low"}
+{"id": "79e9fcc6-2153-41b7-bfb1-88c281cfc111", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 3, "forecast": 63, "index": "very low"}
+{"id": "dee992c2-9b2d-4ad9-b55b-a6cbd8d8cf57", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 3, "forecast": 61, "index": "very low"}
+{"id": "086b9ff0-69e5-41ff-b3fc-9dc24c9745d6", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 3, "forecast": 59, "index": "very low"}
+{"id": "fc8d3111-0c3a-4c1c-874d-b079131556fd", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 3, "forecast": 55, "index": "very low"}
+{"id": "2d0f82da-6d2c-41cb-b1b5-bbe440761594", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 3, "forecast": 55, "index": "very low"}
+{"id": "acdaa30c-4020-49ec-9d37-834a2d32c789", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 3, "forecast": 53, "index": "very low"}
+{"id": "46cbe1b4-af57-447a-910e-e6c6845e9df3", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 3, "forecast": 52, "index": "very low"}
+{"id": "cbf36ef8-2e6d-43c9-a069-9a8bc7ff4186", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 3, "forecast": 60, "index": "very low"}
+{"id": "a003f8de-1346-4078-8580-eead87d5186c", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 3, "forecast": 61, "index": "very low"}
+{"id": "9af06501-407a-42ef-8e22-62403b058f8a", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 3, "forecast": 61, "index": "very low"}
+{"id": "5178af24-1e7b-4a7e-aa5e-6ba5e65d670c", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 3, "forecast": 62, "index": "very low"}
+{"id": "bc0b6d54-896c-4458-84f7-88188e75efd5", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 3, "forecast": 62, "index": "very low"}
+{"id": "76002018-76bc-436b-9c32-49a8a5606334", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 3, "forecast": 63, "index": "very low"}
+{"id": "1c49384e-69d0-4a09-989e-c4c3e8c3df55", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 3, "forecast": 66, "index": "very low"}
+{"id": "9e356db0-e053-454a-b96c-b5c42b25761a", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 3, "forecast": 70, "index": "very low"}
+{"id": "e2be8e50-888b-4032-8d64-6cc420950b90", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 3, "forecast": 73, "index": "very low"}
+{"id": "9c48192e-f9fe-4e6a-a5dd-68d079b8cb53", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 3, "forecast": 76, "index": "very low"}
+{"id": "e7a12af0-5314-42aa-83dd-4480a9711996", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 3, "forecast": 80, "index": "low"}
+{"id": "ab058a1f-370a-4488-a551-3e0df44290b4", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 3, "forecast": 84, "index": "low"}
+{"id": "9049c039-238b-4638-99eb-ea15f28fb6d1", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 3, "forecast": 90, "index": "low"}
+{"id": "7cdb8ca5-7807-42dd-bb7e-5da3a162c311", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 3, "forecast": 97, "index": "low"}
+{"id": "9128d397-0514-4f03-8fc1-be9e1b95558c", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 3, "forecast": 105, "index": "low"}
+{"id": "539e6d03-3559-4333-a132-7016179d2a13", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 3, "forecast": 113, "index": "low"}
+{"id": "f397218e-7ac4-4ac7-a2e3-9d064f017b11", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 3, "forecast": 118, "index": "low"}
+{"id": "9413686b-931a-4ea3-b720-1801c8480475", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 3, "forecast": 122, "index": "low"}
+{"id": "68bfe82d-6b30-4d55-9ef8-cfdb5f7b7850", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 3, "forecast": 123, "index": "low"}
+{"id": "afd7790b-1089-4c51-9a4f-78c6fcaa4dc9", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 3, "forecast": 123, "index": "low"}
+{"id": "2b613c87-465f-4b8b-8518-82395be731fe", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 3, "forecast": 123, "index": "low"}
+{"id": "5e0476a4-c378-41a9-a6a6-fc296944c57c", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 4, "forecast": 72, "index": "very low"}
+{"id": "bcbb2ffc-1c16-437d-9132-74015d592cb2", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 4, "forecast": 58, "index": "very low"}
+{"id": "9371d57f-000d-4282-8105-2a3388692282", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 4, "forecast": 46, "index": "very low"}
+{"id": "19ba5950-fec0-490e-b3b8-2df43f98e827", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 4, "forecast": 34, "index": "very low"}
+{"id": "6ac699b9-fc82-4f6b-8d58-572c5f7f9273", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 4, "forecast": 26, "index": "very low"}
+{"id": "726c1bfc-1079-4ccf-a441-4a477e0b3f2c", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 4, "forecast": 23, "index": "very low"}
+{"id": "e0a9a6fc-8fef-41c9-8b69-98e70f51a576", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 4, "forecast": 23, "index": "very low"}
+{"id": "20f4f925-a741-4c11-9c36-88ee7347adf4", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 4, "forecast": 22, "index": "very low"}
+{"id": "0d966806-5463-4d9d-b9da-7f65472882ca", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 4, "forecast": 22, "index": "very low"}
+{"id": "8642d9e8-f279-4c82-84d3-ce0b11a8dbac", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 4, "forecast": 22, "index": "very low"}
+{"id": "040b5a59-9c3b-4b3f-a1f3-dbcf57518840", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 4, "forecast": 25, "index": "very low"}
+{"id": "cea64cb9-30c1-4b03-9545-a45e4a3e3875", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 4, "forecast": 27, "index": "very low"}
+{"id": "92adb0b1-a195-46b6-af5a-a1e3b3f2dc9d", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 4, "forecast": 29, "index": "very low"}
+{"id": "39e0a0ac-916d-46c1-8f7c-93fe7f2848d2", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 4, "forecast": 30, "index": "very low"}
+{"id": "b58a030a-c8c7-48ec-836e-c7095ef63ebf", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 4, "forecast": 31, "index": "very low"}
+{"id": "1eedb38d-c271-4a00-abee-0309bf043aa5", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 4, "forecast": 30, "index": "very low"}
+{"id": "e0373ea2-1511-4773-8159-04a2bd77383f", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 4, "forecast": 29, "index": "very low"}
+{"id": "56e18e28-3508-4265-8299-3af2fa265291", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 4, "forecast": 27, "index": "very low"}
+{"id": "69d41e9d-f05f-49fb-a56f-9f746bc91ecd", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 4, "forecast": 26, "index": "very low"}
+{"id": "5fe780a1-e665-474c-8367-bb9f7654fdc9", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 4, "forecast": 25, "index": "very low"}
+{"id": "088e9e1e-4754-442a-b555-6035e8600a5b", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 4, "forecast": 24, "index": "very low"}
+{"id": "ec1d8ce5-3c97-4a46-aa48-2e31b2853dea", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 4, "forecast": 23, "index": "very low"}
+{"id": "ba1c6b6a-6fbc-43ee-a824-0792185e2946", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 4, "forecast": 20, "index": "very low"}
+{"id": "53e2e4e6-e3ba-4cbb-9994-47fe56a29425", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 4, "forecast": 13, "index": "very low"}
+{"id": "9d593e95-2574-45b4-9a7d-ee60053e91c4", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 4, "forecast": 0, "index": "very low"}
+{"id": "65f530b9-880b-4758-933b-0535fefba449", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 4, "forecast": 0, "index": "very low"}
+{"id": "3d6386ba-b7f7-45cb-990e-12ca8d57ccd3", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 4, "forecast": 0, "index": "very low"}
+{"id": "157e4e47-9ecb-48a3-875e-daba7158ecbf", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 4, "forecast": 0, "index": "very low"}
+{"id": "7005238e-efab-476d-9196-0cba7df9b9d7", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 4, "forecast": 20, "index": "very low"}
+{"id": "a1bc51ee-47a8-4c27-b34f-67d87a3b2159", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 4, "forecast": 19, "index": "very low"}
+{"id": "8fb5e405-cca4-4ad5-b5cb-cbe6b5fa3ac1", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 4, "forecast": 19, "index": "very low"}
+{"id": "7d4659c8-5343-465c-b3a1-0fcbdb1ca7bf", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 4, "forecast": 18, "index": "very low"}
+{"id": "ed73226a-bdcf-40fa-9fcb-f3dfc39a6156", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 4, "forecast": 17, "index": "very low"}
+{"id": "c182c30d-3b23-442e-933e-9326e82ac38b", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 4, "forecast": 16, "index": "very low"}
+{"id": "6feb87ba-f609-45da-a46a-62b3ce709649", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 4, "forecast": 15, "index": "very low"}
+{"id": "8bb1c247-0e06-4262-a6ba-4a50db00bae4", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 4, "forecast": 15, "index": "very low"}
+{"id": "72174eaf-83b0-4d41-867d-4558008c7edc", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 4, "forecast": 17, "index": "very low"}
+{"id": "78d08126-e97c-452e-bd39-1f87ffab82a6", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 4, "forecast": 21, "index": "very low"}
+{"id": "276c36b2-5a0e-4e61-9fbd-1f98f45649e9", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 4, "forecast": 30, "index": "very low"}
+{"id": "ff17530b-21b0-4810-baa5-39d434a17e94", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 4, "forecast": 42, "index": "very low"}
+{"id": "2075df02-482f-4647-bbc5-84ea227928b5", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 4, "forecast": 58, "index": "very low"}
+{"id": "95aafadc-17c5-4cd3-89dc-ea158a4c2651", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 4, "forecast": 72, "index": "very low"}
+{"id": "002792a8-cb96-4dea-bc5a-0113bcfe271f", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 4, "forecast": 85, "index": "low"}
+{"id": "fe28a2de-287e-4038-897c-2706f7988a47", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 4, "forecast": 97, "index": "low"}
+{"id": "2aba451b-629a-465d-9a8e-2fdf3d875bf1", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 4, "forecast": 106, "index": "low"}
+{"id": "da46d5b6-8844-4416-8d34-ed095839f342", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 4, "forecast": 111, "index": "low"}
+{"id": "21b86a85-6ee4-419f-8a38-b215d64270db", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 4, "forecast": 109, "index": "low"}
+{"id": "da8246bf-a354-4fb0-9be5-c3fe3df5752b", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 4, "forecast": 104, "index": "low"}
+{"id": "9a57cb5f-5029-4f43-a131-c4229cd3a5a7", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 4, "forecast": 100, "index": "low"}
+{"id": "162633bf-f9c3-4470-b541-dc7546a3d73b", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 5, "forecast": 291, "index": "high"}
+{"id": "4590b41a-3b79-4ef9-bfa6-3d3493090ddd", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 5, "forecast": 293, "index": "high"}
+{"id": "13c2fb70-41fb-4052-83ae-1fd1ab10494d", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 5, "forecast": 297, "index": "high"}
+{"id": "866c4788-505e-4556-9b56-04dcf16f7fd3", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 5, "forecast": 300, "index": "high"}
+{"id": "039091d9-8f4e-4565-bcd8-c44cd15eeeaa", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 5, "forecast": 303, "index": "high"}
+{"id": "8656bfe0-10c1-4add-b79f-9334f0193926", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 5, "forecast": 306, "index": "high"}
+{"id": "670e1d75-50ce-4376-8e89-cf0b68d274d0", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 5, "forecast": 312, "index": "high"}
+{"id": "f84b9907-59d4-40d1-bbff-431049e88a25", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 5, "forecast": 317, "index": "high"}
+{"id": "fa568d9f-ed77-4b99-ba27-a90d88747152", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 5, "forecast": 322, "index": "high"}
+{"id": "a3a9178b-8f4e-4fe1-a8dc-eed006a9b396", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 5, "forecast": 326, "index": "high"}
+{"id": "7e0f001d-0cb1-4c40-850d-60a633715510", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 5, "forecast": 329, "index": "high"}
+{"id": "37468d94-399b-46a1-a93e-60a6ad24f86f", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 5, "forecast": 332, "index": "high"}
+{"id": "85b74b01-2c93-4f5a-9fc1-e9e149907a8d", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 5, "forecast": 332, "index": "high"}
+{"id": "3c5c0631-0d41-48ed-8abd-200312197e24", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 5, "forecast": 330, "index": "high"}
+{"id": "5f3d917c-9510-48b6-86f4-23edbf937adf", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 5, "forecast": 326, "index": "high"}
+{"id": "ea22ea8b-a6d9-42cb-b593-37d7d0f0153f", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 5, "forecast": 323, "index": "high"}
+{"id": "4ebcc97d-46b1-49c1-8cd3-e6492e54c6bd", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 5, "forecast": 320, "index": "high"}
+{"id": "83af1a85-aaf2-4223-8e01-aad4e74ada2b", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 5, "forecast": 318, "index": "high"}
+{"id": "6fba000e-46a6-4edc-8ad8-40ce8c0d320f", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 5, "forecast": 315, "index": "high"}
+{"id": "04ed8cb4-e1ad-42c9-a59f-6d302f1a2798", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 5, "forecast": 313, "index": "high"}
+{"id": "8f8f9794-366b-43f1-94d3-0e6709d7a0cd", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 5, "forecast": 310, "index": "high"}
+{"id": "dfd15388-3a7d-445e-b4d2-2430db6ca610", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 5, "forecast": 303, "index": "high"}
+{"id": "3578da35-dd41-4323-8e7e-98e0ee12fe84", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 5, "forecast": 287, "index": "high"}
+{"id": "02912192-29e6-43da-bbae-350f4a48eb0b", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 5, "forecast": 263, "index": "moderate"}
+{"id": "6e277da4-3b74-4435-962b-a6d35a4b93f0", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 5, "forecast": 216, "index": "moderate"}
+{"id": "b995b8ab-3cb9-4035-9b3a-671d4bf72a29", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 5, "forecast": 214, "index": "moderate"}
+{"id": "7c84b05e-2891-43cb-8f34-143390596805", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 5, "forecast": 214, "index": "moderate"}
+{"id": "1eb69b0b-32e7-4b62-8d4a-f77aafa5327b", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 5, "forecast": 215, "index": "moderate"}
+{"id": "f98fa62a-3559-42fa-aebe-4c3fb37bd3ea", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 5, "forecast": 318, "index": "high"}
+{"id": "669eeb5a-7368-4318-9738-9a701ab85888", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 5, "forecast": 318, "index": "high"}
+{"id": "9f59cf3a-0f1b-4c5e-8755-6c54c8207487", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 5, "forecast": 317, "index": "high"}
+{"id": "f339c082-5e49-4225-9ad0-81372463a02e", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 5, "forecast": 316, "index": "high"}
+{"id": "bb076cef-15d5-4958-9d33-ee9507869274", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 5, "forecast": 315, "index": "high"}
+{"id": "fd67b4b1-9f7e-460b-960b-a343e7ef59fd", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 5, "forecast": 315, "index": "high"}
+{"id": "0c7ea2a3-c097-4604-8607-08561800f90e", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 5, "forecast": 315, "index": "high"}
+{"id": "ea806b30-d74e-473b-9832-08ead290a2f2", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 5, "forecast": 315, "index": "high"}
+{"id": "8481127b-ea6f-4895-897b-be17a4e5973b", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 5, "forecast": 315, "index": "high"}
+{"id": "1060f5a3-0d30-48db-9b08-41f4de0b5c5b", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 5, "forecast": 316, "index": "high"}
+{"id": "4add97c2-e9f8-4e59-8508-8656aba292ce", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 5, "forecast": 318, "index": "high"}
+{"id": "d1927f8a-a594-4396-be79-2fbbc4c52008", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 5, "forecast": 323, "index": "high"}
+{"id": "1ac84996-69d9-40fa-a8ee-144c4d918460", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 5, "forecast": 329, "index": "high"}
+{"id": "d3dd2514-71d9-4cf2-9bdd-688f94e238e9", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 5, "forecast": 335, "index": "high"}
+{"id": "41d6c8ff-a33d-4616-8861-eeedcc909fb0", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 5, "forecast": 340, "index": "high"}
+{"id": "4c75a231-e4ff-46e1-bcf1-9fc83adfd917", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 5, "forecast": 342, "index": "high"}
+{"id": "11d1377c-a450-4799-a13c-05c0fa82784d", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 5, "forecast": 337, "index": "high"}
+{"id": "c227c0f5-8774-4675-87e9-2ee8b1fd70a1", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 5, "forecast": 323, "index": "high"}
+{"id": "fefde17d-77ff-41bd-9645-21b07e8921f1", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 5, "forecast": 302, "index": "high"}
+{"id": "fe46bb4c-78dd-4abd-b4a9-c97ffa6946de", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 5, "forecast": 285, "index": "high"}
+{"id": "cfd13c96-713a-43e1-a839-c78c97506623", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 5, "forecast": 275, "index": "moderate"}
+{"id": "8f14f665-d077-4a27-8ddb-e643d179f341", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 6, "forecast": 282, "index": "high"}
+{"id": "e04df29c-db07-4a06-9993-6bf0035a42b0", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 6, "forecast": 269, "index": "moderate"}
+{"id": "dc8581d2-05d4-4b84-b377-b2ed11f4d3f7", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 6, "forecast": 256, "index": "moderate"}
+{"id": "056576f9-aebd-4383-bc21-0b151d7f7773", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 6, "forecast": 242, "index": "moderate"}
+{"id": "40ed1cc2-caa1-417b-9a19-780b109e6436", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 6, "forecast": 234, "index": "moderate"}
+{"id": "0319d496-8286-45c4-beb6-246abcc2477e", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 6, "forecast": 232, "index": "moderate"}
+{"id": "0ed16b84-43da-4aa7-a4f3-2763045b2ab4", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 6, "forecast": 236, "index": "moderate"}
+{"id": "c08bcdda-8e5d-4c0e-a900-2fd95a8ce817", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 6, "forecast": 238, "index": "moderate"}
+{"id": "a03f2eb5-d4a4-40af-a5a6-a645940a6a7f", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 6, "forecast": 240, "index": "moderate"}
+{"id": "97fe2e45-e04c-46a7-8fde-d9c4db9e4011", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 6, "forecast": 242, "index": "moderate"}
+{"id": "9ec3273e-e707-4cc0-972e-e7ccfdf35fdc", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 6, "forecast": 250, "index": "moderate"}
+{"id": "febf44dc-cd8b-4c48-93f1-3116c8009dc5", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 6, "forecast": 260, "index": "moderate"}
+{"id": "32e68ad3-a29f-4653-8596-b796fe8b1184", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 6, "forecast": 270, "index": "moderate"}
+{"id": "e0c16476-dc2b-42a6-97d8-76fb3afd79b2", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 6, "forecast": 276, "index": "moderate"}
+{"id": "ff3ccabe-639d-46d9-a60f-cfff94997ac7", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 6, "forecast": 279, "index": "moderate"}
+{"id": "861d53cd-2600-4fb7-952f-ff8bb870de34", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 6, "forecast": 277, "index": "moderate"}
+{"id": "20e4ec66-c1c4-4da1-8439-45671db78a28", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 6, "forecast": 270, "index": "moderate"}
+{"id": "ba533ba1-f420-4b76-8f61-db272ad2bb62", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 6, "forecast": 263, "index": "moderate"}
+{"id": "e78203a3-34a8-4aea-a321-96b870d14ec0", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 6, "forecast": 257, "index": "moderate"}
+{"id": "24a6b262-1e25-4670-a2f5-df234201c01c", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 6, "forecast": 252, "index": "moderate"}
+{"id": "bb4204c5-98fe-43ee-b931-fc9f819bd211", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 6, "forecast": 246, "index": "moderate"}
+{"id": "278923b6-815a-4576-8430-7a501fbc12d4", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 6, "forecast": 239, "index": "moderate"}
+{"id": "f42408b1-8d5f-41fe-8c62-546bccd1a771", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 6, "forecast": 236, "index": "moderate"}
+{"id": "29d002de-3183-42cf-b954-c91a2ba060d0", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 6, "forecast": 236, "index": "moderate"}
+{"id": "2ac253f1-787d-4bfd-afed-976be9017de5", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 6, "forecast": 250, "index": "moderate"}
+{"id": "57263831-abbb-4bf1-92a7-5c6b8449b1b2", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 6, "forecast": 256, "index": "moderate"}
+{"id": "2b6116a1-e884-499b-afe1-a29fb5a32d55", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 6, "forecast": 269, "index": "moderate"}
+{"id": "229073d2-9884-4d01-8371-a6e75c45bde3", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 6, "forecast": 282, "index": "high"}
+{"id": "0d0c8693-08e1-441b-bc8f-655a65a4ff0d", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 6, "forecast": 315, "index": "high"}
+{"id": "0f7ec782-97c7-4a10-b189-a32e5468a131", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 6, "forecast": 316, "index": "high"}
+{"id": "e5ccd1fc-06cc-4c15-8725-b06f7b3ccc26", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 6, "forecast": 318, "index": "high"}
+{"id": "6a4ff564-8f52-4c26-9504-1fea3398fa62", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 6, "forecast": 314, "index": "high"}
+{"id": "dde83d6f-c711-4bec-80ba-def1b8d82b72", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 6, "forecast": 302, "index": "high"}
+{"id": "0fd4d7e7-61cf-45bc-b427-0063f920010b", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 6, "forecast": 289, "index": "high"}
+{"id": "e7be55bf-b0de-4454-857c-96d18e25aa91", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 6, "forecast": 282, "index": "high"}
+{"id": "1a372d95-2805-4fe1-ad7e-28021784458e", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 6, "forecast": 282, "index": "high"}
+{"id": "600c785b-2c18-47a2-8e67-da3bc5e71388", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 6, "forecast": 282, "index": "high"}
+{"id": "380a776c-9889-4ea7-976f-1acd1667155d", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 6, "forecast": 277, "index": "moderate"}
+{"id": "1c46445a-1021-4666-94ce-4792687194ec", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 6, "forecast": 269, "index": "moderate"}
+{"id": "c62e11c6-c937-4628-91b3-c2f1331227a1", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 6, "forecast": 260, "index": "moderate"}
+{"id": "55cf7db6-baae-49e2-882e-6227cccf1a9a", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 6, "forecast": 250, "index": "moderate"}
+{"id": "fb338cb9-17c8-4c99-89a2-92e4f1402f71", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 6, "forecast": 240, "index": "moderate"}
+{"id": "ffae0c5f-4323-4f21-becf-3ffc58f66fa5", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 6, "forecast": 232, "index": "moderate"}
+{"id": "b336ccac-31c8-4440-a5c6-c524566550c1", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 6, "forecast": 229, "index": "moderate"}
+{"id": "ac098771-391a-4724-8688-3e086f593718", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 6, "forecast": 230, "index": "moderate"}
+{"id": "a7341a98-a17d-4216-a622-7becba862c85", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 6, "forecast": 227, "index": "moderate"}
+{"id": "907fef72-1568-4cdc-a986-2fe99e050742", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 6, "forecast": 218, "index": "moderate"}
+{"id": "79773d8e-4bcb-4dbe-8369-19d8ef7b5c24", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 6, "forecast": 204, "index": "moderate"}
+{"id": "cebb3902-5b2d-41cd-8581-6031b9909a9a", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 6, "forecast": 193, "index": "moderate"}
+{"id": "add7a916-01bc-48ed-8915-a582dc4b5a63", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 7, "forecast": 330, "index": "high"}
+{"id": "f0d2ccf0-e065-4916-aa60-0c699c7c25b2", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 7, "forecast": 329, "index": "high"}
+{"id": "9d8b50a6-88ca-4c5f-8f5a-edba222ab957", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 7, "forecast": 329, "index": "high"}
+{"id": "3c6f388f-8608-4cf1-bd3b-d88a2fab92c4", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 7, "forecast": 328, "index": "high"}
+{"id": "89de79d9-7b79-46b4-8030-d43091a3c1ed", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 7, "forecast": 328, "index": "high"}
+{"id": "f9ace185-e1f9-40e8-b89f-1e43c55a26a9", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 7, "forecast": 329, "index": "high"}
+{"id": "2020dac5-d478-477d-9dab-3850cb4eb99d", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 7, "forecast": 332, "index": "high"}
+{"id": "1b74334b-f33b-4ddc-834c-bcdd4c12a757", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 7, "forecast": 336, "index": "high"}
+{"id": "18a21a03-3dbc-43d5-b730-5fd5b1109b33", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 7, "forecast": 342, "index": "high"}
+{"id": "b098abe4-ead9-496d-8a6b-3530c1abe3b2", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 7, "forecast": 348, "index": "high"}
+{"id": "a824d88f-a9ff-46d6-a4ea-a64e0b653e9c", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 7, "forecast": 353, "index": "high"}
+{"id": "670f1744-3784-4f34-b322-0d88f58f6b4b", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 7, "forecast": 359, "index": "high"}
+{"id": "3647048b-f435-49cb-b023-0ad4143d5b71", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 7, "forecast": 364, "index": "high"}
+{"id": "c29475c2-c1b5-48ae-a973-e22868e6f78e", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 7, "forecast": 368, "index": "high"}
+{"id": "d0eaca4a-bceb-4566-a774-97482f0431b6", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 7, "forecast": 372, "index": "high"}
+{"id": "b5c5f720-4cd8-406a-ad36-26a586f90fde", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 7, "forecast": 374, "index": "high"}
+{"id": "145a6783-aa29-45ea-b6a6-1e6df9f6a3a8", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 7, "forecast": 373, "index": "high"}
+{"id": "6de3f170-aa2e-402c-ad6d-aea5e4e57d9c", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 7, "forecast": 371, "index": "high"}
+{"id": "0bf3d54a-19e7-4056-9a9a-973b36e9a89d", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 7, "forecast": 369, "index": "high"}
+{"id": "e668e66f-cea0-44af-b649-1b069bf8f4bd", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 7, "forecast": 367, "index": "high"}
+{"id": "5ed36806-cfcb-4a4f-8733-eceeafb15b05", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 7, "forecast": 366, "index": "high"}
+{"id": "cefaf3b7-129f-4a53-95ef-9b2af6def43f", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 7, "forecast": 365, "index": "high"}
+{"id": "777b2a71-614d-4bf0-9c0f-0b3734c8f820", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 7, "forecast": 360, "index": "high"}
+{"id": "28318f47-84bd-48ab-a89f-4219abfd3440", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 7, "forecast": 351, "index": "high"}
+{"id": "a65dfbaa-e3b3-4c4b-9e86-4aec19011811", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 7, "forecast": 334, "index": "high"}
+{"id": "f78e5a5f-10e0-4d28-abd2-f9f7658f0472", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 7, "forecast": 332, "index": "high"}
+{"id": "4c83cdde-8e86-4ea0-a1ef-dc465b69bb11", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 7, "forecast": 330, "index": "high"}
+{"id": "c2618c03-2323-43d8-b2d5-ac71c90ed386", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 7, "forecast": 326, "index": "high"}
+{"id": "0fcf142c-ad3a-4c8b-9053-d5be13fa3d4e", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 7, "forecast": 322, "index": "high"}
+{"id": "f13590f4-8b3a-42a1-bc19-98f4691ceb67", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 7, "forecast": 322, "index": "high"}
+{"id": "70cf0ade-82ff-4bc0-8c78-770a9a0cd927", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 7, "forecast": 322, "index": "high"}
+{"id": "42033f1b-b5fa-4ed4-a3c5-2d5769d62c69", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 7, "forecast": 323, "index": "high"}
+{"id": "21c54393-1296-4f30-a59c-ef961f260a3a", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 7, "forecast": 323, "index": "high"}
+{"id": "ddf91091-b0e1-4994-8a52-05b59baee7ab", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 7, "forecast": 323, "index": "high"}
+{"id": "db935748-c4d9-4b56-8add-8cacd6e7d9e4", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 7, "forecast": 323, "index": "high"}
+{"id": "ac594263-fcd3-4e37-ae5e-7b79f18ae361", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 7, "forecast": 323, "index": "high"}
+{"id": "ef3e3e9c-fdc6-4aec-8138-4271c1062ae7", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 7, "forecast": 326, "index": "high"}
+{"id": "7d4bd1e0-9182-44ea-894b-0f30b6badd40", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 7, "forecast": 331, "index": "high"}
+{"id": "34c5898e-7d61-46de-9bf5-cc9b8c96de65", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 7, "forecast": 340, "index": "high"}
+{"id": "8e4fe405-bee2-4a8f-aa4d-3c4d6f0fb03c", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 7, "forecast": 350, "index": "high"}
+{"id": "b4ad6166-2c5e-4fae-9799-37c50dba7f06", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 7, "forecast": 357, "index": "high"}
+{"id": "42a189d1-facc-4ca3-a516-0133177f0860", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 7, "forecast": 360, "index": "high"}
+{"id": "d91afa2a-af2f-4170-aa67-791a82711b61", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 7, "forecast": 361, "index": "high"}
+{"id": "8aeda75b-c4d9-47c6-ba6e-00539dec9cd1", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 7, "forecast": 360, "index": "high"}
+{"id": "b2bf96d6-a3e7-4207-81cc-ebf24045cfae", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 7, "forecast": 359, "index": "high"}
+{"id": "4539c07c-6aeb-49c0-bf57-d07d1bfb8154", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 7, "forecast": 359, "index": "high"}
+{"id": "a1430f59-c5c7-4672-b313-8ff050257a12", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 7, "forecast": 358, "index": "high"}
+{"id": "fa05467a-3a6d-4cc7-8a66-4187b2e25b3c", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 7, "forecast": 357, "index": "high"}
+{"id": "4ae8fe36-574b-4121-a6c2-dd5933b9df39", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 7, "forecast": 356, "index": "high"}
+{"id": "a576aef5-ce2c-48cc-b0b9-2fca6bdb40fc", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 8, "forecast": 230, "index": "moderate"}
+{"id": "acbc19e5-883b-4d7e-b634-5ac881349440", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 8, "forecast": 222, "index": "moderate"}
+{"id": "116d1f61-ae49-49f1-bb56-a0921a164ddb", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 8, "forecast": 215, "index": "moderate"}
+{"id": "c38bc871-47ac-48c4-8180-4734009ff0c5", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 8, "forecast": 210, "index": "moderate"}
+{"id": "c9ecf147-de7d-48d9-85bf-1c792fd3fe4e", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 8, "forecast": 207, "index": "moderate"}
+{"id": "92c6a370-1530-4430-8c29-7073e89e8f83", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 8, "forecast": 205, "index": "moderate"}
+{"id": "2ad577d5-5b3b-44b5-8fba-c547e73de169", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 8, "forecast": 202, "index": "moderate"}
+{"id": "8fbe78d2-dc4a-4765-a875-297dca80504b", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 8, "forecast": 196, "index": "moderate"}
+{"id": "427e602d-7213-40aa-bf13-78d2b74011e5", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 8, "forecast": 192, "index": "moderate"}
+{"id": "7dd8d3fe-2144-4501-a677-a4680f44ef8e", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 8, "forecast": 191, "index": "moderate"}
+{"id": "96004966-9956-401e-8baa-28b959d2d032", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 8, "forecast": 192, "index": "moderate"}
+{"id": "b0d3d71b-738b-49ee-a399-03e2cdc33d49", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 8, "forecast": 191, "index": "moderate"}
+{"id": "cb298165-d0ee-4b92-ad34-3928024aba12", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 8, "forecast": 188, "index": "moderate"}
+{"id": "c0d587c1-634d-4da4-85bf-b603b98938e0", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 8, "forecast": 183, "index": "moderate"}
+{"id": "f2a98663-12ff-4a9e-970c-004853724822", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 8, "forecast": 179, "index": "low"}
+{"id": "e43cdf69-e4d4-4f61-898c-18a0d306cc61", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 8, "forecast": 175, "index": "low"}
+{"id": "6b506115-3ab5-425f-8f6d-87e6401b9b6f", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 8, "forecast": 172, "index": "low"}
+{"id": "a5a5081d-08d2-4d48-bb7e-27240724c4d5", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 8, "forecast": 170, "index": "low"}
+{"id": "5b1f9555-8de3-47ef-9dd6-b48273eb8bd5", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 8, "forecast": 168, "index": "low"}
+{"id": "1dd82235-b9e3-4b22-9670-e7ec7ab1f5f0", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 8, "forecast": 168, "index": "low"}
+{"id": "fdedb4c3-cf7b-481f-b163-79ef421492fd", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 8, "forecast": 168, "index": "low"}
+{"id": "8b647cc7-b9bf-42a5-a394-bc37d846710f", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 8, "forecast": 166, "index": "low"}
+{"id": "eb7ed9a6-7f7d-4d0e-9513-20835a670ecb", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 8, "forecast": 157, "index": "low"}
+{"id": "e32e94bb-b9dc-4ebf-8ccf-2dac7970e47e", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 8, "forecast": 142, "index": "low"}
+{"id": "903f6ca0-51b8-430b-8638-2fde01957c42", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 8, "forecast": 117, "index": "low"}
+{"id": "768460d8-b334-48d4-953d-f01d010bbf59", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 8, "forecast": 117, "index": "low"}
+{"id": "e911c74c-4d21-48f6-9d0b-4c7f25f0741a", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 8, "forecast": 116, "index": "low"}
+{"id": "ffc9733b-8663-439a-9cf4-9d47db53100c", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 8, "forecast": 115, "index": "low"}
+{"id": "4f6feb24-f320-46ef-9580-127d8ddb0e9d", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 8, "forecast": 108, "index": "low"}
+{"id": "07b94869-7920-4adc-a26c-ba601beeb7ed", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 8, "forecast": 106, "index": "low"}
+{"id": "7204964b-3a35-4cab-a983-bc61bdc21ec3", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 8, "forecast": 101, "index": "low"}
+{"id": "07a8bfe7-9394-48c2-a630-0fdf6e426e36", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 8, "forecast": 92, "index": "low"}
+{"id": "481fd048-f160-4024-a273-8f4d4750e5fc", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 8, "forecast": 87, "index": "low"}
+{"id": "79b90b52-810c-409b-b2d9-5ec4be923243", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 8, "forecast": 88, "index": "low"}
+{"id": "04362a0f-7236-4f4b-80e6-8af9f3d901e1", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 8, "forecast": 94, "index": "low"}
+{"id": "87c93b61-43ce-4a6e-8f30-df82b3db0d18", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 8, "forecast": 101, "index": "low"}
+{"id": "dbb432e7-213c-4330-bbdf-d7a8de5fcb58", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 8, "forecast": 112, "index": "low"}
+{"id": "2a036a4e-f811-4afb-9a5d-4ccb4bf7a840", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 8, "forecast": 129, "index": "low"}
+{"id": "779d25f3-342f-43d6-b1aa-27a67b7530de", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 8, "forecast": 158, "index": "low"}
+{"id": "cc36c2bc-5bf7-4ee7-83df-8fbbebacae56", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 8, "forecast": 195, "index": "moderate"}
+{"id": "52eae1b4-ad7a-4934-b413-08f0becc6041", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 8, "forecast": 231, "index": "moderate"}
+{"id": "ef3aa4a3-223b-4e3c-9718-dc97eed2bd68", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 8, "forecast": 257, "index": "moderate"}
+{"id": "9b8000de-40a5-4cad-ae31-ea4436e0b4ca", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 8, "forecast": 273, "index": "moderate"}
+{"id": "72597d44-123f-460f-89af-b9c34c08a8a3", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 8, "forecast": 284, "index": "high"}
+{"id": "17018147-529e-483b-af44-c1eb6a645bf9", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 8, "forecast": 291, "index": "high"}
+{"id": "39d2f751-8efc-4e85-b726-dce17e9cbbe7", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 8, "forecast": 290, "index": "high"}
+{"id": "6371f44e-ff58-4270-80d9-107c1e5fe85c", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 8, "forecast": 282, "index": "high"}
+{"id": "ee62f408-fb88-494b-8aa0-6ab81273898e", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 8, "forecast": 275, "index": "moderate"}
+{"id": "5b7a6ac5-657e-439b-8a5e-0e744b53d70b", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 8, "forecast": 270, "index": "moderate"}
+{"id": "5f0f6d19-597c-4980-9231-bb25eecad730", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 9, "forecast": 262, "index": "moderate"}
+{"id": "a1a3995e-c475-4fd0-bf48-2bbd652689a1", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 9, "forecast": 258, "index": "moderate"}
+{"id": "0b43a927-c926-4934-a933-c3a5019e8669", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 9, "forecast": 254, "index": "moderate"}
+{"id": "bd8b75fa-a431-4bd0-a91c-68c458ab7f78", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 9, "forecast": 252, "index": "moderate"}
+{"id": "68ebd214-e2ba-4422-92d5-0a3f27c62dd0", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 9, "forecast": 251, "index": "moderate"}
+{"id": "b16a9bdf-80f1-4ca2-a4f9-ae283b86efe1", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 9, "forecast": 250, "index": "moderate"}
+{"id": "214e25fe-9306-4b77-83b4-f00409f6f8a3", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 9, "forecast": 252, "index": "moderate"}
+{"id": "7d31df8b-e666-417c-bc83-0435a3521b71", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 9, "forecast": 257, "index": "moderate"}
+{"id": "056c27dd-3d79-45e4-9416-340d5b50d42b", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 9, "forecast": 265, "index": "moderate"}
+{"id": "06f0b285-193a-45bd-987a-ebb1e5e69e84", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 9, "forecast": 278, "index": "moderate"}
+{"id": "17789114-e61d-49a3-aa67-39a4f23c863c", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 9, "forecast": 295, "index": "high"}
+{"id": "a776dc94-6a1f-4110-9235-da4973104d4f", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 9, "forecast": 315, "index": "high"}
+{"id": "387dd785-24bf-4514-8c34-7702a644d75b", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 9, "forecast": 336, "index": "high"}
+{"id": "243eff5e-b987-4905-8b16-0e944df9766f", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 9, "forecast": 353, "index": "high"}
+{"id": "4e757c1c-704e-4b91-8796-a307d7d73b79", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 9, "forecast": 364, "index": "high"}
+{"id": "009e8374-ad65-4d97-8cb2-129c5f06d90c", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 9, "forecast": 369, "index": "high"}
+{"id": "83bd37b0-be25-4d0b-905b-641de38aaea7", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 9, "forecast": 371, "index": "high"}
+{"id": "887e2a63-42b9-4409-aab1-271af0e75810", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 9, "forecast": 370, "index": "high"}
+{"id": "af7cab38-101c-48eb-87d2-8ec6c51e7149", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 9, "forecast": 367, "index": "high"}
+{"id": "80480292-28b9-4959-aa1a-b68e1f3361c8", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 9, "forecast": 361, "index": "high"}
+{"id": "b1815cd6-b916-4082-95a1-bb8106e792a2", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 9, "forecast": 350, "index": "high"}
+{"id": "d7605876-3336-44f7-a256-af4a5e8f613e", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 9, "forecast": 331, "index": "high"}
+{"id": "e802654e-70da-4334-bed0-181acbf814fa", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 9, "forecast": 309, "index": "high"}
+{"id": "bad0b914-5a68-47e6-8290-b3710d60ceac", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 9, "forecast": 288, "index": "high"}
+{"id": "578e901b-fd72-4947-8ec5-e89701af1489", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 9, "forecast": 268, "index": "moderate"}
+{"id": "395c555e-fd2c-4423-aac8-91302c6b39c1", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 9, "forecast": 267, "index": "moderate"}
+{"id": "a9a5ce8c-9408-40ef-b454-b1b51b35e847", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 9, "forecast": 265, "index": "moderate"}
+{"id": "d9bd1ab3-0736-40a6-b9dd-8ae4223f0ed1", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 9, "forecast": 261, "index": "moderate"}
+{"id": "30d7e35a-e2bc-4344-a3cc-48f6d04c04d3", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 9, "forecast": 280, "index": "high"}
+{"id": "af90e269-8de2-4d76-854f-9f19229a4cf8", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 9, "forecast": 278, "index": "moderate"}
+{"id": "f19f0671-d15d-43a9-9d7c-cac5342e01c7", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 9, "forecast": 272, "index": "moderate"}
+{"id": "91600162-865d-41e9-820b-3fde0b0d1ea8", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 9, "forecast": 265, "index": "moderate"}
+{"id": "5a2e5817-9fe8-4924-a844-0c1583839bc9", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 9, "forecast": 256, "index": "moderate"}
+{"id": "434252c8-b137-46ee-adc3-a3d3656b1187", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 9, "forecast": 249, "index": "moderate"}
+{"id": "7ae21e9e-416f-4db4-9636-00e8fb97b411", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 9, "forecast": 243, "index": "moderate"}
+{"id": "85d01e65-b4a3-4091-9817-ba8cd00eb4a4", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 9, "forecast": 240, "index": "moderate"}
+{"id": "8cf5d19a-380e-4f09-8024-75f2bc4829dc", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 9, "forecast": 241, "index": "moderate"}
+{"id": "f0048e89-56e9-408d-bf80-35c5b4851754", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 9, "forecast": 245, "index": "moderate"}
+{"id": "9a739588-895c-4a72-9892-15ddf0d82fea", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 9, "forecast": 252, "index": "moderate"}
+{"id": "6a69f5de-5fe2-43a3-a398-f6c720a59282", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 9, "forecast": 262, "index": "moderate"}
+{"id": "07f7bcd8-a130-44a4-93fe-33501f7525e8", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 9, "forecast": 274, "index": "moderate"}
+{"id": "d986645c-c623-4ee1-992d-3e670c98e4d5", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 9, "forecast": 284, "index": "high"}
+{"id": "3b3187c1-3a27-4f58-8a12-17287e20e0d3", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 9, "forecast": 290, "index": "high"}
+{"id": "2e954e17-1aeb-458e-8d3d-b7fa9d3e6220", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 9, "forecast": 292, "index": "high"}
+{"id": "d486a7e0-5553-47d3-9d55-34cd3dd513ff", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 9, "forecast": 291, "index": "high"}
+{"id": "7521b043-cc9e-4642-be6e-2df6cb1b34bb", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 9, "forecast": 288, "index": "high"}
+{"id": "b85d260b-fec8-4371-a112-19fc2934f663", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 9, "forecast": 284, "index": "high"}
+{"id": "cdd395ac-1400-4f10-b375-17497e13a263", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 9, "forecast": 281, "index": "high"}
+{"id": "7af83312-64f6-42d8-8eb7-39c61cee779b", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 9, "forecast": 281, "index": "high"}
+{"id": "4dcfe780-da17-49f0-ad45-d737bbaeffc4", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 10, "forecast": 80, "index": "low"}
+{"id": "6cb14824-6f9d-4812-9e93-c7d681fa5a33", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 10, "forecast": 74, "index": "very low"}
+{"id": "02561fe3-07cb-4d57-b151-5d38932b2b5b", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 10, "forecast": 72, "index": "very low"}
+{"id": "10b27a44-1330-4e11-b144-7ce17e2fe43a", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 10, "forecast": 71, "index": "very low"}
+{"id": "292136ce-227d-4e4a-820d-2b97ec9fa05d", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 10, "forecast": 71, "index": "very low"}
+{"id": "06b11756-b306-4e33-97cb-3f2d4f4f7eb0", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 10, "forecast": 71, "index": "very low"}
+{"id": "280430d6-2adf-4287-86f1-c330cf9ec30a", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 10, "forecast": 73, "index": "very low"}
+{"id": "e374bd4f-aa43-4910-b4c8-81cb9a069aff", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 10, "forecast": 74, "index": "very low"}
+{"id": "359815d9-b33d-4709-8a0d-ae35899cc66e", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 10, "forecast": 76, "index": "very low"}
+{"id": "aefd1b90-b79d-43dc-896c-6bcb10a77108", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 10, "forecast": 78, "index": "very low"}
+{"id": "e6c368c5-6119-4543-b9df-5a5c1f905b83", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 10, "forecast": 83, "index": "low"}
+{"id": "b9f967bd-617d-422a-95a0-e831e1cbc9d4", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 10, "forecast": 91, "index": "low"}
+{"id": "e5f10c6c-8f0c-45b3-a8cd-33619ecf8b1a", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 10, "forecast": 102, "index": "low"}
+{"id": "3284b926-3462-4b41-bd8e-94b421e9e24d", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 10, "forecast": 112, "index": "low"}
+{"id": "8443cac0-1e75-4cc2-a143-b95600c6a260", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 10, "forecast": 120, "index": "low"}
+{"id": "389d1b5f-7e3e-4e6f-8dd3-a67c88a41120", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 10, "forecast": 126, "index": "low"}
+{"id": "b9c5fa6f-86f9-4d93-9ec8-3d95bab2d892", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 10, "forecast": 130, "index": "low"}
+{"id": "9d28ee77-fa8c-4db8-8288-8f8902aab92b", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 10, "forecast": 133, "index": "low"}
+{"id": "78b7571b-97f7-4d57-924b-e2889da02b3b", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 10, "forecast": 134, "index": "low"}
+{"id": "7177b405-5135-4ab9-825f-d7660feea73c", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 10, "forecast": 134, "index": "low"}
+{"id": "6fca62cf-71d4-41cb-8bcd-33d27f9f7292", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 10, "forecast": 133, "index": "low"}
+{"id": "430a94b3-7530-4867-9cd8-1b1471c127d9", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 10, "forecast": 129, "index": "low"}
+{"id": "221aad1a-6f0e-47ba-9ef1-b76f19d4e56e", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 10, "forecast": 124, "index": "low"}
+{"id": "b739c2c3-e826-4e21-ae0f-832f58176306", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 10, "forecast": 116, "index": "low"}
+{"id": "6b4e83c9-a5f6-4814-ab81-8952bb471e5a", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 10, "forecast": 101, "index": "low"}
+{"id": "0579bfc6-88c2-41bb-888a-476b101fb50e", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 10, "forecast": 96, "index": "low"}
+{"id": "c4e79c81-3747-4426-b8ba-23d5dea05279", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 10, "forecast": 88, "index": "low"}
+{"id": "6612b4ec-3728-4aa2-9559-21aaf2a8617b", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 10, "forecast": 79, "index": "very low"}
+{"id": "565837d4-8984-4107-b733-7ca397c168df", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 10, "forecast": 78, "index": "very low"}
+{"id": "709b6808-63d2-4a04-862c-01c4128eb920", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 10, "forecast": 78, "index": "very low"}
+{"id": "877995fb-4153-4968-80b2-fed42e57325a", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 10, "forecast": 76, "index": "very low"}
+{"id": "991aa5f8-a53a-44c1-89d2-9d5765ccf39f", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 10, "forecast": 75, "index": "very low"}
+{"id": "4f8c2d9b-62fa-45c4-b24a-7539987b0bf5", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 10, "forecast": 72, "index": "very low"}
+{"id": "1830441f-0996-4958-b7d0-fc287925322f", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 10, "forecast": 70, "index": "very low"}
+{"id": "afa19139-2c98-42c5-85db-3b00fcb67461", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 10, "forecast": 69, "index": "very low"}
+{"id": "21b9060d-ed12-4c70-b397-9d52835f174c", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 10, "forecast": 68, "index": "very low"}
+{"id": "a9d6306c-c965-4da4-bf89-72288e0fa751", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 10, "forecast": 69, "index": "very low"}
+{"id": "4c4324fd-3ffe-48f2-b17b-dbb8d0648e02", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 10, "forecast": 72, "index": "very low"}
+{"id": "6d610d51-b6a3-4019-9a0f-094cbfcb4687", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 10, "forecast": 75, "index": "very low"}
+{"id": "5d2d369f-37ca-4f1a-bf3d-566ca0a0bd98", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 10, "forecast": 77, "index": "very low"}
+{"id": "35979132-155c-4fe0-bf94-bfab3a37a516", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 10, "forecast": 76, "index": "very low"}
+{"id": "ebf7f380-9c22-4a83-89a0-730b35fbab6c", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 10, "forecast": 75, "index": "very low"}
+{"id": "d922f359-b0f8-4940-bf70-a96f1261b9ff", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 10, "forecast": 75, "index": "very low"}
+{"id": "38775188-f957-4f48-bef7-841d27234e67", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 10, "forecast": 77, "index": "very low"}
+{"id": "6b5ddf99-eb45-484b-bef8-cdf57194363b", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 10, "forecast": 82, "index": "low"}
+{"id": "30530e49-6e62-4b7c-8477-12cf911ff7e6", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 10, "forecast": 89, "index": "low"}
+{"id": "03d8d382-c136-4ccf-9249-bed94a309203", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 10, "forecast": 95, "index": "low"}
+{"id": "8fbba2aa-751b-4bac-b159-8772ceddfc26", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 10, "forecast": 98, "index": "low"}
+{"id": "020d4672-aba4-4caf-9755-f49d1ba047cc", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 10, "forecast": 99, "index": "low"}
+{"id": "6c8e9850-9bb0-4f03-bc50-e57eaf640001", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 11, "forecast": 98, "index": "low"}
+{"id": "19672952-028f-4fc7-9e62-2bf66912d127", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 11, "forecast": 98, "index": "low"}
+{"id": "3dab0bd4-7dc9-4d0c-befe-f58f8cd47fb1", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 11, "forecast": 99, "index": "low"}
+{"id": "ea3e3a0b-b595-4f22-8ec5-78a70cf99936", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 11, "forecast": 102, "index": "low"}
+{"id": "c63f8bf6-866e-4040-99c8-35f1296d8c91", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 11, "forecast": 106, "index": "low"}
+{"id": "726145c5-dcdb-480a-be8b-f8b9290de107", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 11, "forecast": 113, "index": "low"}
+{"id": "37275ec8-b57e-40e5-bd97-bf49686b5dda", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 11, "forecast": 120, "index": "low"}
+{"id": "3b8f0257-4ef4-4410-9ed1-1424e762bcd1", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 11, "forecast": 129, "index": "low"}
+{"id": "56a36e83-f37c-4ca1-836d-a5ef695825ec", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 11, "forecast": 137, "index": "low"}
+{"id": "45a166f4-124b-4b17-8b5c-a48f8949bfe2", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 11, "forecast": 147, "index": "low"}
+{"id": "4b4d4cc8-0b35-4a4b-961f-f5ad95ca9903", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 11, "forecast": 157, "index": "low"}
+{"id": "77706650-d031-4394-9d26-ca2868833ec8", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 11, "forecast": 169, "index": "low"}
+{"id": "0a651db5-78c9-4f9f-b5b8-0f7b2e6c4842", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 11, "forecast": 182, "index": "moderate"}
+{"id": "e4cf6e3c-4e2f-4b0f-8d6b-d5f4f970528d", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 11, "forecast": 196, "index": "moderate"}
+{"id": "1f917a6e-d413-4935-a5b2-e380f8edcba8", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 11, "forecast": 209, "index": "moderate"}
+{"id": "7bbf19ac-7ba9-4c14-a53e-d7cd6b7f8795", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 11, "forecast": 220, "index": "moderate"}
+{"id": "2e3459f2-9b32-4e6f-b0a9-6b15e3cb1028", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 11, "forecast": 227, "index": "moderate"}
+{"id": "55d99a6f-e569-4bc6-b13d-ac6c3ced55c3", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 11, "forecast": 229, "index": "moderate"}
+{"id": "66b8cbcd-4c9c-4af2-b546-71586edf3daa", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 11, "forecast": 226, "index": "moderate"}
+{"id": "787aa22a-5584-416c-b814-5fbda2e5c9d8", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 11, "forecast": 223, "index": "moderate"}
+{"id": "dabb243e-921c-4552-b7d9-ad17ab6de439", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 11, "forecast": 226, "index": "moderate"}
+{"id": "7b49a246-b9df-4e25-8321-9e82b5d41ea2", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 11, "forecast": 234, "index": "moderate"}
+{"id": "ce012b15-dced-4f1a-ae82-ae560875f549", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 11, "forecast": 244, "index": "moderate"}
+{"id": "45758aaa-5ff0-4aef-a7b5-b1d5b354ccb3", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 11, "forecast": 251, "index": "moderate"}
+{"id": "e0b15b6f-7150-4620-bd84-b4b632947b02", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 11, "forecast": 253, "index": "moderate"}
+{"id": "30f4dc96-09cb-46ce-8cc3-8e184db82fa5", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 11, "forecast": 252, "index": "moderate"}
+{"id": "f1ccd31b-a3d3-415b-859e-7ba21bb6b0cf", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 11, "forecast": 249, "index": "moderate"}
+{"id": "4946650c-7a55-4f77-bb79-a80cf061afb1", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 11, "forecast": 246, "index": "moderate"}
+{"id": "87f8645d-906c-415c-b8a3-7cd1ab8311f5", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 11, "forecast": 169, "index": "low"}
+{"id": "6ed0c3b6-d9b7-4a07-9443-a2b98b18e67d", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 11, "forecast": 167, "index": "low"}
+{"id": "f83dcf2d-8a66-42ec-9c3f-53240970e064", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 11, "forecast": 162, "index": "low"}
+{"id": "3b600aa3-c380-460c-b58d-295281715ff4", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 11, "forecast": 155, "index": "low"}
+{"id": "dcad19e2-895f-4fdd-ae6c-9ad9201e3f44", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 11, "forecast": 148, "index": "low"}
+{"id": "d1848f49-893a-4aa0-9257-45ea6c90933e", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 11, "forecast": 142, "index": "low"}
+{"id": "b5293fd9-cc02-47e7-8d8e-9d1b9505c016", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 11, "forecast": 138, "index": "low"}
+{"id": "73f54624-3a6e-445b-a56f-471c0056ec50", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 11, "forecast": 135, "index": "low"}
+{"id": "7ce5a92e-2c94-4f23-bcaf-e310ee49089d", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 11, "forecast": 132, "index": "low"}
+{"id": "19871e0d-b407-4edd-ad38-aec9da977ca5", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 11, "forecast": 130, "index": "low"}
+{"id": "2161d0b9-ef6f-4314-8050-8003373d4978", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 11, "forecast": 133, "index": "low"}
+{"id": "2029aedf-f19d-4c72-a09a-edb2fdfc3a57", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 11, "forecast": 144, "index": "low"}
+{"id": "cf0b5bbb-c033-47ef-8f7f-2b7ea8c3d8a8", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 11, "forecast": 163, "index": "low"}
+{"id": "45dfb76a-851b-41f7-a4ab-cb4f69268fe0", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 11, "forecast": 183, "index": "moderate"}
+{"id": "9f734268-1fe7-4c6b-b5d2-be8c07e1a051", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 11, "forecast": 193, "index": "moderate"}
+{"id": "bfaf04b7-eed0-44d9-be45-4e369780cbf0", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 11, "forecast": 194, "index": "moderate"}
+{"id": "dc38c276-5f14-4b04-8cce-bef8f7a70b1c", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 11, "forecast": 191, "index": "moderate"}
+{"id": "4452367b-497d-4dc9-9513-bc8b11c99afc", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 11, "forecast": 189, "index": "moderate"}
+{"id": "c4bf516a-b2dd-4358-adbf-39cac997cffc", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 11, "forecast": 189, "index": "moderate"}
+{"id": "60e6fa98-43b3-4ce4-943a-1cfd9f57c3b4", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 11, "forecast": 189, "index": "moderate"}
+{"id": "e2f93629-781b-414c-be5b-1f7095079d3e", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 11, "forecast": 188, "index": "moderate"}
+{"id": "991c595f-d916-4601-9b9f-19483abe32d4", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 12, "forecast": 235, "index": "moderate"}
+{"id": "4354ab79-665b-49ee-ac42-168f9e5b609f", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 12, "forecast": 233, "index": "moderate"}
+{"id": "4073b2e4-0322-4257-8308-abfccec430ed", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 12, "forecast": 232, "index": "moderate"}
+{"id": "8d128261-81a4-4259-9480-584fc80dc932", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 12, "forecast": 232, "index": "moderate"}
+{"id": "f5eb69f0-8ff6-4550-99bf-7248157afd09", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 12, "forecast": 234, "index": "moderate"}
+{"id": "46ee41ea-54b3-42b1-aad9-9d93ea8d0076", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 12, "forecast": 236, "index": "moderate"}
+{"id": "5240c8ba-70a3-41e4-af13-e71460a5b17f", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 12, "forecast": 238, "index": "moderate"}
+{"id": "cbb38279-135c-4ad9-9a88-ae4460eddd05", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 12, "forecast": 242, "index": "moderate"}
+{"id": "41e8b325-9008-43a6-b9cd-6a6581eac51d", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 12, "forecast": 247, "index": "moderate"}
+{"id": "b2615c32-07fe-405c-95e0-8a6a4e51bbde", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 12, "forecast": 255, "index": "moderate"}
+{"id": "5ae2d560-a994-4415-a2ac-74c809239f11", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 12, "forecast": 266, "index": "moderate"}
+{"id": "c04067da-be0b-4810-a364-9a5f303899ba", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 12, "forecast": 278, "index": "moderate"}
+{"id": "6d93368a-a71d-42c0-9fd9-851e3ae74bce", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 12, "forecast": 290, "index": "high"}
+{"id": "8bdb42ce-8528-45b1-a1fd-eda781d0de26", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 12, "forecast": 298, "index": "high"}
+{"id": "4114e5ba-360a-48ed-a5b2-3394262bfcc3", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 12, "forecast": 303, "index": "high"}
+{"id": "982105b8-7c93-4ee3-9337-695279a5e678", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 12, "forecast": 306, "index": "high"}
+{"id": "03256e7e-3e73-4fc3-ab86-80db67b88275", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 12, "forecast": 309, "index": "high"}
+{"id": "17e7a5f0-1b84-4259-912e-ef76aedebdb0", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 12, "forecast": 311, "index": "high"}
+{"id": "5d627ca1-4849-43e1-9efe-ada7c10a65d4", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 12, "forecast": 312, "index": "high"}
+{"id": "7772cd36-d2ce-4c9d-b82b-d01c14ceddb2", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 12, "forecast": 312, "index": "high"}
+{"id": "6bf9630f-75e6-4a2a-90bd-8f064ee981e7", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 12, "forecast": 313, "index": "high"}
+{"id": "1648b49b-b387-41d4-aabe-9e703f1fae0a", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 12, "forecast": 312, "index": "high"}
+{"id": "72e862ce-f75e-420c-ab78-227b4bb570db", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 12, "forecast": 308, "index": "high"}
+{"id": "d8e73566-0f77-4ab4-bf0e-4530a6f39323", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 12, "forecast": 299, "index": "high"}
+{"id": "a47e10d9-fbf4-41be-a366-08336465c8fb", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 12, "forecast": 271, "index": "moderate"}
+{"id": "9eb218d0-231f-42d2-a9a4-c8d624b6be78", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 12, "forecast": 267, "index": "moderate"}
+{"id": "b465c237-0d98-48d3-95f7-78f93ded5d8d", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "7ec9511f-ce5b-45cf-b638-56b2815dcfea", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 12, "forecast": 255, "index": "moderate"}
+{"id": "b879efa5-40da-4d96-b169-25aaa19b182f", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 12, "forecast": 262, "index": "moderate"}
+{"id": "805383fc-0cbb-4e6c-9546-af6dcc323cb1", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "7c9a3721-c568-409f-91de-1b08d9e5bd61", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "a8347312-c970-4609-b34c-97d575b2e353", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "ca4ede0a-0aa5-45db-9083-0ecbf2164d02", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "c4f1adbe-76ed-4906-9adb-d6604ab2d69c", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 12, "forecast": 262, "index": "moderate"}
+{"id": "75098038-d487-4138-bc14-a2f9a5e2aa6e", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "42a3ceec-1555-4bcc-98cc-ce446f16a15e", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "9f02c8ee-cfcf-42d7-b740-fd6ef3b2cbda", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 12, "forecast": 261, "index": "moderate"}
+{"id": "ed5f599e-22b8-4747-a821-249ca58851c6", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 12, "forecast": 264, "index": "moderate"}
+{"id": "98948a52-3db5-45de-b5bc-43292a77e3e1", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 12, "forecast": 271, "index": "moderate"}
+{"id": "d92c1208-87e6-43b1-a6f6-30686c1c74b2", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 12, "forecast": 283, "index": "high"}
+{"id": "e821419b-cbb1-4a01-b228-5e439067bf58", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 12, "forecast": 296, "index": "high"}
+{"id": "bc35ed10-8fcb-4a54-bdea-5ba774499a21", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 12, "forecast": 304, "index": "high"}
+{"id": "f921123a-fe85-4767-ba4b-fa1f322ff1df", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 12, "forecast": 306, "index": "high"}
+{"id": "ca7aff07-9668-4c74-95af-750b9f773f92", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 12, "forecast": 302, "index": "high"}
+{"id": "a889dbb4-7e6f-4f9b-b684-0a24e77474f2", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 12, "forecast": 297, "index": "high"}
+{"id": "5aace044-5d28-4639-b022-4489c3f843ef", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 12, "forecast": 292, "index": "high"}
+{"id": "e0f74cb4-f4df-4439-8505-0a637b796127", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 12, "forecast": 289, "index": "high"}
+{"id": "f496dd52-7a7c-4d84-918f-4546f2f1dbca", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 12, "forecast": 287, "index": "high"}
+{"id": "d9de673f-4d53-45b6-944e-b1497f46979f", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 12, "forecast": 287, "index": "high"}
+{"id": "de98bdbc-fb8c-4813-925c-79303abe6b78", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 13, "forecast": 164, "index": "low"}
+{"id": "3c6c67c4-3fc2-4e81-a36b-340f93eb7faa", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 13, "forecast": 166, "index": "low"}
+{"id": "69c2db13-0fd8-4235-bd83-00d4fd041a61", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 13, "forecast": 167, "index": "low"}
+{"id": "3f83a8ff-6139-4d9a-a7aa-73cfaf541507", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 13, "forecast": 167, "index": "low"}
+{"id": "a567dc42-8005-4c49-93cb-ae93f73a93bb", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 13, "forecast": 166, "index": "low"}
+{"id": "a231dfc3-336f-47cf-a3f3-07f03f50bcda", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 13, "forecast": 163, "index": "low"}
+{"id": "f662bcb5-3547-4373-a28b-ec582c269c76", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 13, "forecast": 160, "index": "low"}
+{"id": "56d22ecb-d74a-41a0-8518-5aecae6c8941", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 13, "forecast": 160, "index": "low"}
+{"id": "1247ae98-e441-4c00-9e39-796f906a9bc6", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 13, "forecast": 162, "index": "low"}
+{"id": "c8d6e29e-d5f3-431b-9b33-c3f754796fd7", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 13, "forecast": 164, "index": "low"}
+{"id": "f2ee9bfe-c8dc-4eff-8dd4-d41912013726", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 13, "forecast": 169, "index": "low"}
+{"id": "a2fc49e4-109f-4157-b2c0-9eb06297b9e6", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 13, "forecast": 175, "index": "low"}
+{"id": "066fef6b-6eeb-47ff-983d-435a2b051b60", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 13, "forecast": 181, "index": "moderate"}
+{"id": "6b5c0087-c22c-46df-b65d-4db2f492cb57", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 13, "forecast": 184, "index": "moderate"}
+{"id": "d0026e0f-4e10-43df-84e6-e65c85aa36d9", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 13, "forecast": 184, "index": "moderate"}
+{"id": "e289c199-fbe6-4086-a715-9fcab3465402", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 13, "forecast": 184, "index": "moderate"}
+{"id": "30947aaf-59f4-4dee-81d1-6b9c89095751", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 13, "forecast": 185, "index": "moderate"}
+{"id": "e11f9821-2ba3-4c52-900f-ee028361c744", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 13, "forecast": 187, "index": "moderate"}
+{"id": "f701c115-7915-4c97-bc88-8443752334ac", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 13, "forecast": 187, "index": "moderate"}
+{"id": "30eb9437-f832-4a1d-b5fa-2690b8c73224", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 13, "forecast": 186, "index": "moderate"}
+{"id": "c262f795-015f-4abe-b970-f94ec96c9f86", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 13, "forecast": 183, "index": "moderate"}
+{"id": "4649c493-2214-4139-844b-38b867579cb0", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 13, "forecast": 178, "index": "low"}
+{"id": "02a3105b-d33c-4d82-89fb-15631d451893", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 13, "forecast": 173, "index": "low"}
+{"id": "e7983e5f-679c-45cd-a7d7-3d7a0e3fe908", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 13, "forecast": 168, "index": "low"}
+{"id": "b18c5b09-4194-4ed9-82df-9b79591d113a", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 13, "forecast": 159, "index": "low"}
+{"id": "40bd81db-6cce-4589-8a51-85fa9f4a47ae", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 13, "forecast": 155, "index": "low"}
+{"id": "4be1132c-e661-423f-8e65-012cf4f9c4df", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 13, "forecast": 148, "index": "low"}
+{"id": "d0826685-d1c2-42e8-9a0f-4fc2b999d068", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 13, "forecast": 141, "index": "low"}
+{"id": "5f13152e-ccef-4652-8178-354cdc020593", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 13, "forecast": 178, "index": "low"}
+{"id": "a3261320-7fb5-4494-9a03-207b4c73e7ac", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 13, "forecast": 177, "index": "low"}
+{"id": "b041800a-d63f-4680-b7ea-3a04940f2778", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 13, "forecast": 176, "index": "low"}
+{"id": "819da795-d9c3-44cd-8ef4-ed78d83aa868", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 13, "forecast": 173, "index": "low"}
+{"id": "4ecb2a22-d81a-4d9c-828d-4f1294699d51", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 13, "forecast": 169, "index": "low"}
+{"id": "bd1b0f8c-4717-4a34-bcd7-cabe5c3c9bca", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 13, "forecast": 164, "index": "low"}
+{"id": "c215b995-6ac4-48b0-96c4-5e909203f2df", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 13, "forecast": 157, "index": "low"}
+{"id": "7984fb69-1786-4813-95ce-587852a2048f", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 13, "forecast": 151, "index": "low"}
+{"id": "bd4f8975-89fa-4e53-bb54-13f1fd7ec0eb", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 13, "forecast": 146, "index": "low"}
+{"id": "866ca887-5419-4b41-bb65-e03ce528f004", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 13, "forecast": 145, "index": "low"}
+{"id": "7f611f36-732e-4ad6-87de-81587c684152", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 13, "forecast": 148, "index": "low"}
+{"id": "09659022-233d-4019-a09d-a9e474ddb87d", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 13, "forecast": 156, "index": "low"}
+{"id": "fd438d0c-2574-4310-be55-36f1357b1dc7", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 13, "forecast": 169, "index": "low"}
+{"id": "a9f9e503-166e-4fb9-a55b-47c7e9b0b103", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 13, "forecast": 177, "index": "low"}
+{"id": "45451979-f28d-4e1b-956d-277dfc29578c", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 13, "forecast": 180, "index": "moderate"}
+{"id": "f9e7d18b-441c-43f6-8598-9f470ebe6eee", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 13, "forecast": 172, "index": "low"}
+{"id": "f0992864-3a14-459b-8133-fcc1c30d338d", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 13, "forecast": 165, "index": "low"}
+{"id": "87e5ce53-94d0-4bb9-8344-6e60229acaad", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 13, "forecast": 159, "index": "low"}
+{"id": "55e852c5-fe04-4aed-b9a6-5e0bbe3f8e91", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 13, "forecast": 159, "index": "low"}
+{"id": "a1038f16-1b15-4425-ab63-ae21b843fa4e", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 13, "forecast": 160, "index": "low"}
+{"id": "8718c62e-4e78-4e0c-8b7a-520724f2f88e", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 13, "forecast": 160, "index": "low"}
+{"id": "effd6feb-2803-4a9b-bd35-826793fae70f", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 14, "forecast": 180, "index": "moderate"}
+{"id": "9fe123aa-ed4a-4057-869c-2de587eba63f", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 14, "forecast": 173, "index": "low"}
+{"id": "4950823d-32d1-4e1f-a3bf-c45c4df96fb7", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 14, "forecast": 166, "index": "low"}
+{"id": "6c37657e-e13d-492d-8fe5-38c701ec20d9", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 14, "forecast": 161, "index": "low"}
+{"id": "6ba1a7f9-a92c-42c1-aa73-83f44fddad5e", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 14, "forecast": 156, "index": "low"}
+{"id": "0d6f2f43-285f-4414-95b8-b36c94e9f58c", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 14, "forecast": 153, "index": "low"}
+{"id": "1706aca1-0612-43a3-96be-5accac9491b7", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 14, "forecast": 151, "index": "low"}
+{"id": "aaa8ac0b-52d0-4ed4-8e61-f0f5ba31f344", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 14, "forecast": 152, "index": "low"}
+{"id": "11724694-f41d-4846-b448-6ac5c8651678", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 14, "forecast": 154, "index": "low"}
+{"id": "9f4e5184-9c31-4e82-8ea4-356d04102395", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 14, "forecast": 156, "index": "low"}
+{"id": "bef21aa2-2fc3-4f88-aea0-c02da4ed94b9", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 14, "forecast": 159, "index": "low"}
+{"id": "c62e9c99-aa21-4031-97d7-ba8e4105e2d3", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 14, "forecast": 162, "index": "low"}
+{"id": "1069428f-54ae-4e3a-b40e-edfb7505b64a", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 14, "forecast": 165, "index": "low"}
+{"id": "9082d29a-ec65-4ba7-a9a8-fd18f191c4cb", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 14, "forecast": 167, "index": "low"}
+{"id": "c13cb8fc-d8db-4f29-bbfd-b28eacca00e6", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 14, "forecast": 170, "index": "low"}
+{"id": "13c8d0ef-2f79-4fdf-9452-5c62c0b13152", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 14, "forecast": 172, "index": "low"}
+{"id": "5e83ec3e-9231-40a0-b21d-2be832a5b4d2", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 14, "forecast": 174, "index": "low"}
+{"id": "68e03dfc-9d6f-4fda-9b30-b1dbfa2c9a61", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 14, "forecast": 175, "index": "low"}
+{"id": "411f029f-1e31-4533-b0e9-a30b42302a0f", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 14, "forecast": 175, "index": "low"}
+{"id": "d07333e6-ac6a-4d59-99e6-cc2760dbddf9", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 14, "forecast": 171, "index": "low"}
+{"id": "48488835-7d4c-41c7-9af3-0eb8aff2ddb2", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 14, "forecast": 166, "index": "low"}
+{"id": "318923ba-5a6c-48ad-bfe2-fbb4404ff316", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 14, "forecast": 159, "index": "low"}
+{"id": "7279b505-3052-4e51-b208-1af34c61462d", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 14, "forecast": 156, "index": "low"}
+{"id": "613e5b49-7fbb-4d41-acfa-74f3fb507044", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 14, "forecast": 157, "index": "low"}
+{"id": "e2978580-0eed-40ee-8d1e-5c899653445b", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 14, "forecast": 164, "index": "low"}
+{"id": "2a25cec3-119e-4121-9e09-31daa713d89b", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 14, "forecast": 163, "index": "low"}
+{"id": "34b4475a-7753-46af-a32e-b96dd80aa8ef", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 14, "forecast": 159, "index": "low"}
+{"id": "211483ef-ca34-42e7-b97d-452822d70afe", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 14, "forecast": 155, "index": "low"}
+{"id": "f00026c3-bf4e-4a2e-9420-efd8cd22f2c1", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 14, "forecast": 158, "index": "low"}
+{"id": "e570ffc7-19c3-4478-9a82-2f55295e0940", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 14, "forecast": 157, "index": "low"}
+{"id": "ec6741fa-dbc1-4c3d-95bb-39ebbe228d18", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 14, "forecast": 156, "index": "low"}
+{"id": "144e8bb7-a56e-4b3e-b382-a21b4d52ac18", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 14, "forecast": 154, "index": "low"}
+{"id": "5317ecf2-435d-4a26-8082-9d7e0089a8c9", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 14, "forecast": 152, "index": "low"}
+{"id": "3edc1645-37ed-41fc-b2d0-507834702b87", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 14, "forecast": 149, "index": "low"}
+{"id": "5e3bc492-e6b5-4542-9105-4064f73706cc", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 14, "forecast": 146, "index": "low"}
+{"id": "1db02bba-820a-41b5-8de3-5ce3d474d987", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 14, "forecast": 144, "index": "low"}
+{"id": "554f8c4f-7ddd-4315-9d75-ff9dc68d2742", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 14, "forecast": 142, "index": "low"}
+{"id": "7b9aa348-db96-4a2a-a6e4-2c789449af5d", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 14, "forecast": 142, "index": "low"}
+{"id": "1b84c3b9-558a-414b-a96d-8755d6f377c0", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 14, "forecast": 147, "index": "low"}
+{"id": "5a783c6a-d101-47e5-b592-91f91e42d8f5", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 14, "forecast": 157, "index": "low"}
+{"id": "ee79f304-23a9-42cc-b7da-7c58c609f298", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 14, "forecast": 171, "index": "low"}
+{"id": "8306e8ac-bd04-4bdd-ba2d-cda9f47b221c", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 14, "forecast": 181, "index": "moderate"}
+{"id": "3ccba6b1-cee8-4c1e-9ff8-6e06c7aaaff9", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 14, "forecast": 187, "index": "moderate"}
+{"id": "cbed1b81-a116-46d2-94a5-bc5743f4da4f", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 14, "forecast": 190, "index": "moderate"}
+{"id": "01f51cae-4ba2-40e2-bbd9-25367d3170b3", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 14, "forecast": 191, "index": "moderate"}
+{"id": "5be25908-cbb2-49fb-bc1c-54172b8cc64f", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 14, "forecast": 191, "index": "moderate"}
+{"id": "1c4e8a5b-83a0-4560-a661-d9afd6526244", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 14, "forecast": 190, "index": "moderate"}
+{"id": "2dd0f8f6-0ddc-4418-8944-6ed6d7428fca", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 14, "forecast": 189, "index": "moderate"}
+{"id": "95e525fb-8008-41c1-8978-2a262a2bda5e", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 14, "forecast": 188, "index": "moderate"}
+{"id": "e003d327-12f1-4f42-9ca4-aa3cf454bcf2", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 15, "forecast": 177, "index": "low"}
+{"id": "1bc830db-4221-4eeb-a0ef-c0644ce5e3a9", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 15, "forecast": 174, "index": "low"}
+{"id": "35ed26a7-87a7-4d92-a764-2e69fb3f7bb6", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 15, "forecast": 172, "index": "low"}
+{"id": "e29529bc-3acc-4419-b765-ec767f055765", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 15, "forecast": 171, "index": "low"}
+{"id": "6ed48828-c7cd-443b-b03c-01b2092006aa", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 15, "forecast": 169, "index": "low"}
+{"id": "adf4ad68-5c02-4f0a-a541-1efa3a0d796f", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 15, "forecast": 168, "index": "low"}
+{"id": "daf2dd20-7d6f-441a-a22b-484e48e3f00b", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 15, "forecast": 168, "index": "low"}
+{"id": "af1fddf2-92f1-4c05-aff8-0a211933e06a", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 15, "forecast": 168, "index": "low"}
+{"id": "424063c4-0be8-4389-b60f-0380a92a0944", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 15, "forecast": 170, "index": "low"}
+{"id": "d5a3fc7a-0bf1-4349-bb7e-8815c0667440", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 15, "forecast": 174, "index": "low"}
+{"id": "5e39e1fa-3938-492b-a9e5-1815365152b5", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 15, "forecast": 181, "index": "moderate"}
+{"id": "b35617a2-75b2-49bc-bbc4-e8c751d923be", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 15, "forecast": 189, "index": "moderate"}
+{"id": "9c73d1f2-f47d-4acc-8b1f-f676c1fbc4d3", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 15, "forecast": 196, "index": "moderate"}
+{"id": "c81d858a-859d-41ba-8d51-0477a2a2eac2", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 15, "forecast": 201, "index": "moderate"}
+{"id": "bd5c6040-9ec4-46d4-b6ad-98a41583a4a3", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 15, "forecast": 204, "index": "moderate"}
+{"id": "715bf4b9-3c29-48f3-9925-be2604958b6e", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 15, "forecast": 205, "index": "moderate"}
+{"id": "1e2aa1e4-2308-4322-839d-38a34a428719", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 15, "forecast": 205, "index": "moderate"}
+{"id": "891dccfd-c81a-44a1-8ed4-ecaa4556997b", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 15, "forecast": 205, "index": "moderate"}
+{"id": "547dfac9-9191-4bbe-9e79-c1fb1d2b926b", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 15, "forecast": 205, "index": "moderate"}
+{"id": "2f659d7e-0067-4d09-9c05-c0e0fec092d4", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 15, "forecast": 204, "index": "moderate"}
+{"id": "f3fb7ed9-9fb3-48e1-8c90-ba6be2a0695d", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 15, "forecast": 202, "index": "moderate"}
+{"id": "48be5efa-d567-4fc1-9b8b-5c07eb34ceb9", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 15, "forecast": 196, "index": "moderate"}
+{"id": "1e6bb5b1-de40-49c4-9f2f-7f4a50d3c245", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 15, "forecast": 188, "index": "moderate"}
+{"id": "f17236ea-fa00-425b-a1e5-64adc4822a9d", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 15, "forecast": 177, "index": "low"}
+{"id": "31423284-a635-44a7-949c-3f9c2522f74f", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 15, "forecast": 157, "index": "low"}
+{"id": "2b575659-a956-4543-ae20-6526ee86ec08", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 15, "forecast": 154, "index": "low"}
+{"id": "fe720090-13b9-4735-b158-9d3d83800541", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 15, "forecast": 148, "index": "low"}
+{"id": "6a361361-152b-47c8-b037-2a52ddb8ffc6", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 15, "forecast": 141, "index": "low"}
+{"id": "24079d50-3019-4d02-914b-9d604b3f6e0e", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 15, "forecast": 184, "index": "moderate"}
+{"id": "a4682f94-b47a-4ae1-b60d-b6d5758260d2", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 15, "forecast": 184, "index": "moderate"}
+{"id": "96e8f1ea-0a74-4bc1-ad71-32c79f8cb27a", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 15, "forecast": 184, "index": "moderate"}
+{"id": "66b78a5e-c9c2-4aa8-9bad-0763d7e20199", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 15, "forecast": 183, "index": "moderate"}
+{"id": "39d6ca50-c8f3-42f9-a1c5-d88ebee984e8", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 15, "forecast": 182, "index": "moderate"}
+{"id": "8ae86ca9-a165-4641-8ab0-079d8148195f", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 15, "forecast": 180, "index": "moderate"}
+{"id": "3c8596bf-72a6-41e8-8f43-71f76c8bbaff", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 15, "forecast": 178, "index": "low"}
+{"id": "3346cc53-afc6-404b-a0e0-b459b4ff9780", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 15, "forecast": 177, "index": "low"}
+{"id": "34579856-354e-4bb9-888b-a5e2330acb4a", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 15, "forecast": 178, "index": "low"}
+{"id": "48206c57-2066-474a-928b-0e096fef3d37", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 15, "forecast": 181, "index": "moderate"}
+{"id": "5c647cf7-1c6f-4237-a30d-6abc6e9906de", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 15, "forecast": 189, "index": "moderate"}
+{"id": "a935882e-aaf8-4d53-81e4-b7a61bf6082e", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 15, "forecast": 198, "index": "moderate"}
+{"id": "f486ea6b-1852-47ec-aa43-d4e77dc82ad3", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 15, "forecast": 209, "index": "moderate"}
+{"id": "80fdd03d-5276-447a-8c59-32d555bc7f12", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 15, "forecast": 218, "index": "moderate"}
+{"id": "10b2b23a-39ee-4be6-8d11-534f10ab1782", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 15, "forecast": 224, "index": "moderate"}
+{"id": "70db9bbe-c868-40fb-ac70-86398d876597", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 15, "forecast": 226, "index": "moderate"}
+{"id": "7684d075-d6a9-4451-bf07-c7bdbed1b984", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 15, "forecast": 223, "index": "moderate"}
+{"id": "c0bdf8bd-36c5-4952-ba90-35d6e711f237", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 15, "forecast": 215, "index": "moderate"}
+{"id": "184a6fbf-49ab-45c2-b60b-d49c3dce9995", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 15, "forecast": 203, "index": "moderate"}
+{"id": "fb2e3b05-7a73-48d0-89f2-92d925f1e541", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 15, "forecast": 196, "index": "moderate"}
+{"id": "826892d0-44f8-4a26-9b39-dd3c94107c14", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 15, "forecast": 191, "index": "moderate"}
+{"id": "537b8455-c1af-47d4-a1ab-c32dc4b30620", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 16, "forecast": 74, "index": "very low"}
+{"id": "afd909ef-4b99-463b-94b2-9328d068e23c", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 16, "forecast": 73, "index": "very low"}
+{"id": "fd6be603-bb77-481f-ac60-30856eae6b24", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 16, "forecast": 71, "index": "very low"}
+{"id": "fc7d89b8-44e2-4b0c-8e51-4e8e57e246df", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 16, "forecast": 70, "index": "very low"}
+{"id": "46df1f0b-5815-4d98-a4b0-c431de3372ce", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 16, "forecast": 69, "index": "very low"}
+{"id": "39d925e1-3c25-4de4-a8fd-f84a8af28bc5", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 16, "forecast": 69, "index": "very low"}
+{"id": "e32b60b3-9f0a-4bde-a9fb-81df9367c1e6", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 16, "forecast": 67, "index": "very low"}
+{"id": "69c4801a-d2fe-460e-acc1-e9acaa5bf297", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 16, "forecast": 64, "index": "very low"}
+{"id": "a05436e6-e948-46e6-81ed-cf0aa3967918", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 16, "forecast": 61, "index": "very low"}
+{"id": "651380a2-de2c-43b5-b2ed-904d52f07eb5", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 16, "forecast": 60, "index": "very low"}
+{"id": "710f07ed-1f88-4896-ad5c-f79ca6683e33", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "30f75465-71a4-46a4-a8b1-6be1d153359a", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "496d2c5c-2455-4d8b-99a4-2ebe79d3e519", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "8d368c59-9f47-4375-b90d-f193c9555849", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "5ce9b6ca-1adc-406b-be43-42558c2ec7bc", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "bceb95fc-d5f4-48ab-9370-23eef13f0514", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "d98832ea-bac4-4952-9bf4-dc012273de40", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "7e99b7ba-daa6-4e48-ae70-f35af15e8d0b", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 16, "forecast": 59, "index": "very low"}
+{"id": "725c258a-68b3-457f-8d0a-064a7f1d235c", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 16, "forecast": 60, "index": "very low"}
+{"id": "cb5958c2-c5f6-4e06-96d9-d15d00600987", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 16, "forecast": 63, "index": "very low"}
+{"id": "e1f9d59d-7f4b-4941-b196-aa382516002c", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 16, "forecast": 66, "index": "very low"}
+{"id": "a1c55429-7225-4f20-9895-abc8f44416c1", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 16, "forecast": 70, "index": "very low"}
+{"id": "7ae9d442-c739-4318-ac71-b076ea94542e", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 16, "forecast": 76, "index": "very low"}
+{"id": "9d34ee85-1815-40c5-adfd-9afbe59df7a4", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 16, "forecast": 82, "index": "low"}
+{"id": "2806573c-ddd4-4f17-8e82-545374e760da", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 16, "forecast": 94, "index": "low"}
+{"id": "de8b719b-5365-4aa9-83fe-be020a473441", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 16, "forecast": 93, "index": "low"}
+{"id": "0b28f0d1-ca54-4b23-a424-78cf2a6e83f4", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 16, "forecast": 92, "index": "low"}
+{"id": "71410045-33b2-412d-ac8f-b72326ea61dc", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 16, "forecast": 91, "index": "low"}
+{"id": "fe0ef824-1ab2-4538-bf07-5ca4423d8430", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 16, "forecast": 60, "index": "very low"}
+{"id": "358ee32a-2a58-4ee7-bc18-2b55966797da", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 16, "forecast": 61, "index": "very low"}
+{"id": "1f702862-eb26-4118-86a4-dee31d2fbc7f", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 16, "forecast": 62, "index": "very low"}
+{"id": "0f257458-1cc4-4690-b615-8e9aa443e671", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 16, "forecast": 64, "index": "very low"}
+{"id": "c1dcd47a-6340-4108-b9bc-bec72cb0f74e", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 16, "forecast": 67, "index": "very low"}
+{"id": "20b44d2d-5c87-4649-990d-d12ec855099b", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 16, "forecast": 69, "index": "very low"}
+{"id": "fb5060ff-0ed9-4a92-8ffa-3db91bab141c", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 16, "forecast": 71, "index": "very low"}
+{"id": "4e99e2cd-2587-43d2-b02a-4a3a254e294c", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 16, "forecast": 72, "index": "very low"}
+{"id": "6c5b0ae6-fd50-4cf7-abf0-c23c6e31f994", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 16, "forecast": 73, "index": "very low"}
+{"id": "54b3f954-7b86-4a35-bdd5-8d1208cb8afa", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 16, "forecast": 75, "index": "very low"}
+{"id": "8d00a440-5f8b-4e12-a2d0-db8d46771d32", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 16, "forecast": 76, "index": "very low"}
+{"id": "0fa7be59-d06e-4821-98de-a95d3e48d2f2", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 16, "forecast": 78, "index": "very low"}
+{"id": "6d694fa7-303e-4177-8e30-d7563b21ed42", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 16, "forecast": 79, "index": "very low"}
+{"id": "cf783578-a095-401e-a21d-c8cb069d9d77", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 16, "forecast": 81, "index": "low"}
+{"id": "10fb1416-33a3-4076-9273-804428e02362", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 16, "forecast": 80, "index": "low"}
+{"id": "ca8e15c8-aec6-4274-8eea-476be17b6ef8", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 16, "forecast": 80, "index": "low"}
+{"id": "e3acbdfc-5ad7-42d5-8b7b-ff553561b583", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 16, "forecast": 80, "index": "low"}
+{"id": "b987104e-afbd-4926-8709-ef706977385f", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 16, "forecast": 82, "index": "low"}
+{"id": "870270a1-cb8b-48e7-a852-216eeeb8e4b8", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 16, "forecast": 84, "index": "low"}
+{"id": "d4a61caa-2272-4f0e-9cf7-7fdc23a68f27", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 16, "forecast": 87, "index": "low"}
+{"id": "7f8f0297-cdac-44bb-be27-0681137515ed", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 16, "forecast": 88, "index": "low"}
+{"id": "cc3f03d7-d971-404e-80bf-325f16614e5f", "from": "2018-05-15T11:30Z", "to": "2018-05-15T12:00Z", "region_id": 17, "forecast": 313, "index": "high"}
+{"id": "f68e7e02-fbc5-4cf1-a0d4-61671da4c445", "from": "2018-05-15T12:00Z", "to": "2018-05-15T12:30Z", "region_id": 17, "forecast": 312, "index": "high"}
+{"id": "16f70918-3171-4fa3-bb50-f94528cf66de", "from": "2018-05-15T12:30Z", "to": "2018-05-15T13:00Z", "region_id": 17, "forecast": 310, "index": "high"}
+{"id": "2478cccf-de54-4607-bb5c-43b6b97a259f", "from": "2018-05-15T13:00Z", "to": "2018-05-15T13:30Z", "region_id": 17, "forecast": 309, "index": "high"}
+{"id": "7c4a4b9e-aa40-4204-a8e2-5ebf9d9f4689", "from": "2018-05-15T13:30Z", "to": "2018-05-15T14:00Z", "region_id": 17, "forecast": 309, "index": "high"}
+{"id": "3c469ecd-7e23-4703-8118-a43d6619f17b", "from": "2018-05-15T14:00Z", "to": "2018-05-15T14:30Z", "region_id": 17, "forecast": 310, "index": "high"}
+{"id": "9edbda76-af72-44f3-902d-9370963bbb66", "from": "2018-05-15T14:30Z", "to": "2018-05-15T15:00Z", "region_id": 17, "forecast": 313, "index": "high"}
+{"id": "f9310075-1d55-41b6-9a74-c04f90edaf7f", "from": "2018-05-15T15:00Z", "to": "2018-05-15T15:30Z", "region_id": 17, "forecast": 316, "index": "high"}
+{"id": "203d13f0-e3ae-4185-9b88-6bc234744c00", "from": "2018-05-15T15:30Z", "to": "2018-05-15T16:00Z", "region_id": 17, "forecast": 320, "index": "high"}
+{"id": "5db06495-1410-4eb8-a7d5-5cd19f7ebf35", "from": "2018-05-15T16:00Z", "to": "2018-05-15T16:30Z", "region_id": 17, "forecast": 322, "index": "high"}
+{"id": "2b2a8ca9-253a-476a-8560-69f3f46f252a", "from": "2018-05-15T16:30Z", "to": "2018-05-15T17:00Z", "region_id": 17, "forecast": 323, "index": "high"}
+{"id": "5458c16c-8266-493b-ac4a-1608eb4c5678", "from": "2018-05-15T17:00Z", "to": "2018-05-15T17:30Z", "region_id": 17, "forecast": 323, "index": "high"}
+{"id": "4671d823-1680-43b3-8f14-732b2b3779fd", "from": "2018-05-15T17:30Z", "to": "2018-05-15T18:00Z", "region_id": 17, "forecast": 322, "index": "high"}
+{"id": "a57039cf-1e1d-46c0-b579-4efa1193c360", "from": "2018-05-15T18:00Z", "to": "2018-05-15T18:30Z", "region_id": 17, "forecast": 319, "index": "high"}
+{"id": "74d4b21f-b4c4-410c-aa73-a0baf828b163", "from": "2018-05-15T18:30Z", "to": "2018-05-15T19:00Z", "region_id": 17, "forecast": 314, "index": "high"}
+{"id": "7a361e77-0e60-4473-8ace-96a1566fe53f", "from": "2018-05-15T19:00Z", "to": "2018-05-15T19:30Z", "region_id": 17, "forecast": 309, "index": "high"}
+{"id": "6e425210-101a-45e2-9d72-0d1eddb601d9", "from": "2018-05-15T19:30Z", "to": "2018-05-15T20:00Z", "region_id": 17, "forecast": 302, "index": "high"}
+{"id": "445ec6e3-b932-410f-a813-3e4d12dd501e", "from": "2018-05-15T20:00Z", "to": "2018-05-15T20:30Z", "region_id": 17, "forecast": 297, "index": "high"}
+{"id": "4c3fe50d-a9db-4dab-92e0-c64c7f2b6bf3", "from": "2018-05-15T20:30Z", "to": "2018-05-15T21:00Z", "region_id": 17, "forecast": 294, "index": "high"}
+{"id": "fb95d3b6-d70e-4476-a0dd-891053f7c3c9", "from": "2018-05-15T21:00Z", "to": "2018-05-15T21:30Z", "region_id": 17, "forecast": 293, "index": "high"}
+{"id": "81ea68d0-bbb6-4199-bf40-315e73200b2b", "from": "2018-05-15T21:30Z", "to": "2018-05-15T22:00Z", "region_id": 17, "forecast": 292, "index": "high"}
+{"id": "08e54074-397e-4581-b858-a3bfddf3d574", "from": "2018-05-15T22:00Z", "to": "2018-05-15T22:30Z", "region_id": 17, "forecast": 292, "index": "high"}
+{"id": "783c54aa-8f17-4a0b-9262-c68d32d71b67", "from": "2018-05-15T22:30Z", "to": "2018-05-15T23:00Z", "region_id": 17, "forecast": 280, "index": "high"}
+{"id": "f9987f10-2fc8-4e4a-9e58-79bf83463e1a", "from": "2018-05-15T23:00Z", "to": "2018-05-15T23:30Z", "region_id": 17, "forecast": 257, "index": "moderate"}
+{"id": "0918585b-ca04-4d2d-afee-7fedf1448168", "from": "2018-05-15T23:30Z", "to": "2018-05-16T00:00Z", "region_id": 17, "forecast": 197, "index": "moderate"}
+{"id": "0161c386-8a49-48d3-b73c-7ea13f618c24", "from": "2018-05-16T00:00Z", "to": "2018-05-16T00:30Z", "region_id": 17, "forecast": 202, "index": "moderate"}
+{"id": "8e2efed9-2edb-4ae1-af06-0501fd398e6a", "from": "2018-05-16T00:30Z", "to": "2018-05-16T01:00Z", "region_id": 17, "forecast": 211, "index": "moderate"}
+{"id": "d83c1ec6-7201-4c4f-b14d-53fcf38da6bb", "from": "2018-05-16T01:00Z", "to": "2018-05-16T01:30Z", "region_id": 17, "forecast": 217, "index": "moderate"}
+{"id": "31acafae-cc40-4864-8f58-936eac2f96c3", "from": "2018-05-16T01:30Z", "to": "2018-05-16T02:00Z", "region_id": 17, "forecast": 254, "index": "moderate"}
+{"id": "80d154aa-fd6f-47d1-99f7-2d60326707e2", "from": "2018-05-16T02:00Z", "to": "2018-05-16T02:30Z", "region_id": 17, "forecast": 255, "index": "moderate"}
+{"id": "c503a85b-2afa-4421-8ab8-075d8e4f0d52", "from": "2018-05-16T02:30Z", "to": "2018-05-16T03:00Z", "region_id": 17, "forecast": 260, "index": "moderate"}
+{"id": "32241b77-2d4c-4071-b151-60261129562b", "from": "2018-05-16T03:00Z", "to": "2018-05-16T03:30Z", "region_id": 17, "forecast": 267, "index": "moderate"}
+{"id": "40542815-8a9a-45c2-88e8-d4fac0f4ba3f", "from": "2018-05-16T03:30Z", "to": "2018-05-16T04:00Z", "region_id": 17, "forecast": 273, "index": "moderate"}
+{"id": "3e5e1eec-6521-4672-b618-98516127109d", "from": "2018-05-16T04:00Z", "to": "2018-05-16T04:30Z", "region_id": 17, "forecast": 277, "index": "moderate"}
+{"id": "1fae5ffe-2e7e-4cce-86df-acd213e0e1db", "from": "2018-05-16T04:30Z", "to": "2018-05-16T05:00Z", "region_id": 17, "forecast": 279, "index": "moderate"}
+{"id": "3c9e2157-4164-45b2-870c-571c203b88cb", "from": "2018-05-16T05:00Z", "to": "2018-05-16T05:30Z", "region_id": 17, "forecast": 283, "index": "high"}
+{"id": "d90af762-d81b-43fc-bff4-1a44db5f4349", "from": "2018-05-16T05:30Z", "to": "2018-05-16T06:00Z", "region_id": 17, "forecast": 289, "index": "high"}
+{"id": "4f8183fe-981a-419a-9ebb-90bd124c29f8", "from": "2018-05-16T06:00Z", "to": "2018-05-16T06:30Z", "region_id": 17, "forecast": 299, "index": "high"}
+{"id": "8fb725d3-9912-4c8b-b512-6d668d47e77a", "from": "2018-05-16T06:30Z", "to": "2018-05-16T07:00Z", "region_id": 17, "forecast": 310, "index": "high"}
+{"id": "32bc0b18-a683-4bf0-8eff-00df0e45430b", "from": "2018-05-16T07:00Z", "to": "2018-05-16T07:30Z", "region_id": 17, "forecast": 319, "index": "high"}
+{"id": "23b75e30-3fb4-47c0-ad6f-8c1b6b6efac7", "from": "2018-05-16T07:30Z", "to": "2018-05-16T08:00Z", "region_id": 17, "forecast": 320, "index": "high"}
+{"id": "9ee35f0c-76f2-43e1-b5fa-1e5de15927ea", "from": "2018-05-16T08:00Z", "to": "2018-05-16T08:30Z", "region_id": 17, "forecast": 314, "index": "high"}
+{"id": "4eb33ac4-e451-476d-b4bc-9e86d9603242", "from": "2018-05-16T08:30Z", "to": "2018-05-16T09:00Z", "region_id": 17, "forecast": 303, "index": "high"}
+{"id": "cf0208d1-3122-465b-ba75-4a510c1f40e3", "from": "2018-05-16T09:00Z", "to": "2018-05-16T09:30Z", "region_id": 17, "forecast": 297, "index": "high"}
+{"id": "31247f25-62aa-4bbd-8e57-97ddea940900", "from": "2018-05-16T09:30Z", "to": "2018-05-16T10:00Z", "region_id": 17, "forecast": 295, "index": "high"}
+{"id": "77a48f01-0c7d-4988-9e42-4f1a31be285b", "from": "2018-05-16T10:00Z", "to": "2018-05-16T10:30Z", "region_id": 17, "forecast": 298, "index": "high"}
+{"id": "10097349-4ff8-485b-ab10-de1d86c98223", "from": "2018-05-16T10:30Z", "to": "2018-05-16T11:00Z", "region_id": 17, "forecast": 298, "index": "high"}
+{"id": "9af09cb4-db75-4aff-be0c-a310ef3e216c", "from": "2018-05-16T11:00Z", "to": "2018-05-16T11:30Z", "region_id": 17, "forecast": 297, "index": "high"}
+{"id": "1259b36d-b77b-4728-b445-d80759dd26d6", "from": "2018-05-16T11:30Z", "to": "2018-05-16T12:00Z", "region_id": 17, "forecast": 293, "index": "high"}
