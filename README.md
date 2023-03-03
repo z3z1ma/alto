@@ -1,4 +1,4 @@
-# Alto 👩‍🎤
+# 👩‍🎤 Alto
 
 Alto is a versatile data integration tool that allows you to easily run Singer plugins, build and cache PEX files encapsulating those plugins, and create a data reservoir whereby you can extract once and replay to as many destinations as you want. With Alto, you can seamlessly connect to various data sources, store your data in a centralized reservoir (singerlake), and manage extract lean, efficient load flows. Throw it into a `dbt` project, a data science project, or a passion project without fear of conflicting deps or a new paradigm.
 
