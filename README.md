@@ -18,21 +18,27 @@ I might recommend `alto` if you need a simple codebase as a starting point to ex
 
 - The CLI is extremely fast due to the lightness of the package.
 
-- Significantly smaller dependency footprint by an order of magnitude. Alto only has 4 direct dependencies with no C or rust extensions in the dependency tree. The below comparison includes transitives:
+- There is no system db so no database migrations or system directory to care about.
+
+- Significantly smaller dependency footprint by an **order of magnitude**. Alto only has 4 direct dependencies with no C or rust extensions in the dependency tree, it is pure python. The below comparison includes transitives:
     - **Meltano**: 151
     - **Alto**: 7
 
-- Because of its dependency footprint, it can be installed in very tiny Docker containers and wheels are cross platform compatible.
+- Because of its dependency footprint, it can be installed in very tiny Docker containers and wheels are cross platform compatible. It also installs extremely quickly.
 
 - We use `PEX` (PythonEXecutable) for all plugins instead of loose venvs making plugins single files that are straightforward to cache.
 
 - We use a (simple) caching algorithm that makes the plugins re-usable across machines when combined with a remote filesystem and re-usable on the same system in general.
 
-- The docker containers do not require you to "install" the plugins during the build process since the plugins are instantly pulled from a remote cache.
+- Docker containers do not require you to "install" the plugins during the build process since the plugins are instantly pulled from a remote cache.
+
+- Because of how plugins are handled it can be ran in `lambda` and serverless functions very easily.
 
 - We use `fsspec` to provide that filesystem abstraction layer that provides the exact same experience locally on a single machine as when plugged into a remote blob store such as `s3`, `gcs`, or any supported `fsspec` storage. We do not carry the dep but let the user specify.
 
-- An order of magnitude (`>85%`) less code which makes iteration/maintenance or forking easier (in theory)
+- An order of magnitude (`>85%`) less code which makes iteration/maintenance or forking easier (in theory) but of course less code != better
+
+- Because it is scaffolded over a build system, never worry about running `install` again, run pipelines immediately and alto works out the rest.
 
 - We use `Dynaconf` to manage configuration
     - This gives us uniform support for json, toml, and yaml out of the box
