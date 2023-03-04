@@ -1,4 +1,5 @@
 import importlib.util
+import typing as t
 from pathlib import Path
 from types import ModuleType
 
@@ -11,7 +12,7 @@ def load_extension_from_path(ext: Path) -> ModuleType:
     return ext_namespace
 
 
-def load_extensions_from_path(ext_path: Path) -> list[ModuleType]:
+def load_extensions_from_path(ext_path: Path) -> t.List[ModuleType]:
     """Load all extensions from a path."""
     exts = []
     for ext in ext_path.glob("*.py"):
@@ -19,7 +20,7 @@ def load_extensions_from_path(ext_path: Path) -> list[ModuleType]:
     return exts
 
 
-def merge(source: dict, destination: dict):
+def merge(source: dict, destination: dict) -> dict:
     """Merge source into destination recursively mutating destination in place."""
     for key, value in source.items():
         if isinstance(value, dict):
