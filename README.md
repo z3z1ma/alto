@@ -1,5 +1,22 @@
 # 👩‍🎤 Alto
 
+[![PyPI](https://img.shields.io/pypi/v/singer-alto)][pypi_]
+[![Status](https://img.shields.io/pypi/status/singer-alto.svg)][status]
+[![Python Version](https://img.shields.io/pypi/pyversions/singer-alto)][python version]
+[![License](https://img.shields.io/pypi/l/singer-alto)][license]
+
+[![Tests](https://github.com/z3z1ma/singer-alto/workflows/Alto%20Tests/badge.svg)][tests]
+
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
+
+[pypi_]: https://pypi.org/project/singer-alto/
+[status]: https://pypi.org/project/singer-alto/
+[python version]: https://pypi.org/project/singer-alto
+[tests]: https://github.com/z3z1ma/alto/actions?workflow=Alto%20Tests
+[pre-commit]: https://github.com/pre-commit/pre-commit
+[black]: https://github.com/psf/black
+
 Alto is a versatile data integration tool that allows you to easily run Singer plugins, build and cache PEX files encapsulating those plugins, and create a data reservoir whereby you can extract once and replay to as many destinations as you want. With Alto, you can seamlessly connect to various data sources, store your data in a centralized reservoir (singerlake), and manage lean, efficient extract load flows. Throw it into a `dbt` project, a data science project, or a passion project without fear of conflicting deps or a new paradigm.
 
 **Install:**
@@ -8,7 +25,7 @@ pipx install singer-alto  # install system wide
 pip install singer-alto   # or add it to your project!
 ```
 
-Like [Meltano](https://github.com/meltano/meltano), Alto is driven entirely by configuration and the config structure drew much of its inspiration from Meltano. Alto supports YAML, TOML, and JSON leveraging [Dynaconf](https://github.com/dynaconf/dynaconf) for robust features and the structure is modeled similarly to Meltano making using one or the other, or just giving `alto` a whirl, a fairly straightforward process. 
+Like [Meltano](https://github.com/meltano/meltano), Alto is driven entirely by configuration and the config structure drew much of its inspiration from Meltano. Alto supports YAML, TOML, and JSON leveraging [Dynaconf](https://github.com/dynaconf/dynaconf) for robust features and the structure is modeled similarly to Meltano making using one or the other, or just giving `alto` a whirl, a fairly straightforward process.
 
 **Small Example Config (see the bottom of the readme for the same thing as TOML):**
 
@@ -57,7 +74,7 @@ Finally, Alto is scaffolded over [Doit](https://github.com/pydoit/doit), a Pytho
 
 ### Pros
 
-I might recommend `alto` if Meltano seems like overkill for what you are doing. What does that mean? If you have a Python project where EL is one of many concerns and you want a dependency you can add that is lean, yet highly functional. You can use `alto` alongside [dbt](https://github.com/dbt-labs/dbt-core/) without conflict, along data science packages without conflict, and in general there is _very_ low risk for conflict in general. I would recommend `alto` if you don't want everything in your project running in different venvs because they would conflict with Meltano. 
+I might recommend `alto` if Meltano seems like overkill for what you are doing. What does that mean? If you have a Python project where EL is one of many concerns and you want a dependency you can add that is lean, yet highly functional. You can use `alto` alongside [dbt](https://github.com/dbt-labs/dbt-core/) without conflict, along data science packages without conflict, and in general there is _very_ low risk for conflict in general. I would recommend `alto` if you don't want everything in your project running in different venvs because they would conflict with Meltano.
 
 Alto is able to run taps -> targets with centralized environment-aware configuration, secret management, automatically managed state, automatic discovery, catalog caching to a remote backend, catalog manipulation via `select` & `metadata` keys, and all the things we love about Meltano. Given this, in most situations -- from a pure EL perspective, it stacks up fairly with Meltano since it is really the plugins that do most of the work once the previous conveniences are factored in. I don't claim `alto` does as much as Meltano but I do claim, in my experience, it does *enough*.
 
@@ -89,7 +106,7 @@ Outside of the prior points, there are some compelling features in `alto` in gen
 
 - We use `Dynaconf` to manage configuration
     - This gives us uniform support for json, toml, and yaml out of the box
-    - We get environment management 
+    - We get environment management
     - We get configuration inheritance / deep merging
     - We get `.env` support
     - We get unique ways to render vars with `'@format ` tokens
@@ -179,3 +196,5 @@ pip_url = "target-jsonl==0.1.4"
 [default.targets.target-jsonl.config]
 destination_path = "output"
 ```
+
+[license]: https://github.com/z3z1ma/alto/blob/main/LICENSE

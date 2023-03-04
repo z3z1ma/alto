@@ -1,8 +1,26 @@
+# MIT License
+# Copyright (c) 2023 Alex Butler
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 """This provides a custom UI for doit.
 
 It is based on the ConsoleReporter, but uses rich to provide a more
 interesting UI. It is entirely optional, and must be explicitly
 enabled via the presence of the `ALTO_RICH_UI` environment variable.
+
+It also provides a UI that uses emojis to indicate the status of
+tasks. This is enabled by default. It gives a more colorful and
+interesting UI (some personality), but is not as useful as the rich UI.
+
+NOTE: the rich UI often truncates output, so it is not recommended currently.
 """
 
 import time
