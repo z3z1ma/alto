@@ -5,8 +5,7 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/singer-alto)][python version]
 [![License](https://img.shields.io/pypi/l/singer-alto)][license]
 
-[![Tests](https://github.com/z3z1ma/singer-alto/workflows/Alto%20Tests/badge.svg)][tests]
-
+[![Tests](https://github.com/z3z1ma/alto/workflows/Alto%20Tests/badge.svg)][tests]
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
