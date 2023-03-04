@@ -14,7 +14,10 @@
         "ghcr.io/devcontainers-contrib/features/poetry:2": { },
         "ghcr.io/devcontainers-contrib/features/pre-commit:2": { },
         "ghcr.io/frntn/devcontainers-features/gitleaks:1": { },
-        "ghcr.io/dhoeric/features/act:1": { }
+        "ghcr.io/dhoeric/features/act:1": { },
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+            "moby": false
+        }
     },
 
     "postCreateCommand": "poetry config virtualenvs.in-project true && pre-commit install",
