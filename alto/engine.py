@@ -20,12 +20,10 @@ from hashlib import md5, sha1
 from pathlib import Path
 
 import fsspec
-import pex.bin.pex
 from doit.cmd_base import DoitCmdBase as AltoCmdBase
 from doit.cmd_base import TaskLoader2 as DoitEngine
 from doit.loader import generate_tasks
 from doit.tools import config_changed
-from dynaconf import Dynaconf
 from dynaconf.utils.boxing import DynaBox
 from fsspec.implementations.dirfs import DirFileSystem
 
@@ -70,6 +68,10 @@ class AltoCmd(str, Enum):
     ABOUT = "about"
     INVOKE = "invoke"
     REPL = "repl"
+
+    def __str__(self) -> str:
+        """Return the string representation of the command."""
+        return self.value
 
 
 class AltoConfiguration:
@@ -480,6 +482,8 @@ class AltoTaskEngine(DoitEngine):
     ) -> None:
         """Initialize the alto task engine."""
         super().__init__()
+        from dynaconf import Dynaconf
+
         self.alto = Dynaconf(
             settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
             secrets=[root_dir / f"alto.secrets.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
@@ -553,7 +557,9 @@ class AltoTaskEngine(DoitEngine):
         def build_pex(plugin: AltoPlugin) -> None:
             """Build a pex from the requirements string."""
             output = self.filesystem.executable_path(plugin.pex_name)
-            # Build the pex
+            # Build the pex (deferred import speeds up the CLI)
+            import pex.bin.pex
+
             try:
                 pex.bin.pex.main(["-o", output, "--no-emit-warnings", *plugin.pip_url.split()])
             except SystemExit:
