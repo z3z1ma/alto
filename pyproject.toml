@@ -27,6 +27,11 @@ pex = ">=2"
 fsspec = "^2023.1.0"
 dynaconf = "^3.1.11"
 
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+black = "*"
+isort = "*"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -36,7 +41,7 @@ alto = "alto.main:main"
 
 [tool.black] # https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#configuration-via-a-file
 line-length = 100
-target-version = ["py39"]
+target-version = ["py38", "py39", "py310", "py311"]
 preview = true
 
 [tool.isort] # https://pycqa.github.io/isort/docs/configuration/options.html

@@ -1,0 +1,48 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
+{
+    "name": "Alto Dev Container",
+    "build": {
+        "context": "..",
+        "dockerfile": "../Dockerfile"
+    },
+
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "configureZshAsDefaultShell": true
+        },
+        "ghcr.io/eitsupi/devcontainer-features/jq-likes:1": { },
+        "ghcr.io/devcontainers-contrib/features/pre-commit:2": { },
+        "ghcr.io/frntn/devcontainers-features/gitleaks:1": { },
+        "ghcr.io/dhoeric/features/act:1": { }
+    },
+
+    "settings": {
+        "python.defaultInterpreterPath": "/home/dev/.venv/bin/python",
+        "python.testing.unittestArgs": [
+            "-v",
+            "-s",
+            "./tests",
+            "-p",
+            "test_*.py"
+        ],
+        "python.testing.pytestEnabled": false,
+        "python.testing.unittestEnabled": true
+    },
+
+    "postAttachCommand": "poetry shell",
+
+    "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml",
+        "eriklynd.json-tools",
+        "cschleiden.vscode-github-actions",
+        "charliermarsh.ruff",
+        "ms-python.isort",
+        "GitHub.copilot",
+        "seatonjiang.gitmoji-vscode"
+    ]
+}

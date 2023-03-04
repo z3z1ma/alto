@@ -1540,9 +1540,13 @@ class AltoTaskEngine(DoitEngine):
                         "name": f"param{i}",
                         "long": arg.lstrip("-"),
                         "default": "",
-                        "type": bool
-                        if len(args) > i + 1 and args[1 + i].startswith("-") or len(args) == i + 1
-                        else str,
+                        "type": (
+                            bool
+                            if len(args) > i + 1
+                            and args[1 + i].startswith("-")
+                            or len(args) == i + 1
+                            else str
+                        ),
                     }
                     for i, arg in enumerate(args)
                     if arg.startswith("-")
