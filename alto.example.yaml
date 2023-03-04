@@ -23,7 +23,7 @@ default:
     # ASANA (SINGER)
     tap-asana:
       pip_url: git+https://github.com/z3z1ma/tap-asana.git#egg=tap-asana
-      namespace: asana
+      load_path: asana
       capabilities: [catalog, state, about]
       config:
         client_id: "..."
@@ -36,7 +36,7 @@ default:
     # CONFLUENCE (SINGER)
     tap-confluence:
       pip_url: git+https://github.com/z3z1ma/tap-confluence.git#egg=tap-confluence
-      namespace: confluence
+      load_path: confluence
       capabilities: [catalog, state, about, test]
       config:
         base_url: https://something.atlassian.net/wiki/rest/api
@@ -45,7 +45,7 @@ default:
     # GONG (SINGER)
     tap-gong:
       pip_url: git+https://github.com/z3z1ma/tap-gong.git#egg=tap-gong
-      namespace: gong
+      load_path: gong
       capabilities: [catalog, state, about, test]
       config:
         access_key: "..."
@@ -54,7 +54,7 @@ default:
     # MARKETO (SINGER)
     tap-marketo:
       pip_url: git+https://github.com/z3z1ma/tap-marketo.git#egg=tap-marketo
-      namespace: marketo
+      load_path: marketo
       capabilities: [catalog, state, about]
       select:
         - "!leads.*"
@@ -68,7 +68,7 @@ default:
     # SHOWPAD (SINGER)
     tap-showpad:
       pip_url: git+https://github.com/z3z1ma/tap-showpad.git#egg=tap-showpad
-      namespace: showpad
+      load_path: showpad
       capabilities: [catalog, state, about, test]
       config:
         subdomain: yourdomain
@@ -81,7 +81,7 @@ default:
     # SALESFORCE (SINGER)
     tap-salesforce:
       pip_url: git+https://github.com/z3z1ma/tap-salesforce.git#egg=tap-salesforce
-      namespace: salesforce
+      load_path: salesforce
       capabilities: [catalog, state]
       select:
         - Opportunity.*
@@ -124,7 +124,7 @@ default:
     # QUALIFIED (SINGER)
     tap-qualified:
       pip_url: git+https://github.com/z3z1ma/tap-qualified.git#egg=tap-qualified
-      namespace: qualified
+      load_path: qualified
       capabilities: [catalog, state, about, test]
       # 👇 A more complex accent
       target-bigquery:
@@ -136,7 +136,7 @@ default:
     tap-github:
       pip_url: git+https://github.com/MeltanoLabs/tap-airbyte-wrapper.git#egg=tap_airbyte
       executable: tap-airbyte
-      namespace: github
+      load_path: github
       capabilities: [catalog, state, about, test]
       select:
         - "*.*"
@@ -159,7 +159,7 @@ default:
     tap-jira:
       pip_url: git+https://github.com/MeltanoLabs/tap-airbyte-wrapper.git#egg=tap_airbyte
       executable: tap-airbyte
-      namespace: jira
+      load_path: jira
       capabilities: [catalog, state, about, test]
       select:
         - issues.*
@@ -183,7 +183,7 @@ default:
     tap-slack:
       pip_url: git+https://github.com/MeltanoLabs/tap-airbyte-wrapper.git#egg=tap_airbyte
       executable: tap-airbyte
-      namespace: slack
+      load_path: slack
       capabilities: [catalog, state, about, test]
       metadata:
         "*": { replication-method: "INCREMENTAL" }
@@ -238,7 +238,7 @@ default:
 # Dev Environment (these are merged into the "defaults" above) if ALTO_ENV=dev
 # 👇 Use submodules in dev mode overwriting the default pip_url with the local path
 dev:
-  namespace: testing
+  load_path: testing
   taps:
     # Use submodules in dev mode
     tap-asana:
@@ -268,32 +268,32 @@ dev:
         dataset: raw_testing
     target-jsonl:
       config:
-        destination_path: "@format output/dev/{this.namespace}"
+        destination_path: "@format output/dev/{this.load_path}"
 
 # CI Environment (these are merged into the "defaults" above) if ALTO_ENV=ci
 # (note you can have as many envs as you want named whatever you want)
 ci:
-  namespace: ci
+  load_path: ci
   targets:
     target-bigquery:
       config:
         dataset: "@format {env[CI_DATASET]}"
     target-jsonl:
       config:
-        # 👇 This is how you can use the current namespace
-        # this is very important since the namespace is dynamic
+        # 👇 This is how you can use the current load_path
+        # this is very important since the load_path is dynamic
         # based on the tap and almost always correlates to a delineatation
         # in the destination such as a schema in a db or key in a bucket
-        destination_path: "@format output/ci/{this.namespace}"
+        destination_path: "@format output/ci/{this.load_path}"
 
 # Prod Environment (these are merged into the "defaults" above) if ALTO_ENV=prod
 prod:
-  namespace: prod
+  load_path: prod
   taps:
     # MONGODB (SINGER) [BASE]
     tap-mongodb:
       pip_url: z3-tap-mongodb==0.4.3
-      namespace: mongodb
+      load_path: mongodb
       capabilities: [catalog, state, about, test]
       config:
         optional_replication_key: true
@@ -367,11 +367,11 @@ prod:
   targets:
     target-bigquery:
       config:
-        # 👇 This is how you can use the current namespace
+        # 👇 This is how you can use the current load_path
         # notice we do it in prod for BigQuery but not in the other envs
         # this is so non prod data is written to a different dataset
-        dataset: "@format {this.namespace}"
+        dataset: "@format {this.load_path}"
     target-jsonl:
       config:
-        # 👇 This is how you can use the current namespace
-        destination_path: "@format output/prod/{this.namespace}"
+        # 👇 This is how you can use the current load_path
+        destination_path: "@format output/prod/{this.load_path}"

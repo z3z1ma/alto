@@ -22,15 +22,15 @@ default:
   project_name: 4c167d53
   # there is an extension system that lets you add doit tasks to alto
   extensions: []
-  # the namespace is often used by targets, it is overwritten by a taps `namespace` during EL
-  namespace: raw
+  # the load_path is often used by targets, it is overwritten by a taps `load_path` during EL
+  load_path: raw
   # taps, targets, and utilities are the 3 keys here
   taps:
     # name the tap whatever you want, but naming it after the executable saves us from specifying it
     tap-carbon-intensity:
-      # this should all be almost identical to Meltano barring `namespace` which is explained above
+      # this should all be almost identical to Meltano barring `load_path` which is explained above
       pip_url: git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity
-      namespace: carbon_intensity
+      load_path: carbon_intensity
       capabilities:
         - state
         - catalog
@@ -163,11 +163,11 @@ example_project
 [default]
 project_name = "4c167d53"
 extensions = []
-namespace = "raw"
+load_path = "raw"
 
 [default.taps.tap-carbon-intensity]
 pip_url = "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
-namespace = "carbon_intensity"
+load_path = "carbon_intensity"
 capabilities = ["state", "catalog"]
 select = ["*.*"]
 
