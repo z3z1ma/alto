@@ -31,8 +31,6 @@
         "python.testing.unittestEnabled": true
     },
 
-    "postAttachCommand": "poetry shell",
-
     "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
