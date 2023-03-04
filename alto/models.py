@@ -381,7 +381,10 @@ class AltoTask:
         return self
 
     def set_task_dep(self, *tasks: str, extend: bool = True) -> "AltoTask":
-        """Set the task dependencies for the task. These are the tasks that must be run before this task."""
+        """Set the task dependencies for the task.
+
+        These are the tasks that must be run before this task.
+        """
         if extend:
             self._data.setdefault("task_dep", []).extend(tasks)
         else:
@@ -389,7 +392,10 @@ class AltoTask:
         return self
 
     def set_file_dep(self, *files: Union[str, Path], extend: bool = True) -> "AltoTask":
-        """Set the file dependencies for the task. These are the files that must be present before this task can run."""
+        """Set the file dependencies for the task.
+
+        These are the files that must be present before this task can run.
+        """
         if extend:
             self._data.setdefault("file_dep", []).extend(files)
         else:
@@ -399,7 +405,10 @@ class AltoTask:
     def set_uptodate(
         self, *uptodate: Callable[..., Union[bool, None]], extend: bool = True
     ) -> "AltoTask":
-        """Set the uptodate function for the task. This is a function that determines if the task is up to date."""
+        """Set the uptodate function for the task.
+
+        This is a function that determines if the task is up to date.
+        """
         if extend:
             self._data.setdefault("uptodate", []).extend(uptodate)
         else:
@@ -407,7 +416,10 @@ class AltoTask:
         return self
 
     def set_setup(self, *tasks: str, extend: bool = True) -> "AltoTask":
-        """Set the setup tasks for the task. These are the tasks that must be run before this task."""
+        """Set the setup tasks for the task.
+
+        These are the tasks that must be run before this task.
+        """
         if extend:
             self._data.setdefault("setup", []).extend(tasks)
         else:
@@ -415,27 +427,42 @@ class AltoTask:
         return self
 
     def set_meta(self, meta: Dict[str, Any]) -> "AltoTask":
-        """Set the meta data for the task. This is a dictionary of arbitrary data that can be used by other tasks."""
+        """Set the meta data for the task.
+
+        This is a dictionary of arbitrary data that can be used by other tasks.
+        """
         self._data["meta"] = meta
         return self
 
     def set_custom_title(self, custom_title: Callable) -> "AltoTask":
-        """Set the custom title function for the task. This is a function that returns a string to be used as the title"""
+        """Set the custom title function for the task.
+
+        This is a function that returns a string to be used as the title
+        """
         self._data["custom_title"] = custom_title
         return self
 
     def set_doc(self, doc: str) -> "AltoTask":
-        """Set the doc string for the task. This is a string that will be displayed when the user invokes help."""
+        """Set the doc string for the task.
+
+        This is a string that will be displayed when the user invokes help.
+        """
         self._data["doc"] = doc
         return self
 
     def set_verbosity(self, verbosity: int) -> "AltoTask":
-        """Set the verbosity for the task. This is an integer that determines the verbosity level for the task."""
+        """Set the verbosity for the task.
+
+        This is an integer that determines the verbosity level for the task.
+        """
         self._data["verbosity"] = verbosity
         return self
 
     def __dict__(self) -> AltoTaskData:
-        """Return the task data as a dictionary. This is used by the Alto engine to create the task."""
+        """Return the task data as a dictionary.
+
+        This is used by the Alto engine to create the task.
+        """
         return self._data
 
 
