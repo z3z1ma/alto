@@ -2,11 +2,16 @@
 import os
 import shutil
 import unittest
+import warnings
 
 from alto import main
 
-class TestRunAlto(unittest.TestCase):
+# Ignore warnings from vendored packages
+warnings.filterwarnings("ignore", category=ImportWarning, message="VendorImporter.find_spec().*")
+warnings.filterwarnings("ignore", category=ImportWarning, message="_Loader.exec_module().*")
 
+
+class TestRunAlto(unittest.TestCase):
     def setUp(self):
         self.path = os.path.join(os.path.dirname(__file__), os.urandom(4).hex())
         os.makedirs(self.path, exist_ok=True, mode=0o755)
@@ -16,7 +21,7 @@ class TestRunAlto(unittest.TestCase):
         os.chdir(os.path.dirname(__file__))
         try:
             shutil.rmtree(self.path)
-        except OSError:
+        except FileNotFoundError:
             pass
 
     def test_run_init(self):
@@ -37,5 +42,6 @@ class TestRunAlto(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(self.path, "alto.secrets.toml")))
         self.assertEqual(main(["tap-carbon-intensity:target-jsonl"]), 0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

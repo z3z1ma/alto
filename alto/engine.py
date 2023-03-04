@@ -695,12 +695,13 @@ class AltoTaskEngine(DoitEngine):
             Path(catalog).parent.mkdir(parents=True, exist_ok=True)
             try:
                 # Run the tap in discovery mode
-                subprocess.run(
-                    [bin, "--config", config, "--discover"],
-                    stdout=open(catalog, "w"),
-                    check=True,
-                    env={**os.environ, **tap.environment},
-                )
+                with open(catalog, "w") as f:
+                    subprocess.run(
+                        [bin, "--config", config, "--discover"],
+                        stdout=f,
+                        check=True,
+                        env={**os.environ, **tap.environment},
+                    )
             except subprocess.CalledProcessError:
                 # If the tap fails to discover, delete the compromised catalog
                 os.remove(catalog)

@@ -75,14 +75,14 @@ class AltoInit(Command):
                         "default": {
                             "project_name": os.urandom(4).hex(),
                             "extensions": [],
-                            "namespace": "raw",
+                            "load_path": "raw",
                             "taps": {
                                 "tap-carbon-intensity": {
                                     "pip_url": (
                                         "git+https://gitlab.com/meltano/tap-carbon-intensity.git"
                                         "#egg=tap_carbon_intensity"
                                     ),
-                                    "namespace": "carbon_intensity",
+                                    "load_path": "carbon_intensity",
                                     "config": {
                                         "any_key": (
                                             "<this will end up in a config.json passed to the tap>"
