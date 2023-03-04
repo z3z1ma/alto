@@ -380,7 +380,7 @@ class AltoPlugin:
     @property
     def namespace(self) -> str:
         """Return the namespace for the plugin."""
-        return self.spec.get("path", self.root_namespace)
+        return self.spec.get("load_path", self.root_namespace)
 
     @property
     def capabilities(self) -> t.List[str]:
@@ -484,7 +484,6 @@ class AltoTaskEngine(DoitEngine):
             settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
             secrets=[root_dir / f"alto.secrets.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
             root_path=root_dir,
-            fresh_vars=["LOAD_PATH"],
             envvar_prefix="ALTO",
             env_switcher="ALTO_ENV",
             load_dotenv=True,
