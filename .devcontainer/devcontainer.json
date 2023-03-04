@@ -1,25 +1,28 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
-    "name": "Alto Dev Container",
-    "build": {
-        "context": "..",
-        "dockerfile": "../Dockerfile"
-    },
+    "name": "Alto (Python 3.10)",
+    "image": "mcr.microsoft.com/devcontainers/python:3.10",
 
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "configureZshAsDefaultShell": true
         },
+        "ghcr.io/devcontainers-contrib/features/curl-apt-get:1": { },
         "ghcr.io/eitsupi/devcontainer-features/jq-likes:1": { },
+        "ghcr.io/devcontainers-contrib/features/poetry:2": { },
         "ghcr.io/devcontainers-contrib/features/pre-commit:2": { },
         "ghcr.io/frntn/devcontainers-features/gitleaks:1": { },
         "ghcr.io/dhoeric/features/act:1": { }
     },
 
+    "postCreateCommand": "poetry config virtualenvs.in-project true && pre-commit install",
+    "postAttachCommand": "poetry install --no-interaction --no-ansi",
+
     "settings": {
-        "python.defaultInterpreterPath": "/home/dev/.venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "python.defaultInterpreterPath": ".venv/bin/python",
         "python.testing.unittestArgs": [
             "-v",
             "-s",
@@ -41,6 +44,7 @@
         "charliermarsh.ruff",
         "ms-python.isort",
         "GitHub.copilot",
-        "seatonjiang.gitmoji-vscode"
+        "seatonjiang.gitmoji-vscode",
+        "ms-python.black-formatter"
     ]
 }
