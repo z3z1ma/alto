@@ -29,14 +29,16 @@ class AltoInit(Command):
         "Scan the current directory for a file named alto.{toml,yml,yaml,json} and "
         "create one if it doesn't exist."
     )
-    cmd_options = [{
-        "name": "no-prompt",
-        "short": "n",
-        "long": "no-prompt",
-        "type": bool,
-        "default": False,
-        "help": "Do not prompt for confirmation before creating files",
-    }]
+    cmd_options = [
+        {
+            "name": "no-prompt",
+            "short": "n",
+            "long": "no-prompt",
+            "type": bool,
+            "default": False,
+            "help": "Do not prompt for confirmation before creating files",
+        }
+    ]
 
     def execute(self, opt_values, pos_args):
         """Initialize a new project."""
@@ -202,7 +204,7 @@ class AltoMain(DoitMain):
         return commands
 
 
-def main(args = sys.argv[1:]) -> int:
+def main(args=sys.argv[1:]) -> int:
     """Main entry point for the CLI."""
     args = args[:]
     print(f"📦 Alto version: {__version__}")

@@ -52,7 +52,8 @@ __all__ = [
     "AltoTaskEngine",
 ]
 
-
+RESERVOIR_VERSION_KEY = "__version__"
+"""The key used to store the version of the reservoir format."""
 RESERVOIR_BUFFER_SIZE = 10_000
 """The default number of records to buffer before flushing to reservoir filesystem."""
 
@@ -183,7 +184,7 @@ class AltoFileSystem:
         if not hasattr(self, "_sys_dir"):
             self._sys_dir = str(
                 Path.home()
-                .joinpath(ALTO_ROOT, self.config.get("project_name", "default"))
+                .joinpath(ALTO_ROOT, self.config.get("PROJECT_NAME", "default"))
                 .resolve()
             )
         return self._sys_dir
@@ -214,20 +215,20 @@ class AltoFileSystem:
         The alto storage file system is used to persist data to a remote storage location.
         """
         if not hasattr(self, "_fs"):
-            fsystem: str = self.config.get("filesystem", "file")
-            if fsystem == "file":
+            fsystem: str = str(self.config.get("FILESYSTEM", "FILE")).upper()
+            if fsystem == "FILE":
                 # Local file system
                 self._fs = DirFileSystem(
-                    self.sys_dir, fs=fsspec.filesystem("file", auto_mkdir=True)
+                    self.sys_dir, fs=fsspec.filesystem(fsystem.lower(), auto_mkdir=True)
                 )
-            elif fsystem in ("s3", "s3a", "gs", "gcs", "azure"):
+            elif fsystem in ("S3", "S3A", "GS", "GCS", "ADLS"):
                 # Remote file system
-                path: str = self.config.get("bucket_path", "alto")
+                path: str = self.config.get("BUCKET_PATH", "alto")
                 path = path.strip("/")
                 self._fs = DirFileSystem(
-                    f"{self.config['bucket']}/{path}/{self.config['project_name']}",
+                    f"{self.config['BUCKET']}/{path}/{self.config['PROJECT_NAME']}",
                     fs=fsspec.filesystem(
-                        fsystem, **self.config.get(f"{fsystem}_kwargs", DynaBox())
+                        fsystem.lower(), **self.config.get(f"{fsystem}_KWARGS", DynaBox())
                     ),
                 )
             else:
@@ -304,7 +305,7 @@ class AltoFileSystem:
             remote: Whether or not the path should be in the remote storage directory.
         """
         getter = self._remote_path if remote else self._temp_path
-        return getter(fname=f"{tap}-to-{target}.json", key=STATE_DIR.format(env=self.config["env"]))
+        return getter(fname=f"{tap}-to-{target}.json", key=STATE_DIR.format(env=self.config["ENV"]))
 
     def base_catalog_path(self, name: str, remote: bool = False) -> str:
         """Return the path to the base catalog for a plugin.
@@ -336,7 +337,7 @@ class AltoFileSystem:
             remote: Whether or not the path should be in the remote storage directory.
         """
         getter = self._remote_path if remote else self._root_path
-        return getter(fname=fname, key=LOG_DIR.format(env=self.config["env"]))
+        return getter(fname=fname, key=LOG_DIR.format(env=self.config["ENV"]))
 
 
 class AltoPlugin:
@@ -374,12 +375,12 @@ class AltoPlugin:
     @property
     def root_namespace(self) -> str:
         """Return the root namespace for the plugin."""
-        return self.alto.inner["namespace"]
+        return self.alto.inner["LOAD_PATH"]
 
     @property
     def namespace(self) -> str:
         """Return the namespace for the plugin."""
-        return self.spec.get("namespace", self.root_namespace)
+        return self.spec.get("path", self.root_namespace)
 
     @property
     def capabilities(self) -> t.List[str]:
@@ -483,7 +484,7 @@ class AltoTaskEngine(DoitEngine):
             settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
             secrets=[root_dir / f"alto.secrets.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
             root_path=root_dir,
-            fresh_vars=["namespace"],
+            fresh_vars=["LOAD_PATH"],
             envvar_prefix="ALTO",
             env_switcher="ALTO_ENV",
             load_dotenv=True,
@@ -513,7 +514,7 @@ class AltoTaskEngine(DoitEngine):
         return a generator of doit tasks. The extension function is called at
         runtime and the tasks are added to the engine. A `name` attribute must be set.
         """
-        for extension_path in t.cast(t.List[str], self.alto.get("extensions", [])):
+        for extension_path in t.cast(t.List[str], self.alto.get("EXTENSIONS", [])):
             py = self.filesystem.root_dir / extension_path
             if not (py.is_file() and py.suffix == ".py"):
                 raise Exception("Invalid extension path. Must be a .py file.")
@@ -617,10 +618,10 @@ class AltoTaskEngine(DoitEngine):
     def task_config(self) -> AltoTaskGenerator:
         """[core] Generate configuration files on disk."""
 
-        # This lock is used to prevent multiple threads from mutating the root
-        # namespace at the same time. This is necessary because the namespace is
+        # This lock is used to prevent multiple threads from mutating the root namespace
+        # "LOAD_PATH" at the same time. This is necessary because "LOAD_PATH" is
         # a top-level variable used by Alto during dumping. Users reference it
-        # in config via "@format {this.namespace}" with the expectation that it
+        # in config via "@format {this.load_path}" with the expectation that it
         # will be replaced with the current plugin's namespace.
         config_lock = threading.Lock()
 
@@ -631,10 +632,10 @@ class AltoTaskEngine(DoitEngine):
             """Render a config file for a plugin."""
             with config_lock:
                 # Set the namespace for the current plugin being rendered
-                original_namespace = deepcopy(self.alto["namespace"])
+                original_namespace = deepcopy(self.alto["LOAD_PATH"])
                 namespace_override = accent.namespace if accent is not None else plugin.namespace
                 if namespace_override:
-                    self.alto["namespace"] = namespace_override
+                    self.alto["LOAD_PATH"] = namespace_override
                 # Apply accent
                 if accent is not None:
                     config = plugin.config_relative_to(accent)
@@ -648,7 +649,7 @@ class AltoTaskEngine(DoitEngine):
                 with open(config_path, "w") as f:
                     json.dump(config.to_dict(), f, indent=2)
                 # Reset the namespace
-                self.alto["namespace"] = original_namespace
+                self.alto["LOAD_PATH"] = original_namespace
 
         for plugin in self.configuration.plugins(PluginType.TAP, PluginType.TARGET):
             yield (
@@ -981,7 +982,7 @@ class AltoTaskEngine(DoitEngine):
                     container["count"] += 1
                     container["records"].write(line + b"\n")
                     if container["count"] >= self.alto.get(
-                        "reservoir_buffer_size", RESERVOIR_BUFFER_SIZE
+                        "RESERVOIR_BUFFER_SIZE", RESERVOIR_BUFFER_SIZE
                     ):
                         # Buffer is full, flush to filesystem
                         print(f"Flushing {stream} ({active_schemas[stream]})")
@@ -1040,6 +1041,7 @@ class AltoTaskEngine(DoitEngine):
             with open(state_path, "w") as state_data:
                 json.dump(stream_states, state_data)
 
+        # TODO: Add retry decorator
         def reservoir_emitter(stdin: t.IO[bytes], path: str) -> str:
             """Emits records from the reservoir to the target.
 
@@ -1048,9 +1050,6 @@ class AltoTaskEngine(DoitEngine):
             for pulling data from the reservoir, decompressing, and
             emitting it to the stdin handle of the target process.
             """
-            # TODO: oddly, a failure in this function will lock up the
-            # entire pipeline instead of raising an exception in the
-            # main thread. This is probably a bug in the ThreadPoolExecutor
             stream = gzip.decompress(self.fs.cat(path))
             with reservoir_lock:
                 # Write the records to the target's stdin handle with a lock
@@ -1068,7 +1067,7 @@ class AltoTaskEngine(DoitEngine):
             )
             stream_states = {}
             state = self.filesystem.state_path(tap.name, target)
-            base_path = f"{target}/{self.alto['env']}/{tap}"
+            base_path = f"{target}/{self.alto['ENV']}/{tap}"
 
             # Build the command to run the pipeline
             cmd = [tap_bin, "--config", tap_config]
@@ -1111,8 +1110,8 @@ class AltoTaskEngine(DoitEngine):
                     t1.start()
                     # Stream the tap output to the reservoir 🚀
                     # mutates the reservoir index and the state file
-                    # and blocks until the tap process exits. The finally
-                    # block will update the reservoir index and drop the
+                    # and blocks until the tap process exits. The `finally`
+                    # statement will update the reservoir index and drop the
                     # lock file to allow the next run to proceed.
                     reservoir_ingestor(
                         stdout=tap_proc.stdout,
@@ -1145,14 +1144,14 @@ class AltoTaskEngine(DoitEngine):
             if os.path.isfile(state):
                 with open(state) as state_data:
                     stream_states = json.load(state_data)
-            stream_states.setdefault("__version__", 0)
+            stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
 
             # Load the index
-            base_path = f"reservoir/{self.alto['env']}/{tap}"
+            base_path = f"reservoir/{self.alto['ENV']}/{tap}"
             index_path = self.filesystem._remote_path("_reservoir.json", key=base_path)
             if not self.fs.exists(index_path):
                 print("Reservoir index not found, rebuilding")
-                reservoir = {"__version__": 0}
+                reservoir = {RESERVOIR_VERSION_KEY: 0}
                 streams = (
                     [
                         stream_directory.split("/")[-1]
@@ -1183,23 +1182,23 @@ class AltoTaskEngine(DoitEngine):
                 )
 
             # Recreate the state file if the index has changed (from a compaction)
-            stream_states.setdefault("__version__", 0)
-            reservoir.setdefault("__version__", 0)
-            if stream_states["__version__"] != reservoir["__version__"]:
+            stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
+            reservoir.setdefault(RESERVOIR_VERSION_KEY, 0)
+            if stream_states[RESERVOIR_VERSION_KEY] != reservoir[RESERVOIR_VERSION_KEY]:
                 print("Index has changed, recreating state file")
                 for stream, paths in reservoir.items():
                     # Skip stuff we never saw before
-                    if stream in ("__version__",) or stream not in stream_states:
+                    if stream in (RESERVOIR_VERSION_KEY,) or stream not in stream_states:
                         continue
                     # Update the state
                     for path in sorted(paths):
                         fname = path.split("/")[-1]
                         if fname > stream_states[stream]["emitted"]:
                             stream_states[stream]["emitted"] = fname
-                stream_states["__version__"] = reservoir["__version__"]
+                stream_states[RESERVOIR_VERSION_KEY] = reservoir[RESERVOIR_VERSION_KEY]
                 with open(state, "w") as state_dest:
                     json.dump(stream_states, state_dest)
-                print("Index version:", stream_states["__version__"])
+                print("Index version:", stream_states[RESERVOIR_VERSION_KEY])
 
             # Start the pipeline
             print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
@@ -1225,7 +1224,7 @@ class AltoTaskEngine(DoitEngine):
                 files_processed = 0
                 for stream, paths in reservoir.items():
                     # Gather the paths to process
-                    if stream in ("__version__",):
+                    if stream in (RESERVOIR_VERSION_KEY,):
                         continue
                     if stream not in stream_states:
                         stream_states[stream] = {"emitted": ""}
@@ -1276,7 +1275,7 @@ class AltoTaskEngine(DoitEngine):
             from functools import reduce
 
             # Acquire lock
-            base_path = f"reservoir/{self.alto['env']}/{tap}"
+            base_path = f"reservoir/{self.alto['ENV']}/{tap}"
             lock_path = self.filesystem._remote_path("_reservoir.lock", key=base_path)
             if self.fs.exists(lock_path):
                 raise RuntimeError(f"Lock file {lock_path} exists, aborting")
@@ -1295,7 +1294,7 @@ class AltoTaskEngine(DoitEngine):
             changed = False
             try:
                 for stream, paths in reservoir.items():
-                    if stream in ("__version__",):
+                    if stream in (RESERVOIR_VERSION_KEY,):
                         continue
                     print(f"Inspecting {stream} ({len(paths)} paths)")
                     if not len(paths) > 1:
@@ -1347,8 +1346,8 @@ class AltoTaskEngine(DoitEngine):
             # Rebuild the index
             try:
                 if changed:
-                    reservoir["__version__"] = reservoir.get("__version__", 0) + 1
-                    streams = [k for k in reservoir.keys() if k != "__version__"]
+                    reservoir[RESERVOIR_VERSION_KEY] = reservoir.get(RESERVOIR_VERSION_KEY, 0) + 1
+                    streams = [k for k in reservoir.keys() if k != RESERVOIR_VERSION_KEY]
                     for stream in streams:
                         reservoir[stream] = list(
                             sorted(
@@ -1516,7 +1515,7 @@ class AltoTaskEngine(DoitEngine):
         """[alto] Invoke a plugin."""
 
         def invoke(plugin: AltoPlugin) -> None:
-            """Run the sync test for a tap."""
+            """Invoke a plugin."""
 
             exe = self.filesystem.executable_path(plugin.pex_name)
             with subprocess.Popen(
