@@ -526,7 +526,8 @@ class AltoExtension:
         """
         pass
 
-    def get_validators(self) -> t.List["Validator"]:
+    @staticmethod
+    def get_validators() -> t.List["Validator"]:
         """Return the validators for the extension."""
         return []
 
@@ -611,12 +612,14 @@ class AltoTaskEngine(DoitEngine):
             if extension in {"evidence"}:
                 ns = load_extension_from_spec(f"alto.ext.{extension}")
                 try:
-                    ext = ns.register()(
-                        filesystem=self.filesystem, configuration=self.configuration
-                    )
-                except (NameError, AttributeError):
-                    raise ValueError(f"Extension {extension} does not have a register function.")
-                self.alto.validators.register(*ext.get_validators())
+                    ext_cls = ns.register()
+                    for validator in ext_cls.get_validators():
+                        validator.validate(self.alto)
+                    ext = ext_cls(filesystem=self.filesystem, configuration=self.configuration)
+                except (NameError, AttributeError) as e:
+                    raise ValueError(
+                        f"Extension {extension} does not have a register function."
+                    ) from e
                 AltoTaskEngine.Extensions.append(ext)
                 continue
             py = self.filesystem.root_dir / extension

@@ -32,12 +32,23 @@ class Evidence(AltoExtension):
         """Initialize the extension."""
         os.makedirs(self.spec.config.home, exist_ok=True, mode=0o755)
 
-    def get_validators(self) -> t.List["Validator"]:
+    @staticmethod
+    def get_validators() -> t.List["Validator"]:
         return [
             Validator(
-                "UTILITIES.evidence.home", default="./reports", cast=str, apply_default_on_none=True
+                "UTILITIES.evidence.config.home",
+                default="./reports",
+                cast=str,
+                apply_default_on_none=True,
+                description="Evidence home directory.",
             ),
-            Validator("UTILITIES.evidence.strict", default=False, cast=bool),
+            Validator(
+                "UTILITIES.evidence.config.strict",
+                default=False,
+                cast=bool,
+                apply_default_on_none=True,
+                description="Run Evidence in strict mode.",
+            ),
         ]
 
     def initialize(self):
