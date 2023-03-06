@@ -564,7 +564,6 @@ class AltoTaskEngine(DoitEngine):
     executing plugins, and user-specific build tasks supplied via the extension interface.
     """
 
-    Extensions: t.List[t.Callable[["AltoTaskEngine"], AltoTaskGenerator]] = []
     Configuration = AltoConfiguration
     FileSystem = AltoFileSystem
 
@@ -589,6 +588,7 @@ class AltoTaskEngine(DoitEngine):
         # Instantiate the filesystem and configuration
         self.configuration = AltoTaskEngine.Configuration(inner=self.alto)
         self.filesystem = AltoTaskEngine.FileSystem(root_dir, config=self.configuration)
+        self.extensions: t.List[AltoExtension] = []
 
     @property
     def fs(self) -> fsspec.spec.AbstractFileSystem:
@@ -620,14 +620,14 @@ class AltoTaskEngine(DoitEngine):
                     raise ValueError(
                         f"Extension {extension} does not have a register function."
                     ) from e
-                AltoTaskEngine.Extensions.append(ext)
+                self.extensions.append(ext)
                 continue
             py = self.filesystem.root_dir / extension
             if not py.is_file():
                 raise ValueError(f"Extension {extension} does not exist.")
             print(f"Skipping extension {extension} [not implemented]")
             # ns = load_extension_from_path(py)
-            # AltoTaskEngine.Extensions.append(ns.extension)
+            # self.extensions.append(ns.extension)
 
     def load_doit_config(self) -> t.Dict[str, t.Any]:
         """Load the doit configuration. This is called by doit."""
@@ -804,6 +804,7 @@ class AltoTaskEngine(DoitEngine):
                         stdout=f,
                         check=True,
                         env={**os.environ, **tap.environment},
+                        cwd=self.filesystem.root_dir,
                     )
             except subprocess.CalledProcessError:
                 # If the tap fails to discover, delete the compromised catalog
@@ -945,12 +946,14 @@ class AltoTaskEngine(DoitEngine):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={**os.environ, **tap.environment},
+                cwd=self.filesystem.root_dir,
             ) as tap_proc, subprocess.Popen(
                 [target_bin, "--config", target_config],
                 stdin=tap_proc.stdout,
                 stderr=subprocess.PIPE,
                 stdout=open(self.filesystem.log_path(f"state-{pipeline_id}.log"), "w"),
                 env={**os.environ, **target.environment},
+                cwd=self.filesystem.root_dir,
             ) as target_proc:
                 t1 = threading.Thread(
                     target=pipeline_logger,
@@ -1209,6 +1212,7 @@ class AltoTaskEngine(DoitEngine):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     env={**os.environ, **tap.environment},
+                    cwd=self.filesystem.root_dir,
                 ) as tap_proc:
                     # Stream stderr
                     t1 = threading.Thread(
@@ -1317,6 +1321,7 @@ class AltoTaskEngine(DoitEngine):
                 stderr=subprocess.PIPE,
                 stdin=subprocess.PIPE,
                 env={**os.environ, **target.environment},
+                cwd=self.filesystem.root_dir,
             ) as target_proc:
                 # Stream stderr
                 th = threading.Thread(
@@ -1586,6 +1591,7 @@ class AltoTaskEngine(DoitEngine):
                 cmd,
                 stdout=subprocess.PIPE if not auto else None,
                 env={**os.environ, **tap.environment},
+                cwd=self.filesystem.root_dir,
             ) as proc:
                 if auto:
                     # Use the --test flag to run the test, supported by certain taps
@@ -1630,6 +1636,7 @@ class AltoTaskEngine(DoitEngine):
             with subprocess.Popen(
                 [exe, *sys.argv[2:]],
                 env={**os.environ, **plugin.environment},
+                cwd=self.filesystem.root_dir,
             ) as proc:
                 proc.wait()
 
@@ -1679,7 +1686,7 @@ class AltoTaskEngine(DoitEngine):
                 generate_tasks(AltoCmd.INVOKE, self.task_invoke(), self.task_invoke.__doc__),
                 *(
                     generate_tasks(ext.name, ext.tasks(), f"[extension] {ext.__doc__}")
-                    for n, ext in enumerate(AltoTaskEngine.Extensions)
+                    for n, ext in enumerate(self.extensions)
                 ),
             )
         )

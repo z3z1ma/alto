@@ -15,7 +15,6 @@
 import os
 import sys
 import typing as t
-from contextlib import contextmanager
 from pathlib import Path
 
 from doit.cmd_base import Command
@@ -243,21 +242,10 @@ def main(args=sys.argv[1:]) -> int:
         f"🏗  Working directory: {alto.config.working_directory.resolve().relative_to(Path.cwd())}"
     )
     print(f"🌎 Environment: {os.environ['ALTO_ENV']}\n")
-
-    @contextmanager
-    def _ctx(path):
-        odir = Path.cwd()
-        os.chdir(path)
-        try:
-            yield
-        finally:
-            os.chdir(odir)
-
-    with _ctx(alto.config.working_directory):
-        return AltoMain(
-            alto.engine.AltoTaskEngine(Path.cwd()),
-            extra_config={"list": {"status": True, "sort": "definition"}},
-        ).run(args)
+    return AltoMain(
+        alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory),
+        extra_config={"list": {"status": True, "sort": "definition"}},
+    ).run(args)
 
 
 def _get_root_scrub_args(args: t.List[str]) -> Path:

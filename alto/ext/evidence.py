@@ -30,6 +30,11 @@ class Evidence(AltoExtension):
 
     def init_hook(self) -> None:
         """Initialize the extension."""
+        _path = os.path.expanduser(self.spec.config.home)
+        if _path.startswith("/"):
+            self.spec.config.home = _path
+        else:
+            self.spec.config.home = os.path.join(self.filesystem.root_dir, _path)
         os.makedirs(self.spec.config.home, exist_ok=True, mode=0o755)
 
     @staticmethod
