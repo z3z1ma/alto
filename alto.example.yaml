@@ -14,9 +14,10 @@ default:
     # 👇 This is how you can use environment variables (see dynaconf docs)
     token: "@format {env[GOOGLE_APPLICATION_CREDENTIALS]}"
 
-  # BYOE (bring your own extensions)
+  # Evidence.dev (see built in extensions in the repo)
+  # you can also use your own custom extensions via file path
   extensions:
-    - alto_ext/dbt.py
+    - evidence
 
   # Taps!
   taps:

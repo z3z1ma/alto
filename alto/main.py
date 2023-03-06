@@ -86,7 +86,7 @@ class AltoInit(Command):
                     {
                         "default": {
                             "project_name": os.urandom(4).hex(),
-                            "extensions": [],
+                            "extensions": ["evidence"],
                             "load_path": "raw",
                             "taps": {
                                 "tap-carbon-intensity": {

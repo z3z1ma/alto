@@ -40,5 +40,17 @@
         "_values_:": { },
         "checker:": "MD5Checker",
         "deps:": [ ]
+    },
+    "evidence:build": {
+        "_values_:": { },
+        "result:": "ec9806903047ce32835d52717fb8b33b",
+        "checker:": "MD5Checker",
+        "deps:": [ ]
+    },
+    "evidence:initialize": {
+        "_values_:": { },
+        "result:": "22f78c2c3615ee8e13059f015a58ccf5",
+        "checker:": "MD5Checker",
+        "deps:": [ ]
     }
 }

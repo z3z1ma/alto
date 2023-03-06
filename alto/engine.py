@@ -14,7 +14,6 @@
 import atexit
 import datetime
 import gzip
-import inspect
 import io
 import itertools
 import json
@@ -53,7 +52,10 @@ from alto.constants import (
 from alto.models import AltoEngineConfig, AltoTask, AltoTaskData, AltoTaskGenerator, PluginType
 from alto.state import ensure_state, update_state
 from alto.ui import AltoEmojiUI, AltoRichUI
-from alto.utils import load_extension_from_path, merge
+from alto.utils import load_extension_from_path, load_extension_from_spec, merge  # noqa: F401
+
+if t.TYPE_CHECKING:
+    from dynaconf import Validator
 
 __all__ = [
     "AltoConfiguration",
@@ -212,8 +214,15 @@ class AltoFileSystem:
         if not hasattr(self, "_stg_dir"):
             tmp = self.root_dir.joinpath(ALTO_ROOT, os.urandom(4).hex())
             tmp.mkdir(parents=True, exist_ok=True)
+
+            def cleanup():
+                try:
+                    shutil.rmtree(tmp)
+                except FileNotFoundError:
+                    pass
+
             # Register a cleanup function to remove the staging directory
-            atexit.register(shutil.rmtree, tmp)
+            atexit.register(cleanup)
             self._stg_dir = tmp
         return self._stg_dir
 
@@ -355,7 +364,10 @@ class AltoFileSystem:
 
 
 class AltoPlugin:
+    """A class representing a plugin in the Alto ecosystem."""
+
     def __init__(self, name: str, typ: PluginType, config: AltoConfiguration) -> None:
+        """Initialize the plugin."""
         self.name = name
         self.type = typ
         self.alto = config
@@ -367,8 +379,12 @@ class AltoPlugin:
         return self._spec
 
     @property
-    def pip_url(self) -> str:
+    def pip_url(self) -> t.Optional[str]:
         """Return the pip url for the plugin."""
+        if self.type == PluginType.UTILITY:
+            # Utility plugins can optionally specify a pip_url
+            return self.spec.get("pip_url")
+        # All other plugins must specify a pip_url
         return self.spec["pip_url"]
 
     @property
@@ -477,6 +493,69 @@ class AltoPlugin:
         return f"{self.name} ({self.type})"
 
 
+class AltoExtension:
+    """A class representing an extension in the Alto ecosystem."""
+
+    def __init__(
+        self,
+        filesystem: AltoFileSystem,
+        configuration: AltoConfiguration,
+    ) -> None:
+        """Initialize the extension."""
+        self.filesystem = filesystem
+        self.configuration = configuration
+        self.init_hook()
+
+    @property
+    def name(self) -> str:
+        """Return the name of the extension.
+
+        This can be overridden by the subclass. By default, it is the name of the class.
+        """
+        return self.__class__.__name__.lower()
+
+    @property
+    def spec(self):
+        """Return the extension spec."""
+        return self.configuration.spec_for(self.name)
+
+    def init_hook(self) -> None:
+        """Called when the extension is initialized.
+
+        This is called before any tasks are generated.
+        """
+        pass
+
+    def get_validators(self) -> t.List["Validator"]:
+        """Return the validators for the extension."""
+        return []
+
+    def remote_path(self, name: str) -> str:
+        """Return a remote path. Use this to persist data for the extension.
+
+        Data pushed here is cached.
+        """
+        return self.filesystem._remote_path(name, key=self.name)
+
+    def temp_path(self, name: str) -> str:
+        """Return a temp path. Use this to persist data for the extension.
+
+        Data pushed here is not cached and is cleaned up.
+        """
+        return self.filesystem._temp_path(name, key=self.name)
+
+    def root_path(self, name: str) -> str:
+        """Return a root path. Use this to persist data for the extension.
+
+        Data pushed here is not cached and is not cleaned up.
+        """
+        return self.filesystem._root_path(name, key=self.name)
+
+    def tasks(self) -> t.Generator[AltoTaskData, None, None]:
+        """Return the tasks for the extension."""
+        yield from ()
+
+
 class AltoTaskEngine(DoitEngine):
     """The alto task engine builds on top of doit to provide a simple interface for Singer tasks.
 
@@ -518,27 +597,34 @@ class AltoTaskEngine(DoitEngine):
     def setup(self, opt_values: t.Dict[str, t.Any]) -> None:
         """Load extensions and filesystem interface. This is called by doit."""
         self._load_extensions()
+        self.alto.validators.validate_all()
 
     def _load_extensions(self) -> None:
         """Load the extensions from the configuration file.
 
         Extensions are python files that are loaded and executed at runtime. They
         are used to add custom tasks to the alto engine. The API for extensions
-        is simple. The extension file must contain a function named `extension`
-        that takes a single argument, the alto engine instance. The function must
-        return a generator of doit tasks. The extension function is called at
-        runtime and the tasks are added to the engine. A `name` attribute must be set.
+        is simple. The extension file must contain a function named `register`
+        that returns a subclass of AltoExtension as a type. `Type[AltoExtension]`
         """
-        for extension_path in t.cast(t.List[str], self.alto.get("EXTENSIONS", [])):
-            py = self.filesystem.root_dir / extension_path
-            if not (py.is_file() and py.suffix == ".py"):
-                raise Exception("Invalid extension path. Must be a .py file.")
-            for name, ext_func in inspect.getmembers(
-                load_extension_from_path(py),
-                inspect.isfunction,
-            ):
-                if name == "extension":
-                    AltoTaskEngine.Extensions.append(ext_func)
+        for extension in t.cast(t.List[str], self.alto.get("EXTENSIONS", [])):
+            if extension in {"evidence"}:
+                ns = load_extension_from_spec(f"alto.ext.{extension}")
+                try:
+                    ext = ns.register()(
+                        filesystem=self.filesystem, configuration=self.configuration
+                    )
+                except (NameError, AttributeError):
+                    raise ValueError(f"Extension {extension} does not have a register function.")
+                self.alto.validators.register(*ext.get_validators())
+                AltoTaskEngine.Extensions.append(ext)
+                continue
+            py = self.filesystem.root_dir / extension
+            if not py.is_file():
+                raise ValueError(f"Extension {extension} does not exist.")
+            print(f"Skipping extension {extension} [not implemented]")
+            # ns = load_extension_from_path(py)
+            # AltoTaskEngine.Extensions.append(ns.extension)
 
     def load_doit_config(self) -> t.Dict[str, t.Any]:
         """Load the doit configuration. This is called by doit."""
@@ -618,8 +704,10 @@ class AltoTaskEngine(DoitEngine):
             return True
 
         for plugin in self.configuration.plugins():
-            task = AltoTask(name=plugin.name).set_doc(f"Build the {plugin} plugin").set_verbosity(2)
+            if not plugin.pip_url:
+                continue
 
+            task = AltoTask(name=plugin.name).set_doc(f"Build the {plugin} plugin").set_verbosity(2)
             if plugin.parent is None:
                 # If the plugin does not inherit from another plugin, build it
                 task = (
@@ -1544,6 +1632,8 @@ class AltoTaskEngine(DoitEngine):
 
         args = sys.argv[2:]  # Pass through all args after the plugin name
         for plugin in self.configuration.plugins():
+            if not plugin.pip_url:
+                continue
             yield {
                 **AltoTask(name=plugin.name)
                 .set_actions((invoke, (plugin,)))
@@ -1585,7 +1675,7 @@ class AltoTaskEngine(DoitEngine):
                 generate_tasks(AltoCmd.ABOUT, self.task_about(), self.task_about.__doc__),
                 generate_tasks(AltoCmd.INVOKE, self.task_invoke(), self.task_invoke.__doc__),
                 *(
-                    generate_tasks(getattr(ext, "name", f"ext-{n}"), ext(self), ext.__doc__)
+                    generate_tasks(ext.name, ext.tasks(), f"[extension] {ext.__doc__}")
                     for n, ext in enumerate(AltoTaskEngine.Extensions)
                 ),
             )

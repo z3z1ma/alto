@@ -17,15 +17,26 @@
         "ghcr.io/dhoeric/features/act:1": { },
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
             "moby": false
-        }
+        },
+        "ghcr.io/eitsupi/devcontainer-features/duckdb-cli:0": { }
     },
 
-    "postCreateCommand": "poetry config virtualenvs.in-project true && pre-commit install",
-    "postAttachCommand": "poetry install --no-interaction --no-ansi",
+    "onCreateCommand": "curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - && sudo apt-get install -y nodejs",
+    "postCreateCommand": "pre-commit install && sudo mkdir $VIRTUAL_ENV && sudo chown -R vscode:vscode $VIRTUAL_ENV && python -m venv $VIRTUAL_ENV",
+    "postAttachCommand": "poetry install",
+
+    // Set the venv in the /opt/env folder and add it to the PATH.
+    "containerEnv": {
+        "VIRTUAL_ENV": "/opt/env"
+    },
+    "remoteEnv": {
+        "PATH": "${containerEnv:VIRTUAL_ENV}/bin:${containerEnv:PATH}",
+        "VIRTUAL_ENV": "${containerEnv:VIRTUAL_ENV}"
+    },
 
     "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
-        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.defaultInterpreterPath": "/opt/env/bin/python",
         "python.testing.unittestArgs": [
             "-v",
             "-s",

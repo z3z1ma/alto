@@ -14,23 +14,32 @@
 import importlib.util
 import typing as t
 from pathlib import Path
-from types import ModuleType
+
+if t.TYPE_CHECKING:
+    from alto.engine import AltoExtension
 
 
-def load_extension_from_path(ext: Path) -> ModuleType:
+class ExtensionModule(t.Protocol):
+    """Protocol for extension modules."""
+
+    def register() -> t.Type["AltoExtension"]:
+        """Register the extension."""
+
+
+def load_extension_from_spec(module: str) -> ExtensionModule:
+    """Load an extension from a spec."""
+    spec = importlib.util.find_spec(module)
+    ext_namespace = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ext_namespace)
+    return t.cast(ExtensionModule, ext_namespace)
+
+
+def load_extension_from_path(ext: Path) -> ExtensionModule:
     """Load an extension from a path."""
     spec = importlib.util.spec_from_file_location(ext.stem, ext)
     ext_namespace = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ext_namespace)
-    return ext_namespace
-
-
-def load_extensions_from_path(ext_path: Path) -> t.List[ModuleType]:
-    """Load all extensions from a path."""
-    exts = []
-    for ext in ext_path.glob("*.py"):
-        exts.append(load_extension_from_path(ext))
-    return exts
+    return t.cast(ExtensionModule, ext_namespace)
 
 
 def merge(source: dict, destination: dict) -> dict:

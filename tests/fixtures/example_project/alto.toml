@@ -1,6 +1,6 @@
 [default]
 project_name = "de7ecc1b"
-extensions = []
+extensions = ["evidence"]
 namespace = "raw"
 
 [default.taps.tap-carbon-intensity]
