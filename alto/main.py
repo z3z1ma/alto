@@ -68,21 +68,21 @@ class AltoInit(Command):
                 return 1
 
             format_ = "toml"
+            from dynaconf.vendor.toml import dump
+
             while True and not opt_values["no-prompt"]:
                 format_ = input("Preferred config format? [toml, yaml, json]: ")
                 if format_ not in SUPPORTED_CONFIG_FORMATS:
                     LOGGER.info("❌ Invalid format")
                     return 1
                 if format_ == "toml":
-                    from dynaconf.vendor.toml import dump
-
                     kwargs = {}
                 elif format_ == "yaml":
-                    from dynaconf.vendor.ruamel.yaml import dump
+                    from dynaconf.vendor.ruamel.yaml import dump  # noqa: F811
 
                     kwargs = {"default_flow_style": False}
                 elif format_ == "json":
-                    from json import dump
+                    from json import dump  # noqa: F811
 
                     kwargs = {"indent": 2}
                 else:
