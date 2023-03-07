@@ -16,30 +16,47 @@ import typing as t
 from pathlib import Path
 
 if t.TYPE_CHECKING:
-    from alto.engine import AltoExtension
+    from alto.engine import AltoExtension, AltoStreamMap
+
+T = t.TypeVar("T")
 
 
-class ExtensionModule(t.Protocol):
+class Registrar(t.Protocol, t.Generic[T]):
     """Protocol for extension modules."""
 
-    def register() -> t.Type["AltoExtension"]:
+    def register() -> t.Type[T]:
         """Register the extension."""
 
 
-def load_extension_from_spec(module: str) -> ExtensionModule:
+def load_extension_from_spec(spec: str) -> Registrar["AltoExtension"]:
+    """Load an extension from a spec."""
+    return _load_from_spec(spec)
+
+
+def load_extension_from_path(path: Path) -> Registrar["AltoExtension"]:
+    """Load an extension from a path."""
+    return _load_from_path(path)
+
+
+def load_mapper_from_path(ext: Path) -> Registrar["AltoStreamMap"]:
+    """Load a stream mapper from a path."""
+    return _load_from_path(ext)
+
+
+def _load_from_spec(module: str) -> Registrar[T]:
     """Load an extension from a spec."""
     spec = importlib.util.find_spec(module)
     ext_namespace = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ext_namespace)
-    return t.cast(ExtensionModule, ext_namespace)
+    return t.cast(Registrar[T], ext_namespace)
 
 
-def load_extension_from_path(ext: Path) -> ExtensionModule:
+def _load_from_path(ext: Path) -> Registrar[T]:
     """Load an extension from a path."""
     spec = importlib.util.spec_from_file_location(ext.stem, ext)
     ext_namespace = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ext_namespace)
-    return t.cast(ExtensionModule, ext_namespace)
+    return t.cast(Registrar[T], ext_namespace)
 
 
 def merge(source: dict, destination: dict) -> dict:

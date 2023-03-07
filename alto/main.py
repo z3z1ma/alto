@@ -59,7 +59,7 @@ class AltoInit(Command):
         secret_path = alto.config.working_directory.joinpath(secret_fname)
         try:
             if any(
-                (alto.config.working_directory / f"alto.{ext}").exists()
+                (alto.config.working_directory / config_fname.format(ext=ext)).exists()
                 for ext in SUPPORTED_CONFIG_FORMATS
             ):
                 LOGGER.info(

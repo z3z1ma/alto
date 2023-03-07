@@ -54,7 +54,12 @@ from alto.constants import (
 from alto.models import AltoEngineConfig, AltoTask, AltoTaskData, AltoTaskGenerator, PluginType
 from alto.state import ensure_state, update_state
 from alto.ui import AltoEmojiUI, AltoRichUI
-from alto.utils import load_extension_from_path, load_extension_from_spec, merge  # noqa: F401
+from alto.utils import (
+    load_extension_from_path,
+    load_extension_from_spec,
+    load_mapper_from_path,
+    merge,
+)
 
 if t.TYPE_CHECKING:
     from dynaconf import Validator
@@ -486,6 +491,55 @@ class AltoPlugin:
             pex_hash.update(self.cache_version.encode("utf-8"))
         return pex_hash.hexdigest()
 
+    def get_stream_maps(self, filesystem: AltoFileSystem) -> t.List["AltoStreamMap"]:
+        """Return the stream maps for the plugin."""
+        mappers: t.List[AltoStreamMap] = []
+        if not self.type == PluginType.TAP:
+            return mappers
+        # Built in PII hasher
+        hash_rules: t.List[str] = []
+        for select in self.select:
+            if select.startswith("~"):
+                hash_rules.append(select[1:])
+        if hash_rules:
+            print(f"🕵️‍♀️ Found {len(hash_rules)} hashing rules for {self.name}")
+            mappers.append(HashStreamMap(tap_config=self.config, select=hash_rules))
+        # Custom stream maps
+        # this is simply a path to a python file that contains a register function which
+        # returns a class that inherits from AltoStreamMap. Users can define their own
+        # stream maps and use them in their alto config file extremely easily.
+        for mapper_spec in self.spec.get("stream_maps", []):
+            if isinstance(mapper_spec, str):
+                mapper_spec = {"path": mapper_spec}
+            mapper = mapper_spec["path"]
+            select = mapper_spec.get("select", ["*.*"])
+            if mapper.startswith("/"):
+                mapper_path = Path(mapper).resolve()
+            else:
+                mapper_path = Path(mapper).resolve().relative_to(filesystem.root_dir)
+            if not mapper_path.is_file():
+                raise Exception(f"Stream map {mapper} not found")
+            try:
+                stream_map_ns = load_mapper_from_path(mapper_path)
+            except Exception as e:
+                raise RuntimeError(f"Failed to load stream map {mapper}") from e
+            try:
+                stream_map_cls = stream_map_ns.register()
+            except (NameError, AttributeError) as e:
+                raise AttributeError(
+                    f"Extension {mapper} does not have a register function."
+                ) from e
+            try:
+                stream_map = stream_map_cls(tap_config=self.config, select=select)
+            except Exception as e:
+                raise RuntimeError(f"Failed to initialize stream map {mapper}") from e
+            assert isinstance(
+                stream_map, AltoStreamMap
+            ), "Stream map must inherit from AltoStreamMap"
+            print(f"👨‍🔧 Found custom stream map {stream_map.name} for {self.name}")
+            mappers.append(stream_map)
+        return mappers
+
     def __str__(self) -> str:
         return self.name
 
@@ -494,15 +548,101 @@ class AltoPlugin:
 
 
 class AltoStreamMap:
-    """Base class representing a stream map in the Alto ecosystem."""
+    """Base class representing a stream map in the Alto ecosystem.
 
-    def __init__(self, config: "DynaBox") -> None:
+    A stream map is a class that is responsible for transforming the records emitted by
+    a tap. This is useful for things like hashing PII or redacting sensitive data but can
+    be used for any purpose. From ML models to custom transformations, stream maps are
+    extremely flexible and powerful. Alto comes with a built in stream map for hashing
+    PII but users can also define their own stream maps by creating a python file that
+    contains a register function which returns a class that inherits from AltoStreamMap.
+    The user the enables the map for a field by add a `stream_maps` key to a taps config
+    in their alto config file. The value of the `stream_maps` key is a list of dicts
+    where each dict contains a `path` key which is the path to the python file containing
+    the stream map and a `select` key which is a list of globs that match the fields that
+    should be transformed by the stream map.
+    """
+
+    name: str = "No-Op Stream Map"
+
+    def __init__(self, tap_config: "DynaBox", select: t.List[str]) -> None:
         """Initialize the stream map."""
-        self.config = config
+        self.tap_config = tap_config
+        self.select = select
+        self.ignore: t.Set[str] = set()
+
+    def crumb_selected(self, crumb: str) -> bool:
+        """Return whether or not the crumb is selected.
+
+        The crumb is the full path to the field in the record. This assists developers in
+        implementing their own stream maps.
+        """
+        return any(fnmatch.fnmatch(crumb, pat) for pat in self.select)
+
+    def _stream_selected(self, stream: str) -> bool:
+        """Return whether or not the stream is selected."""
+        return any(fnmatch.fnmatch(stream, pat.split(".", 1)[0]) for pat in self.select)
+
+    def recursive_schema_apply(
+        self, value: t.Any, crumb: str, transformer: t.Callable[[t.Any], t.Any]
+    ) -> t.Any:
+        """Recursively apply a function to a schema.
+
+        This respects the `select` property of the stream map. The value `crumb` is
+        the full path to the field in the schema. This assists developers in
+        implementing their own stream maps.
+        """
+        if value.get("type") == "object":
+            for k, v in value.get("properties", {}).items():
+                self.recursive_schema_apply(v, f"{crumb}.{k}")
+        elif value.get("type") == "array":
+            self.recursive_schema_apply(value["items"], crumb)
+        elif self.crumb_selected(crumb):
+            value = transformer(value)
+        return value
+
+    def recursive_record_apply(
+        self, value: t.Any, crumb: str, transformer: t.Callable[[t.Any], t.Any]
+    ) -> t.Any:
+        """Recursively apply a function to a record.
+
+        This respects the `select` property of the stream map. The value `crumb` is
+        the full path to the field in the record. This assists developers in
+        implementing their own stream maps.
+        """
+        if isinstance(value, dict):
+            return {k: self.recursive_record_apply(v, f"{crumb}.{k}") for k, v in value.items()}
+        if isinstance(value, list):
+            return [self.recursive_record_apply(v, crumb) for v in value]
+        elif self.crumb_selected(crumb):
+            return transformer(value)
+        return value
+
+    @t.final
+    def _transform_schema(self, schema: dict) -> dict:
+        """Checks schema message against `select` before passing on."""
+        if schema["stream"] in self.ignore:
+            # Micro-optimization to reduce cpu cycles
+            return schema
+        if not self._stream_selected(schema["stream"]):
+            self.ignore.add(schema["stream"])
+            return schema
+        return self.transform_schema(schema)
 
     def transform_schema(self, schema: dict) -> dict:
         """Transform the schema."""
         return schema
+
+    @t.final
+    def _transform_record(self, record: dict) -> dict:
+        """Checks record message against `select` before passing on."""
+        if record["stream"] in self.ignore:
+            # Micro-optimization to reduce cpu cycles
+            return record
+        if not self._stream_selected(record["stream"]):
+            self.ignore.add(record["stream"])
+            return record
+        return self.transform_record(record)
 
     def transform_record(self, record: dict) -> dict:
         """Transform the record."""
@@ -510,39 +650,42 @@ class AltoStreamMap:
 
 
 class HashStreamMap(AltoStreamMap):
-    """Obfuscate PII in the stream map."""
+    """Obfuscate PII in the stream.
 
-    # TODO: We should ensure SCHEMA message keys are traversed
-    # and the jsonschema converted to string types.
+    This is a stream map that will obfuscate PII in the stream. It is extremely
+    accessible and can be used to obfuscate any field in the record. All you need to
+    do is add the field to the select list rule in the tap config prefixed with a `~`.
 
-    def __init__(self, config: "DynaBox") -> None:
-        """Initialize the stream map."""
-        self.config = config
-        self.ignore = set()
+    For example, if you wanted to hash fields named `password`, `email`, `phone`, `ssn`,
+    and `credit_card` for all streams, you would add the following to the tap config:
 
-    def recursive_pii_hash(self, value: t.Any, crumb: str) -> t.Any:
-        """Recursively hash PII."""
-        if isinstance(value, dict):
-            return {k: self.recursive_pii_hash(v, f"{crumb}.{k}") for k, v in value.items()}
-        if isinstance(value, list):
-            return [self.recursive_pii_hash(v, crumb) for v in value]
-        elif any(fnmatch.fnmatch(crumb, pat) for pat in self.config["select"]):
-            return hashlib.md5(str(value).encode("utf-8"), usedforsecurity=False).hexdigest()
-        return value
+        "select": ["*.*", "~*.password", "~*.email", "~*.phone", "~*.ssn", "~*.credit_card"]
+
+    """
+
+    name: str = "PII Hasher Stream Map"
+
+    def _jsonschema_string(self, value: t.Any) -> t.Any:
+        """Return a JSON schema string type."""
+        return {"type": "string", "format": "hash"}
+
+    def transform_schema(self, schema: dict) -> dict:
+        """Transform the schema."""
+        for k, prop in schema["schema"]["properties"].items():
+            schema["schema"]["properties"][k] = self.recursive_schema_apply(
+                prop, f"{schema['stream']}.{k}", self._jsonschema_string
+            )
+        return schema
+
+    def _pii_hash(self, value: t.Any) -> t.Any:
+        """Hash a value."""
+        return hashlib.md5(str(value).encode("utf-8"), usedforsecurity=False).hexdigest()
 
     def transform_record(self, record: dict) -> dict:
         """Transform the record."""
-        if record["stream"] in self.ignore:
-            # Micro-optimization to reduce cpu cycles
-            return record
-        if not any(
-            fnmatch.fnmatch(record["stream"], pat.split(".", 1)[0]) for pat in self.config["select"]
-        ):
-            self.ignore.add(record["stream"])
-            return record
         for k in record["record"]:
-            record["record"][k] = self.recursive_pii_hash(
-                record["record"][k], f"{record['stream']}.{k}"
+            record["record"][k] = self.recursive_record_apply(
+                record["record"][k], f"{record['stream']}.{k}", self._pii_hash
             )
         return record
 
@@ -663,27 +806,37 @@ class AltoTaskEngine(DoitEngine):
         that returns a subclass of AltoExtension as a type. `Type[AltoExtension]`
         """
         for extension in t.cast(t.List[str], self.alto.get("EXTENSIONS", [])):
+            # Built-in extensions
             if extension in {"evidence"}:
                 ns = load_extension_from_spec(f"alto.ext.{extension}")
-                try:
-                    ext_cls = ns.register()
-                    for validator in ext_cls.get_validators():
-                        # Validators can also seed configuration
-                        # so we must run them before instantiating the extension
-                        validator.validate(self.alto)
-                    ext = ext_cls(filesystem=self.filesystem, configuration=self.configuration)
-                except (NameError, AttributeError) as e:
-                    raise ValueError(
-                        f"Extension {extension} does not have a register function."
-                    ) from e
+                ext_cls = ns.register()
+                for validator in ext_cls.get_validators():
+                    # Validators can also seed configuration
+                    # so we must run them before instantiating the extension
+                    validator.validate(self.alto)
+                ext = ext_cls(filesystem=self.filesystem, configuration=self.configuration)
                 self.extensions.append(ext)
                 continue
+            # External extensions
             py = self.filesystem.root_dir / extension
             if not py.is_file():
                 raise ValueError(f"Extension {extension} does not exist.")
-            print(f"Skipping extension {extension} [not implemented]")
-            # ns = load_extension_from_path(py)
-            # self.extensions.append(ns.extension)
+            try:
+                ext_ns = load_extension_from_path(py)
+            except Exception as e:
+                raise RuntimeError(f"Extension {extension} failed to load.") from e
+            try:
+                ext_cls = ext_ns.register()
+            except (NameError, AttributeError) as e:
+                raise AttributeError(
+                    f"Extension {extension} does not have a register function."
+                ) from e
+            try:
+                ext = ext_cls(self.filesystem, self.configuration)
+            except Exception as e:
+                raise RuntimeError(f"Extension {extension} failed to instantiate.") from e
+            assert isinstance(ext, AltoExtension), f"{ext} is not an AltoExtension"
+            self.extensions.append(ext)
 
     def load_doit_config(self) -> t.Dict[str, t.Any]:
         """Load the doit configuration. This is called by doit."""
@@ -1028,15 +1181,7 @@ def run_pipeline(
         cmd += ["--properties", tap_catalog]
     print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
     stdout_lock = threading.Lock()
-    mappers: t.List[AltoStreamMap] = []
-    # Built in PII hasher
-    hash_rules: t.List[str] = []
-    for select in tap.select:
-        if select.startswith("~"):
-            hash_rules.append(select[1:])
-    if hash_rules:
-        print(f"🕵️‍♀️ Hashing {len(hash_rules)} fields for {tap} -> {target}")
-        mappers.append(HashStreamMap(config=DynaBox({"select": hash_rules})))
+    mappers = tap.get_stream_maps(filesystem)
     with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -1381,20 +1526,11 @@ def tap_to_reservoir(
         raise RuntimeError(f"Lock file {lock_path} exists, aborting")
     filesystem.fs.pipe(lock_path, f"{pipeline_id}".encode("utf-8"))
 
-    mappers: t.List[AltoStreamMap] = []
-    # Built in PII hasher
-    hash_rules: t.List[str] = []
-    for select in tap.select:
-        if select.startswith("~"):
-            hash_rules.append(select[1:])
-    if hash_rules:
-        print(f"🕵️‍♀️ Hashing {len(hash_rules)} fields for {tap} -> {target}")
-        mappers.append(HashStreamMap(config=DynaBox({"select": hash_rules})))
-
     try:
         # Start the pipeline
         print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
         stdout_lock = threading.Lock()
+        mappers = tap.get_stream_maps(filesystem)
         with subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
