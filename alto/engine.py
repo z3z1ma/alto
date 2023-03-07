@@ -1133,7 +1133,8 @@ def map_worker(
         else:
             outstream.write(line)
             continue
-        outstream.write(json.dumps(message).encode("utf-8") + b"\n")
+        if message:
+            outstream.write(json.dumps(message).encode("utf-8") + b"\n")
 
 
 # ==================== #

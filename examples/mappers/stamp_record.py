@@ -2,7 +2,7 @@
 
 This mapper adds a new field to the schema and populates it with a random value.
 """
-import os
+from datetime import datetime
 
 from alto.engine import AltoStreamMap
 
@@ -15,9 +15,14 @@ class AddField(AltoStreamMap):
     name: str = "Add Field Mapper"
 
     def transform_schema(self, schema: dict) -> dict:
-        schema["schema"]["properties"]["new_field"] = {"type": "string"}
+        schema["schema"]["properties"]["_alto_extracted_at"] = {
+            "type": "string",
+            "format": "date-time",
+        }
         return super().transform_schema(schema)
 
     def transform_record(self, record: dict) -> dict:
-        record["record"]["new_field"] = os.urandom(8).hex()
+        record["record"]["_alto_extracted_at"] = datetime.now().isoformat(
+            sep="T", timespec="seconds"
+        )
         return super().transform_record(record)
