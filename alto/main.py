@@ -68,6 +68,7 @@ class AltoInit(Command):
                 return 1
 
             format_ = "toml"
+            kwargs = {}
             from dynaconf.vendor.toml import dump
 
             while True and not opt_values["no-prompt"]:
@@ -76,7 +77,8 @@ class AltoInit(Command):
                     LOGGER.info("❌ Invalid format")
                     return 1
                 if format_ == "toml":
-                    kwargs = {}
+                    # TOML is the default
+                    pass
                 elif format_ == "yaml":
                     from dynaconf.vendor.ruamel.yaml import dump  # noqa: F811
 
