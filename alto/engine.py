@@ -80,8 +80,6 @@ class AltoCmd(str, Enum):
     PIPELINE = "pipeline"
     TEST = "test"
     ABOUT = "about"
-    INVOKE = "invoke"
-    REPL = "repl"
 
     def __str__(self) -> str:
         """Return the string representation of the command."""
@@ -1626,52 +1624,6 @@ class AltoTaskEngine(DoitEngine):
                 .data
             )
 
-    def task_invoke(self) -> AltoTaskGenerator:
-        """[alto] Invoke a plugin."""
-
-        def invoke(plugin: AltoPlugin) -> None:
-            """Invoke a plugin."""
-
-            exe = self.filesystem.executable_path(plugin.pex_name)
-            with subprocess.Popen(
-                [exe, *sys.argv[2:]],
-                env={**os.environ, **plugin.environment},
-                cwd=self.filesystem.root_dir,
-            ) as proc:
-                proc.wait()
-
-        args = sys.argv[2:]  # Pass through all args after the plugin name
-        for plugin in self.configuration.plugins():
-            if not plugin.pip_url:
-                continue
-            yield {
-                **AltoTask(name=plugin.name)
-                .set_actions((invoke, (plugin,)))
-                .set_task_dep(f"{AltoCmd.BUILD}:{plugin}")
-                .set_uptodate(False)
-                .set_doc(f"Invoke {plugin} plugin")
-                .set_verbosity(2)
-                .data,
-                # This is a hack to allow for arbitrary params to be passed to the task
-                # TODO: create a dedicated `invoke` top-level task
-                "params": [
-                    {
-                        "name": f"param{i}",
-                        "long": arg.lstrip("-"),
-                        "default": "",
-                        "type": (
-                            bool
-                            if len(args) > i + 1
-                            and args[1 + i].startswith("-")
-                            or len(args) == i + 1
-                            else str
-                        ),
-                    }
-                    for i, arg in enumerate(args)
-                    if arg.startswith("-")
-                ],
-            }
-
     def load_tasks(self, cmd: AltoCmdBase, pos_args) -> t.List[AltoTaskData]:
         """Loads Alto tasks."""
         return list(
@@ -1683,7 +1635,6 @@ class AltoTaskEngine(DoitEngine):
                 generate_tasks(AltoCmd.PIPELINE, self.task_pipeline(), self.task_pipeline.__doc__),
                 generate_tasks(AltoCmd.TEST, self.task_test(), self.task_test.__doc__),
                 generate_tasks(AltoCmd.ABOUT, self.task_about(), self.task_about.__doc__),
-                generate_tasks(AltoCmd.INVOKE, self.task_invoke(), self.task_invoke.__doc__),
                 *(
                     generate_tasks(ext.name, ext.tasks(), f"[extension] {ext.__doc__}")
                     for n, ext in enumerate(self.extensions)

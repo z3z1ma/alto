@@ -26,6 +26,7 @@ from dynaconf.vendor.toml import dumps
 import alto.config
 import alto.engine
 from alto.constants import DEFAULT_ENVIRONMENT, SUPPORTED_CONFIG_FORMATS
+from alto.logger import LOGGER
 from alto.repl import AltoCmd
 from alto.version import __version__
 
@@ -62,11 +63,13 @@ class AltoInit(Command):
                 (alto.config.working_directory / f"alto.{ext}").exists()
                 for ext in SUPPORTED_CONFIG_FORMATS
             ):
-                print("An Alto file already exists in {}".format(alto.config.working_directory))
+                LOGGER.info(
+                    "❌ An Alto file already exists in {}".format(alto.config.working_directory)
+                )
                 return 1
 
             while True and not opt_values["no-prompt"]:
-                print(
+                LOGGER.info(
                     "🙋 Files to generate:\n\n"
                     f"1️⃣  {alto.config.working_directory.joinpath(config_fname)}\n"
                     f"2️⃣  {alto.config.working_directory.joinpath(secret_fname)}\n"
@@ -75,11 +78,11 @@ class AltoInit(Command):
                 if confirm in ("y", "Y", "yes", "Yes", "YES"):
                     break
                 else:
-                    print("Aborting...")
+                    LOGGER.info("Aborting...")
                     return 0
             # A default template for the config file
             # that lets users get started quickly and immediately run the project
-            print(f"🏗  Building project in {alto.config.working_directory.resolve()}")
+            LOGGER.info(f"🏗  Building project in {alto.config.working_directory.resolve()}")
             config_path.write_text(
                 dumps(
                     {
@@ -133,7 +136,7 @@ class AltoInit(Command):
                 )
             )
         except Exception as e:
-            print("Failed to initialize project: {}".format(e))
+            LOGGER.info("Failed to initialize project: {}".format(e))
             return 1
         else:
             return 0
@@ -157,6 +160,162 @@ class AltoRepl(Command):
         engine = alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory)
         engine.setup(opt_values)
         AltoCmd(engine=engine).cmdloop()
+
+
+class AltoInvoke(Command):
+    doc_purpose = "Invoke a plugin"
+    doc_usage = "alto invoke <plugin_name> [args]"
+    doc_description = "Invoke a plugin by name."
+
+    def execute(self, opt_values, pos_args):
+        """Invoke a plugin."""
+        import subprocess
+
+        engine = alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory)
+        engine.setup(opt_values)
+        try:
+            plugin_name = pos_args.pop(0)
+        except IndexError:
+            LOGGER.info("❌ Plugin name is required.")
+            return 1
+        plugin = engine.configuration.get_plugin(plugin_name)
+        remote_path = engine.filesystem.executable_path(plugin.pex_name, remote=True)
+        if not engine.fs.exists(remote_path):
+            LOGGER.info(
+                f"❌ Plugin {plugin.name} not found. Did you run `alto build:{plugin.name}`?"
+            )
+            return 1
+        exe = engine.filesystem.executable_path(plugin.pex_name)
+        engine.fs.get(remote_path, exe)
+        os.chmod(exe, 0o755)
+        try:
+            LOGGER.info(f"🔨 Invoking {plugin.name}...")
+            with subprocess.Popen(
+                [exe, *pos_args],
+                env={**os.environ, **plugin.environment},
+                cwd=engine.filesystem.root_dir,
+            ) as proc:
+                proc.wait()
+        finally:
+            os.remove(exe)
+
+
+class AltoFs(Command):
+    doc_purpose = "Interact with the remote filesystem"
+    doc_usage = "alto fs [push|pull|rm] [src] [dest]"
+    cmd_options = [
+        {
+            "name": "truncate",
+            "short": "t",
+            "long": "truncate",
+            "type": bool,
+            "default": True,
+            "help": "Truncate the output of the task",
+        },
+        {
+            "name": "no-prompt",
+            "short": "n",
+            "long": "no-prompt",
+            "type": bool,
+            "default": False,
+            "help": "Do not prompt for confirmation before overwriting files",
+        },
+    ]
+
+    def execute(self, opt_values, pos_args):
+        """Drop into a REPL."""
+        try:
+            action = pos_args[0]
+            assert action in ("push", "pull", "rm", "ls")
+        except IndexError:
+            LOGGER.info("❌ Must specify an action. See alto help fs")
+            return 1
+        except AssertionError:
+            LOGGER.info("❌ Invalid action, must be one of push, pull, rm, ls. See alto help fs")
+            return 1
+        engine = alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory)
+        engine.setup(opt_values)
+        if action == "push":
+            try:
+                src, dest = pos_args[1], engine.filesystem._remote_path(pos_args[2])
+            except IndexError:
+                LOGGER.info("❌ Missing arguments. [src] [dest] are required.")
+                return 1
+            if not os.path.exists(src):
+                LOGGER.info(f"❌ Source file {src} does not exist.")
+                return 1
+            if engine.fs.exists(dest) and not opt_values["no-prompt"]:
+                LOGGER.info(f"Destination file {dest} already exists.")
+                confirm = input("Overwrite? [y/N]: ")
+                if confirm not in ("y", "Y", "yes", "Yes", "YES"):
+                    LOGGER.info("Aborting...")
+                    return 0
+            LOGGER.info(f"☁️ Uploading {src} to {dest}...")
+            engine.fs.put(src, dest)
+        elif action == "pull":
+            try:
+                src, dest = engine.filesystem._remote_path(pos_args[1]), pos_args[2]
+            except IndexError:
+                LOGGER.info("❌ Missing arguments")
+                return 1
+            if not engine.fs.exists(src):
+                LOGGER.info(f"❌ Source file {src} does not exist")
+                return 1
+            os.makedirs(os.path.dirname(dest), exist_ok=True, mode=0o755)
+            LOGGER.info(f"☁️ Downloading {src} to {dest}...")
+            engine.fs.get(src, dest)
+        elif action == "rm":
+            try:
+                src = engine.filesystem._remote_path(pos_args[1])
+            except IndexError:
+                LOGGER.info("❌ Missing arguments. [src] is required.")
+                return 1
+            if not engine.fs.exists(src):
+                LOGGER.info(f"❌ Source file {src} does not exist")
+                return 1
+            LOGGER.info(f"☁️ Deleting {src}...")
+            engine.fs.rm(src)
+        elif action == "ls":
+            try:
+                src = engine.filesystem._remote_path(pos_args[1])
+            except IndexError:
+                src = engine.filesystem._remote_path("")
+            if not engine.fs.exists(src):
+                LOGGER.info(f"❌ Source directory {src} does not exist")
+                return 1
+            res = engine.fs.ls(src, detail=False)
+            output = [["Type", "Size (Mb)", "Last Updated", "Name"]]
+            max_width = [len(w) for w in output[0]]
+            remainder = 0
+            for n, f in enumerate(res):
+                i = engine.fs.info(f)
+                parts = [
+                    i["type"][0],
+                    i["size"] * 1e-6,
+                    i.get("updated", ""),
+                    i["name"][i["name"].index(src) :],
+                ]
+                if parts[0] == "d":
+                    parts[1] = ""
+                else:
+                    parts[1] = f"{parts[1]:.02f}"
+                output.append(parts)
+                for i, p in enumerate(parts):
+                    max_width[i] = max(max_width[i], len(str(p)))
+                if opt_values["truncate"] and n > 10:
+                    output.append(["...", "...", "...", "..."])
+                    remainder = len(res[n + 1 :])
+                    break
+            for i, row in enumerate(output):
+                for j, p in enumerate(row):
+                    output[i][j] = str(p).ljust(max_width[j] + 2)
+            LOGGER.info("".join(map(str, output[0])))
+            for row in output[1:]:
+                LOGGER.info("".join(map(str, row)))
+            if opt_values["truncate"] and remainder:
+                LOGGER.info(f"({remainder} more files)")
+
+        return 0
 
 
 class AltoList(List):
@@ -183,8 +342,6 @@ class AltoList(List):
             self.outstream.write("📦 " + template.format(**line_data))
         elif task.name.startswith(alto.engine.AltoCmd.TEST):
             self.outstream.write("🧪 " + template.format(**line_data))
-        elif task.name.startswith(alto.engine.AltoCmd.INVOKE):
-            self.outstream.write("🔮 " + template.format(**line_data))
         elif task.name.startswith("tap-"):
             self.outstream.write("🔌 " + template.format(**line_data))
         elif task.name.startswith("target-"):
@@ -208,17 +365,24 @@ class AltoMain(DoitMain):
         This shows how we can add commands as well as override existing ones.
         """
         commands = super().get_cmds()
-        commands["init"] = AltoInit
+        # Overrides
         commands["run"] = AltoRun
-        commands["repl"] = AltoRepl
         commands["list"] = AltoList
+        # New commands
+        commands["invoke"] = AltoInvoke
+        commands["init"] = AltoInit
+        commands["repl"] = AltoRepl
+        commands["fs"] = AltoFs
+        # Remove commands
+        del commands["reset-dep"]
+        del commands["dumpdb"]
         return commands
 
 
 def main(args=sys.argv[1:]) -> int:
     """Main entry point for the CLI."""
     args = args[:]
-    print(f"📦 Alto version: {__version__}")
+    LOGGER.info(f"📦 Alto version: {__version__}")
     alto.config.working_directory = _get_root_scrub_args(args)
     _init_dir = alto.config.working_directory
     while (
@@ -230,18 +394,18 @@ def main(args=sys.argv[1:]) -> int:
     ):
         alto.config.working_directory = alto.config.working_directory.parent
         if alto.config.working_directory == alto.config.working_directory.parent:
-            print(f"\n🚨 No Alto file found in {_init_dir.resolve()}")
-            print(
+            LOGGER.info(f"\n🚨 No Alto file found in {_init_dir.resolve()}")
+            LOGGER.info(
                 "🚧 Run alto init to create one or invoke "
                 "alto with -r/--root to specify a directory..."
             )
             return 1
     if "ALTO_ENV" not in os.environ:
         os.environ["ALTO_ENV"] = DEFAULT_ENVIRONMENT
-    print(
+    LOGGER.info(
         f"🏗  Working directory: {alto.config.working_directory.resolve().relative_to(Path.cwd())}"
     )
-    print(f"🌎 Environment: {os.environ['ALTO_ENV']}\n")
+    LOGGER.info(f"🌎 Environment: {os.environ['ALTO_ENV']}\n")
     return AltoMain(
         alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory),
         extra_config={"list": {"status": True, "sort": "definition"}},
@@ -261,10 +425,10 @@ def _get_root_scrub_args(args: t.List[str]) -> Path:
                 root = Path(args[ix + 1])
                 assert root.is_dir()
             except IndexError:
-                print("🚨 Missing root directory argument for --root/-r")
+                LOGGER.info("🚨 Missing root directory argument for --root/-r")
                 exit(1)
             except AssertionError:
-                print(f"🚨 {root.resolve()} is not a directory")
+                LOGGER.info(f"🚨 {root.resolve()} is not a directory")
                 exit(1)
             args.pop(ix)
             args.pop(ix)
