@@ -21,7 +21,6 @@ from doit.cmd_base import Command
 from doit.cmd_list import List
 from doit.cmd_run import Run
 from doit.doit_cmd import DoitConfig, DoitMain
-from dynaconf.vendor.toml import dumps
 
 import alto.config
 import alto.engine
@@ -54,8 +53,8 @@ class AltoInit(Command):
 
     def execute(self, opt_values, pos_args):
         """Initialize a new project."""
-        config_fname = "alto.toml"
-        secret_fname = "alto.secrets.toml"
+        config_fname = "alto.{ext}"
+        secret_fname = "alto.secrets.{ext}"
         config_path = alto.config.working_directory.joinpath(config_fname)
         secret_path = alto.config.working_directory.joinpath(secret_fname)
         try:
@@ -68,11 +67,32 @@ class AltoInit(Command):
                 )
                 return 1
 
+            format_ = "toml"
             while True and not opt_values["no-prompt"]:
+                format_ = input("Preferred config format? [toml, yaml, json]: ")
+                if format_ not in SUPPORTED_CONFIG_FORMATS:
+                    LOGGER.info("❌ Invalid format")
+                    return 1
+                if format_ == "toml":
+                    from dynaconf.vendor.toml import dump
+
+                    kwargs = {}
+                elif format_ == "yaml":
+                    from dynaconf.vendor.ruamel.yaml import dump
+
+                    kwargs = {"default_flow_style": False}
+                elif format_ == "json":
+                    from json import dump
+
+                    kwargs = {"indent": 2}
+                else:
+                    raise ValueError("Invalid format")
                 LOGGER.info(
                     "🙋 Files to generate:\n\n"
-                    f"1️⃣  {alto.config.working_directory.joinpath(config_fname)}\n"
-                    f"2️⃣  {alto.config.working_directory.joinpath(secret_fname)}\n"
+                    "1️⃣ "
+                    f" {alto.config.working_directory.joinpath(config_fname.format(ext=format_))}\n"
+                    "2️⃣ "
+                    f" {alto.config.working_directory.joinpath(secret_fname.format(ext=format_))}\n"
                 )
                 confirm = input("Proceed? [y/N]: ")
                 if confirm in ("y", "Y", "yes", "Yes", "YES"):
@@ -83,8 +103,10 @@ class AltoInit(Command):
             # A default template for the config file
             # that lets users get started quickly and immediately run the project
             LOGGER.info(f"🏗  Building project in {alto.config.working_directory.resolve()}")
-            config_path.write_text(
-                dumps(
+            with open(config_path.with_suffix("." + format_), "w") as conf, open(
+                secret_path.with_suffix("." + format_), "w"
+            ) as secret:
+                dump(
                     {
                         "default": {
                             "project_name": os.urandom(4).hex(),
@@ -99,8 +121,12 @@ class AltoInit(Command):
                                     "load_path": "carbon_intensity",
                                     "config": {
                                         "any_key": (
-                                            "<this will end up in a config.json passed to the tap>"
-                                        )
+                                            "**This will end up in a config.json passed to the"
+                                            " tap**"
+                                        ),
+                                        "other_key": (
+                                            "**You can find config on Github or MeltanoHub**"
+                                        ),
                                     },
                                     "capabilities": ["state", "catalog"],
                                     "select": ["*.*"],
@@ -109,32 +135,39 @@ class AltoInit(Command):
                             "targets": {
                                 "target-jsonl": {
                                     "pip_url": "target-jsonl==0.1.4",
-                                    "config": {"destination_path": "output"},
+                                    "config": {
+                                        "destination_path": "@format output/{this.load_path}"
+                                    },
                                 }
                             },
                         }
-                    }
+                    },
+                    conf,
+                    **kwargs,
                 )
-            )
-            secret_path.write_text(
-                dumps(
+                dump(
                     {
                         "default": {
+                            "_note_1": (
+                                f"Notice the structure of this file is the same as alto.{format_}"
+                            ),
+                            "_note_2": "Anything in here is merged into the main config file",
                             "taps": {
                                 "tap-carbon-intensity": {
-                                    "some_secret": "<I will be merged into alto.toml>"
+                                    "some_secret": f"**I will be merged into alto.{format_}**"
                                 }
                             },
                             "targets": {
                                 "target-jsonl": {
-                                    "other_secret": "<use this file for secret management>",
-                                    "final_secret": "<exclude it from source control>",
+                                    "other_secret": "**use this file for secret management**",
+                                    "final_secret": "**exclude it from source control**",
                                 }
                             },
                         }
-                    }
+                    },
+                    secret,
+                    **kwargs,
                 )
-            )
         except Exception as e:
             LOGGER.info("Failed to initialize project: {}".format(e))
             return 1
@@ -178,26 +211,20 @@ class AltoInvoke(Command):
         except IndexError:
             LOGGER.info("❌ Plugin name is required.")
             return 1
+        from alto.engine import build_pex, maybe_get_pex
+
         plugin = engine.configuration.get_plugin(plugin_name)
-        remote_path = engine.filesystem.executable_path(plugin.pex_name, remote=True)
-        if not engine.fs.exists(remote_path):
-            LOGGER.info(
-                f"❌ Plugin {plugin.name} not found. Did you run `alto build:{plugin.name}`?"
-            )
-            return 1
+        if not maybe_get_pex(plugin, engine.filesystem):
+            LOGGER.info(f"🔨 Building {plugin.name}...")
+            build_pex(plugin, engine.filesystem)
         exe = engine.filesystem.executable_path(plugin.pex_name)
-        engine.fs.get(remote_path, exe)
-        os.chmod(exe, 0o755)
-        try:
-            LOGGER.info(f"🔨 Invoking {plugin.name}...")
-            with subprocess.Popen(
-                [exe, *pos_args],
-                env={**os.environ, **plugin.environment},
-                cwd=engine.filesystem.root_dir,
-            ) as proc:
-                proc.wait()
-        finally:
-            os.remove(exe)
+        LOGGER.info(f"🔨 Invoking {plugin.name}...")
+        with subprocess.Popen(
+            [exe, *pos_args],
+            env={**os.environ, **plugin.environment},
+            cwd=engine.filesystem.root_dir,
+        ) as proc:
+            proc.wait()
 
 
 class AltoFs(Command):

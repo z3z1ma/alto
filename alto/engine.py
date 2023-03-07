@@ -13,7 +13,9 @@
 """Primary alto engine."""
 import atexit
 import datetime
+import fnmatch
 import gzip
+import hashlib
 import io
 import itertools
 import json
@@ -491,6 +493,60 @@ class AltoPlugin:
         return f"{self.name} ({self.type})"
 
 
+class AltoStreamMap:
+    """Base class representing a stream map in the Alto ecosystem."""
+
+    def __init__(self, config: "DynaBox") -> None:
+        """Initialize the stream map."""
+        self.config = config
+
+    def transform_schema(self, schema: dict) -> dict:
+        """Transform the schema."""
+        return schema
+
+    def transform_record(self, record: dict) -> dict:
+        """Transform the record."""
+        return record
+
+
+class HashStreamMap(AltoStreamMap):
+    """Obfuscate PII in the stream map."""
+
+    # TODO: We should ensure SCHEMA message keys are traversed
+    # and the jsonschema converted to string types.
+
+    def __init__(self, config: "DynaBox") -> None:
+        """Initialize the stream map."""
+        self.config = config
+        self.ignore = set()
+
+    def recursive_pii_hash(self, value: t.Any, crumb: str) -> t.Any:
+        """Recursively hash PII."""
+        if isinstance(value, dict):
+            return {k: self.recursive_pii_hash(v, f"{crumb}.{k}") for k, v in value.items()}
+        if isinstance(value, list):
+            return [self.recursive_pii_hash(v, crumb) for v in value]
+        elif any(fnmatch.fnmatch(crumb, pat) for pat in self.config["select"]):
+            return hashlib.md5(str(value).encode("utf-8"), usedforsecurity=False).hexdigest()
+        return value
+
+    def transform_record(self, record: dict) -> dict:
+        """Transform the record."""
+        if record["stream"] in self.ignore:
+            # Micro-optimization to reduce cpu cycles
+            return record
+        if not any(
+            fnmatch.fnmatch(record["stream"], pat.split(".", 1)[0]) for pat in self.config["select"]
+        ):
+            self.ignore.add(record["stream"])
+            return record
+        for k in record["record"]:
+            record["record"][k] = self.recursive_pii_hash(
+                record["record"][k], f"{record['stream']}.{k}"
+            )
+        return record
+
+
 class AltoExtension:
     """A class representing an extension in the Alto ecosystem."""
 
@@ -612,6 +668,8 @@ class AltoTaskEngine(DoitEngine):
                 try:
                     ext_cls = ns.register()
                     for validator in ext_cls.get_validators():
+                        # Validators can also seed configuration
+                        # so we must run them before instantiating the extension
                         validator.validate(self.alto)
                     ext = ext_cls(filesystem=self.filesystem, configuration=self.configuration)
                 except (NameError, AttributeError) as e:
@@ -648,73 +706,24 @@ class AltoTaskEngine(DoitEngine):
             failure_verbosity=2,
         )
 
-    # Tasks
+    # ===== #
+    # Tasks #
+    # ===== #
 
     def task_build(self) -> AltoTaskGenerator:
         """[core] Generate pex plugin based on the alto config."""
 
-        def build_pex(plugin: AltoPlugin) -> None:
-            """Build a pex from the requirements string."""
-            output = self.filesystem.executable_path(plugin.pex_name)
-            # Build the pex (deferred import speeds up the CLI)
-            import pex.bin.pex
-
-            try:
-                pex.bin.pex.main(["-o", output, "--no-emit-warnings", *plugin.pip_url.split()])
-            except SystemExit:
-                pass
-            # Upload the pex to the remote cache
-            self.fs.put(output, self.filesystem.executable_path(plugin.pex_name, remote=True))
-
-        def maybe_get_pex(plugin: AltoPlugin) -> bool:
-            """Download a pex from the remote cache if it exists."""
-            local, remote = (
-                self.filesystem.executable_path(plugin.pex_name),
-                self.filesystem.executable_path(plugin.pex_name, remote=True),
-            )
-            if os.path.isfile(local):
-                # Check if the pex is already in the remote cache
-                if not self.fs.exists(remote):
-                    # If not, upload it
-                    self.fs.put(local, remote)
-                return True
-            try:
-                # If the pex is not in the local cache, download it
-                self.fs.get(remote, local)
-                os.chmod(local, 0o755)
-            except Exception:
-                # If the pex is not in the remote cache, build it
-                return False
-            return True
-
-        def maybe_remove_pex(plugin: AltoPlugin) -> bool:
-            """Remove a pex from the remote cache if it exists."""
-            local, remote = (
-                self.filesystem.executable_path(plugin.pex_name),
-                self.filesystem.executable_path(plugin.pex_name, remote=True),
-            )
-            if os.path.isfile(local):
-                os.unlink(local)
-            try:
-                # If the pex is in the remote cache, remove it
-                self.fs.delete(remote)
-            except Exception:
-                raise RuntimeError(
-                    f"Could not remove {remote} from remote cache. It may not exist."
-                )
-            return True
-
         for plugin in self.configuration.plugins():
+            # Skip plugins that do not have a pip_url
             if not plugin.pip_url:
                 continue
-
             task = AltoTask(name=plugin.name).set_doc(f"Build the {plugin} plugin").set_verbosity(2)
             if plugin.parent is None:
                 # If the plugin does not inherit from another plugin, build it
                 task = (
-                    task.set_actions((build_pex, (plugin,)))
-                    .set_uptodate((maybe_get_pex, (plugin,)))
-                    .set_clean((maybe_remove_pex, (plugin,)))
+                    task.set_actions((build_pex, (plugin, self.filesystem)))
+                    .set_uptodate((maybe_get_pex, (plugin, self.filesystem)))
+                    .set_clean((maybe_remove_pex, (plugin, self.filesystem)))
                 )
             else:
                 # If the plugin inherits from another plugin, just ensure the parent is built
@@ -724,43 +733,11 @@ class AltoTaskEngine(DoitEngine):
     def task_config(self) -> AltoTaskGenerator:
         """[core] Generate configuration files on disk."""
 
-        # This lock is used to prevent multiple threads from mutating the root namespace
-        # "LOAD_PATH" at the same time. This is necessary because "LOAD_PATH" is
-        # a top-level variable used by Alto during dumping. Users reference it
-        # in config via "@format {this.load_path}" with the expectation that it
-        # will be replaced with the current plugin's namespace.
         config_lock = threading.Lock()
-
-        def render_config(
-            plugin: AltoPlugin,
-            accent: t.Optional[AltoPlugin] = None,
-        ) -> None:
-            """Render a config file for a plugin."""
-            with config_lock:
-                # Set the namespace for the current plugin being rendered
-                original_namespace = deepcopy(self.alto["LOAD_PATH"])
-                namespace_override = accent.namespace if accent is not None else plugin.namespace
-                if namespace_override:
-                    self.alto["LOAD_PATH"] = namespace_override
-                # Apply accent
-                if accent is not None:
-                    config = plugin.config_relative_to(accent)
-                else:
-                    config = plugin.config
-                # Render the config
-                config_path = Path(
-                    self.filesystem.config_path(plugin.name, accent.name if accent else None)
-                )
-                config_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(config_path, "w") as f:
-                    json.dump(config.to_dict(), f, indent=2)
-                # Reset the namespace
-                self.alto["LOAD_PATH"] = original_namespace
-
         for plugin in self.configuration.plugins(PluginType.TAP, PluginType.TARGET):
             yield (
                 AltoTask(name=plugin.name)
-                .set_actions((render_config, (plugin,)))
+                .set_actions((render_config, (plugin, config_lock, self.alto, self.filesystem)))
                 .set_uptodate(False)
                 .set_doc(f"Render configuration for the {plugin} plugin")
                 .data
@@ -773,7 +750,9 @@ class AltoTaskEngine(DoitEngine):
         ):
             yield (
                 AltoTask(name=f"{target}--{tap}")
-                .set_actions((render_config, (target, tap)))
+                .set_actions(
+                    (render_config, (target, config_lock, self.alto, self.filesystem, tap))
+                )
                 .set_uptodate(False)
                 .set_doc(f"Render configuration for the {target} plugin with {tap} as source")
                 .data
@@ -786,70 +765,14 @@ class AltoTaskEngine(DoitEngine):
         Use `doit clean catalog:plugin-name` to force a rebuild of one or more base catalogs.
         """
 
-        def generate_catalog(tap: AltoPlugin) -> None:
-            """Generate a base catalog for a tap."""
-            bin, catalog, config = (
-                self.filesystem.executable_path(tap.pex_name),
-                self.filesystem.base_catalog_path(tap.name),
-                self.filesystem.config_path(tap.name),
-            )
-            Path(catalog).parent.mkdir(parents=True, exist_ok=True)
-            try:
-                # Run the tap in discovery mode
-                with open(catalog, "w") as f:
-                    subprocess.run(
-                        [bin, "--config", config, "--discover"],
-                        stdout=f,
-                        check=True,
-                        env={**os.environ, **tap.environment},
-                        cwd=self.filesystem.root_dir,
-                    )
-            except subprocess.CalledProcessError:
-                # If the tap fails to discover, delete the compromised catalog
-                os.remove(catalog)
-                raise
-            # Upload the catalog to the remote cache
-            self.fs.put(catalog, self.filesystem.base_catalog_path(tap.name, remote=True))
-
-        def maybe_get_catalog(tap: AltoPlugin) -> bool:
-            """Download a pex from the remote cache if it exists."""
-            local, remote = (
-                self.filesystem.base_catalog_path(tap.name),
-                self.filesystem.base_catalog_path(tap.name, remote=True),
-            )
-            if os.path.isfile(local):
-                # Check if the pex is already in the remote cache
-                if not self.fs.exists(remote):
-                    # If not, upload it
-                    self.fs.put(local, remote)
-                return True
-            try:
-                # If the pex is not in the local cache, download it
-                self.fs.get(remote, local)
-            except Exception:
-                # If the pex is not in the remote cache, build it
-                return False
-            return True
-
-        def clean_catalog(tap: AltoPlugin) -> None:
-            """Remove a base catalog from the local cache."""
-            local, remote = (
-                self.filesystem.base_catalog_path(tap.name),
-                self.filesystem.base_catalog_path(tap.name, remote=True),
-            )
-            if os.path.isfile(local):
-                os.remove(local)
-            if self.fs.exists(remote):
-                self.fs.delete(remote)
-
         for tap in self.configuration.plugins(PluginType.TAP):
             yield (
                 AltoTask(name=tap.name)
-                .set_actions((generate_catalog, (tap,)))
+                .set_actions((generate_catalog, (tap, self.filesystem)))
                 .set_task_dep(f"{AltoCmd.BUILD}:{tap}")
                 .set_setup(f"{AltoCmd.CONFIG}:{tap}")
-                .set_uptodate((maybe_get_catalog, (tap,)))
-                .set_clean((clean_catalog, (tap,)))
+                .set_uptodate((maybe_get_catalog, (tap, self.filesystem)))
+                .set_clean((clean_catalog, (tap, self.filesystem)))
                 .set_doc(f"Generate base catalog for {tap}")
                 .data
             )
@@ -857,17 +780,10 @@ class AltoTaskEngine(DoitEngine):
     def task_apply(self) -> AltoTaskGenerator:
         """[singer] Apply user config to base catalog file."""
 
-        def render_modified_catalog(tap: AltoPlugin) -> str:
-            """Download the base catalog for a tap and apply user config to it."""
-            catalog = self.filesystem.catalog_path(tap.name)
-            shutil.copy(self.filesystem.base_catalog_path(tap.name), catalog)
-            apply_selected(Path(catalog), tap.select)
-            apply_metadata(Path(catalog), tap.metadata)
-
         for tap in self.configuration.plugins(PluginType.TAP):
             yield (
                 AltoTask(name=tap.name)
-                .set_actions((render_modified_catalog, (tap,)))
+                .set_actions((render_modified_catalog, (tap, self.filesystem)))
                 .set_task_dep(f"{AltoCmd.CATALOG}:{tap}")
                 .set_uptodate(
                     Path(self.filesystem.catalog_path(tap.name)).exists,
@@ -884,8 +800,7 @@ class AltoTaskEngine(DoitEngine):
             config = self.filesystem.config_path(tap.name)
             if not tap.supports_about:
                 continue
-            # TODO: this should use a subprocess to control for the environment
-            # variables that the tap might set and to be system agnostic.
+            # TODO: Use subprocess
             yield (
                 AltoTask(name=tap.name)
                 .set_actions(f"{bin} --about --config {config}")
@@ -899,588 +814,6 @@ class AltoTaskEngine(DoitEngine):
     def task_pipeline(self) -> AltoTaskGenerator:
         """[singer] Execute a data pipeline."""
 
-        # Lock to prevent interleaved output from the two processes
-        # in a pipeline. This permits real-time logging of the pipeline.
-        stdout_lock = threading.Lock()
-
-        # Used in the reservoir emitter to ensure that only one thread
-        # is writing to the state file or target stdin at a time.
-        reservoir_lock = threading.Lock()
-
-        # TODO: Move the locals here to a separate class, PipelineManager
-        # or some such. This will make it easier to test the pipeline and
-        # enable programmatic execution of pipelines.
-
-        def pipeline_logger(stream: t.IO[bytes], path: str) -> None:
-            """Log a stream to the console."""
-            with open(path, "wb") as log_data:
-                for line in stream:
-                    log_data.write(line)
-                    with stdout_lock:
-                        print(line.decode("utf-8"), end="", flush=True)
-
-        def run_pipeline(tap: AltoPlugin, target: AltoPlugin, pipeline_id: str) -> None:
-            """Execute a data pipeline."""
-            tap_bin, tap_config, tap_catalog = (
-                self.filesystem.executable_path(tap.pex_name),
-                self.filesystem.config_path(tap.name),
-                self.filesystem.catalog_path(tap.name),
-            )
-            target_bin, target_config = (
-                self.filesystem.executable_path(target.pex_name),
-                self.filesystem.config_path(target.name, tap.name),
-            )
-            state = self.filesystem.state_path(tap.name, target.name)
-            cmd = [tap_bin, "--config", tap_config]
-            if os.path.isfile(state) and tap.supports_state:
-                cmd += ["--state", state]
-            if tap.supports_catalog:
-                cmd += ["--catalog", tap_catalog]
-            elif tap.supports_properties:
-                cmd += ["--properties", tap_catalog]
-            print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
-            with subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={**os.environ, **tap.environment},
-                cwd=self.filesystem.root_dir,
-            ) as tap_proc, subprocess.Popen(
-                [target_bin, "--config", target_config],
-                stdin=tap_proc.stdout,
-                stderr=subprocess.PIPE,
-                stdout=open(self.filesystem.log_path(f"state-{pipeline_id}.log"), "w"),
-                env={**os.environ, **target.environment},
-                cwd=self.filesystem.root_dir,
-            ) as target_proc:
-                t1 = threading.Thread(
-                    target=pipeline_logger,
-                    args=(tap_proc.stderr, self.filesystem.log_path(f"tap-{pipeline_id}.log")),
-                    daemon=True,
-                )
-                t2 = threading.Thread(
-                    target=pipeline_logger,
-                    args=(
-                        target_proc.stderr,
-                        self.filesystem.log_path(f"target-{pipeline_id}.log"),
-                    ),
-                    daemon=True,
-                )
-                t1.start(), t2.start()
-                tap_proc.wait(), target_proc.wait()
-                if tap_proc.returncode != 0:
-                    raise subprocess.CalledProcessError(tap_proc.returncode, cmd)
-                if target_proc.returncode != 0:
-                    raise subprocess.CalledProcessError(target_proc.returncode, cmd)
-                t1.join(), t2.join()
-
-        def get_remote_state(tap: str, target: str, execute: bool = False) -> None:
-            """Download the remote state file."""
-            if execute:
-                remote_state = self.filesystem.state_path(tap, target, remote=True)
-                if self.fs.exists(remote_state):
-                    self.fs.get(remote_state, self.filesystem.state_path(tap, target))
-
-        def update_remote_state(
-            tap: str, target: str, pipeline_id: str, execute: bool = False
-        ) -> None:
-            """Update the remote state file."""
-            if execute:
-                stdout = Path(self.filesystem.log_path(f"state-{pipeline_id}.log"))
-                if not stdout.exists() or stdout.stat().st_size == 0:
-                    return
-                state = Path(self.filesystem.state_path(tap, target))
-                remote_state = self.filesystem.state_path(tap, target, remote=True)
-                ensure_state(state)
-                update_state(state, stdout)
-                ts = datetime.datetime.now().strftime("%Y%m%d%H%M")
-                # Keep a mutable and immutable copy of the state file for recovery / analysis
-                self.fs.put(self.filesystem.state_path(tap, target), remote_state)
-                self.fs.put(
-                    self.filesystem.state_path(tap, target),
-                    remote_state[:-5] + f".{ts}.json",
-                )
-                stdout.unlink()
-
-        def update_remote_state_no_stdout(tap: str, target: str) -> None:
-            """Update the remote state file directly.
-
-            Used for the reservoir emitter.
-            """
-            local_path, remote_state = (
-                self.filesystem.state_path(tap, target),
-                self.filesystem.state_path(tap, target, remote=True),
-            )
-            ensure_state(local_path)
-            ts = datetime.datetime.now().strftime("%Y%m%d%H%M")
-            # Keep a mutable and immutable copy of the state file for recovery / analysis
-            self.fs.put(local_path, remote_state)
-            self.fs.put(local_path, remote_state[:-5] + f".{ts}.json")
-            print(f"Updated state file for {tap} -> {target}.")
-            print(f"Remote state file: {remote_state}")
-
-        def upload_logs(tap: str, target: str, pipeline_id: str) -> None:
-            """Upload the logs for a pipeline run and remove from system."""
-            ts = datetime.datetime.now().strftime("%Y%m%d%H%M")
-            tap_path, tap_dest = (
-                Path(self.filesystem.log_path(f"tap-{pipeline_id}.log")),
-                self.filesystem.log_path(f"{ts}--{tap}--{pipeline_id}.log", remote=True),
-            )
-            target_path, target_dest = (
-                Path(self.filesystem.log_path(f"target-{pipeline_id}.log")),
-                self.filesystem.log_path(f"{ts}--{target}--{pipeline_id}.log", remote=True),
-            )
-            if tap_path.exists():
-                self.fs.put(str(tap_path.resolve()), tap_dest), tap_path.unlink()
-                print(f"Uploaded tap log for pipeline {pipeline_id} to {tap_dest}")
-            if target_path.exists():
-                self.fs.put(str(target_path.resolve()), target_dest), target_path.unlink()
-                print(f"Uploaded target log for pipeline {pipeline_id} to {target_dest}")
-
-        def reservoir_ingestor(
-            stdout: t.IO[bytes],
-            reservoir: t.Dict[str, t.List[str]],
-            record_key: str,
-            state_path: str,
-            stream_states: t.Optional[t.Dict[str, t.Any]] = None,
-        ) -> None:
-            """Primary ingestion loop for the reservoir."""
-            from concurrent.futures import ThreadPoolExecutor
-
-            # Set up
-            if stream_states is None:
-                stream_states = {}
-            record_buffer = {}
-            active_schemas = {}
-
-            # Start the ingestion loop
-            tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
-            for line in stdout:
-                try:
-                    message = json.loads(line.decode("utf-8"))
-                except json.JSONDecodeError:
-                    pass
-                # Handle the state message
-                if message["type"] == "STATE":
-                    merge(message["value"], stream_states)
-                    with open(state_path, "w") as f:
-                        json.dump(stream_states, f)
-                    continue
-                stream = message["stream"]
-                # Handle the schema message
-                if message["type"] == "SCHEMA":
-                    schema_id = md5(
-                        json.dumps(message["schema"], sort_keys=True).encode("utf-8")
-                    ).hexdigest()[:15]
-                    if stream not in record_buffer or schema_id not in record_buffer[stream]:
-                        # New stream
-                        print(f"New stream: {stream} ({schema_id})")
-                        buf, header = gzip.GzipFile(fileobj=io.BytesIO(), mode="wb"), line + b"\n"
-                        buf.write(header)
-                        record_buffer[stream] = {
-                            schema_id: {
-                                "count": 0,
-                                "schema": message,
-                                "header": header,
-                                "records": buf,
-                            }
-                        }
-                    active_schemas[stream] = schema_id
-                # Handle the record message
-                elif message["type"] == "RECORD":
-                    container = record_buffer[stream][active_schemas[stream]]
-                    container["count"] += 1
-                    container["records"].write(line + b"\n")
-                    if container["count"] >= self.alto.get(
-                        "RESERVOIR_BUFFER_SIZE", RESERVOIR_BUFFER_SIZE
-                    ):
-                        # Buffer is full, flush to filesystem
-                        print(f"Flushing {stream} ({active_schemas[stream]})")
-                        ts = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-                        path = self.filesystem._remote_path(
-                            f"{ts}.singer.gz",
-                            key=record_key.format(stream=stream, schema_id=active_schemas[stream]),
-                        )
-                        _buf: gzip.GzipFile = container["records"]
-                        inner_buf: io.BytesIO = _buf.fileobj
-                        _buf.close()
-                        inner_buf.flush(), inner_buf.seek(0)
-                        tpe.submit(self.fs.pipe, path, inner_buf.getvalue())
-                        # Reset the buffer
-                        container["count"] = 0
-                        inner_buf.truncate(0), inner_buf.seek(0)
-                        new_buf = gzip.GzipFile(fileobj=inner_buf, mode="wb")
-                        new_buf.write(container["header"])
-                        container["records"] = new_buf
-                        # Update the index
-                        if stream not in reservoir:
-                            reservoir[stream] = []
-                        reservoir[stream].append(path)
-                        # Write path to pipeline log file
-                        with open(self.filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
-                            f.write(f"{path}\n")
-                        # Write actualized state to the remote storage directory
-                        with open(state_path, "w") as state_data:
-                            json.dump(stream_states, state_data)
-            # Flush the remaining records
-            print("Flushing remaining records")
-            for stream, schemas in record_buffer.items():
-                for schema_id, container in schemas.items():
-                    if container["count"] == 0:
-                        continue
-                    ts = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-                    path = self.filesystem._remote_path(
-                        f"{ts}.singer.gz",
-                        key=record_key.format(stream=stream, schema_id=active_schemas[stream]),
-                    )
-                    _buf: gzip.GzipFile = container["records"]
-                    inner_buf: io.BytesIO = _buf.fileobj
-                    _buf.close()
-                    inner_buf.flush(), inner_buf.seek(0)
-                    tpe.submit(self.fs.pipe, path, inner_buf.getvalue())
-                    # Update the index
-                    if stream not in reservoir:
-                        reservoir[stream] = []
-                    reservoir[stream].append(path)
-                    # Write path to pipeline log file
-                    with open(self.filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
-                        f.write(f"{path}\n")
-            # Write actualized state to the remote storage directory
-            tpe.shutdown()
-            print("Writing final state")
-            with open(state_path, "w") as state_data:
-                json.dump(stream_states, state_data)
-
-        # TODO: Add retry decorator
-        def reservoir_emitter(stdin: t.IO[bytes], path: str) -> str:
-            """Emits records from the reservoir to the target.
-
-            This function is intended to be used as a target for a
-            concurrent.futures.ThreadPoolExecutor, and is responsible
-            for pulling data from the reservoir, decompressing, and
-            emitting it to the stdin handle of the target process.
-            """
-            stream = gzip.decompress(self.fs.cat(path))
-            with reservoir_lock:
-                # Write the records to the target's stdin handle with a lock
-                stdin.writelines((line + b"\n") for line in stream.splitlines() if line)
-            return path
-
-        def tap_to_reservoir(tap: AltoPlugin, pipeline_id: str) -> None:
-            """Execute a data pipeline to the project reservoir."""
-            # Set up
-            target = "reservoir"
-            tap_bin, tap_config, tap_catalog = (
-                self.filesystem.executable_path(tap.pex_name),
-                self.filesystem.config_path(tap.name),
-                self.filesystem.catalog_path(tap.name),
-            )
-            stream_states = {}
-            state = self.filesystem.state_path(tap.name, target)
-            base_path = f"{target}/{self.alto['ENV']}/{tap}"
-
-            # Build the command to run the pipeline
-            cmd = [tap_bin, "--config", tap_config]
-            if os.path.isfile(state) and tap.supports_state:
-                # Load the last state
-                with open(state) as state_file:
-                    stream_states = json.load(state_file)
-                cmd += ["--state", state]
-            if tap.supports_catalog:
-                cmd += ["--catalog", tap_catalog]
-            elif tap.supports_properties:
-                cmd += ["--properties", tap_catalog]
-
-            # Load the index
-            index_path = self.filesystem._remote_path("_reservoir.json", key=base_path)
-            reservoir = {}
-            if self.fs.exists(index_path):
-                reservoir = json.loads(self.fs.cat(index_path).decode("utf-8"))
-
-            # Create a lock file to prevent multiple runs of the same pipeline / env
-            lock_path = self.filesystem._remote_path("_reservoir.lock", key=base_path)
-            if self.fs.exists(lock_path):
-                raise RuntimeError(f"Lock file {lock_path} exists, aborting")
-            self.fs.pipe(lock_path, f"{pipeline_id}".encode("utf-8"))
-            try:
-                # Start the pipeline
-                print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
-                with subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    env={**os.environ, **tap.environment},
-                    cwd=self.filesystem.root_dir,
-                ) as tap_proc:
-                    # Stream stderr
-                    t1 = threading.Thread(
-                        target=pipeline_logger,
-                        args=(tap_proc.stderr, self.filesystem.log_path(f"tap-{pipeline_id}.log")),
-                        daemon=True,
-                    )
-                    t1.start()
-                    # Stream the tap output to the reservoir 🚀
-                    # mutates the reservoir index and the state file
-                    # and blocks until the tap process exits. The `finally`
-                    # statement will update the reservoir index and drop the
-                    # lock file to allow the next run to proceed.
-                    reservoir_ingestor(
-                        stdout=tap_proc.stdout,
-                        reservoir=reservoir,
-                        record_key=base_path + "/{stream}/{schema_id}",
-                        state_path=state,
-                        stream_states=stream_states,
-                    )
-                    tap_proc.wait(), t1.join()
-            finally:
-                # Load the reservoir index from the remote storage directory
-                self.fs.pipe(index_path, json.dumps(reservoir).encode("utf-8"))
-                # Drop the lock file
-                self.fs.delete(lock_path)
-
-        def reservoir_to_target(tap: AltoPlugin, target: AltoPlugin, pipeline_id: str) -> None:
-            """Execute a data pipeline from the project reservoir."""
-            from collections import OrderedDict
-            from concurrent.futures import ThreadPoolExecutor
-
-            # Set up
-            target_bin, target_config = (
-                self.filesystem.executable_path(target.pex_name),
-                self.filesystem.config_path(target.name, tap.name),
-            )
-            state = self.filesystem.state_path(tap.name.replace("tap", "reservoir"), target.name)
-
-            # Load the stream states
-            stream_states = {}
-            if os.path.isfile(state):
-                with open(state) as state_data:
-                    stream_states = json.load(state_data)
-            stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
-
-            # Load the index
-            base_path = f"reservoir/{self.alto['ENV']}/{tap}"
-            index_path = self.filesystem._remote_path("_reservoir.json", key=base_path)
-            if not self.fs.exists(index_path):
-                print("Reservoir index not found, rebuilding")
-                reservoir = {RESERVOIR_VERSION_KEY: 0}
-                streams = (
-                    [
-                        stream_directory.split("/")[-1]
-                        for stream_directory in self.fs.ls(base_path, detail=False)
-                        if not self.fs.isfile(stream_directory)
-                    ]
-                    if self.fs.exists(base_path)
-                    else []
-                )
-                for stream in streams:
-                    reservoir[stream] = list(
-                        sorted(
-                            self.fs.glob(
-                                self.filesystem._remote_path(
-                                    "**.singer.gz", key=f"{base_path}/{stream}"
-                                )
-                            )
-                        )
-                    )
-                self.fs.pipe(
-                    self.filesystem._remote_path("_reservoir.json", key=base_path),
-                    json.dumps(reservoir).encode("utf-8"),
-                )
-                print("Reservoir index rebuilt")
-            else:
-                reservoir: t.Dict[str, t.List[str]] = json.loads(
-                    self.fs.cat(index_path).decode("utf-8")
-                )
-
-            # Recreate the state file if the index has changed (from a compaction)
-            stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
-            reservoir.setdefault(RESERVOIR_VERSION_KEY, 0)
-            if stream_states[RESERVOIR_VERSION_KEY] != reservoir[RESERVOIR_VERSION_KEY]:
-                print("Index has changed, recreating state file")
-                for stream, paths in reservoir.items():
-                    # Skip stuff we never saw before
-                    if stream in (RESERVOIR_VERSION_KEY,) or stream not in stream_states:
-                        continue
-                    # Update the state
-                    for path in sorted(paths):
-                        fname = path.split("/")[-1]
-                        if fname > stream_states[stream]["emitted"]:
-                            stream_states[stream]["emitted"] = fname
-                stream_states[RESERVOIR_VERSION_KEY] = reservoir[RESERVOIR_VERSION_KEY]
-                with open(state, "w") as state_dest:
-                    json.dump(stream_states, state_dest)
-                print("Index version:", stream_states[RESERVOIR_VERSION_KEY])
-
-            # Start the pipeline
-            print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
-            with subprocess.Popen(
-                [target_bin, "--config", target_config],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.PIPE,
-                env={**os.environ, **target.environment},
-                cwd=self.filesystem.root_dir,
-            ) as target_proc:
-                # Stream stderr
-                th = threading.Thread(
-                    target=pipeline_logger,
-                    args=(
-                        target_proc.stderr,
-                        self.filesystem.log_path(f"target-{pipeline_id}.log"),
-                    ),
-                    daemon=True,
-                )
-                th.start()
-                # Batch the reservoir paths by schema
-                tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
-                files_processed = 0
-                for stream, paths in reservoir.items():
-                    # Gather the paths to process
-                    if stream in (RESERVOIR_VERSION_KEY,):
-                        continue
-                    if stream not in stream_states:
-                        stream_states[stream] = {"emitted": ""}
-                    work_queue = [
-                        path
-                        for path in paths
-                        if path.split("/")[-1] > stream_states[stream]["emitted"]
-                    ]
-                    if not work_queue:
-                        continue
-                    # Partition the paths by schema
-                    paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
-                    for path in work_queue:
-                        schema = path.split("/")[-2]
-                        if schema not in paths_by_schema:
-                            paths_by_schema[schema] = []
-                        paths_by_schema[schema].append(path)
-                    # Emit from the paths
-                    for schema, paths_to_emit in paths_by_schema.items():
-                        print(
-                            f"Loading {len(paths_to_emit)} path(s) for {stream} "
-                            f"(schema_id: {schema})"
-                        )
-                        job_res = tpe.map(
-                            reservoir_emitter,
-                            itertools.repeat(target_proc.stdin),
-                            [path for path in paths_to_emit],
-                        )
-                        stream_states[stream]["emitted"] = max(
-                            stream_states[stream]["emitted"],
-                            max(path.split("/")[-1] for path in job_res),
-                        )
-                        with reservoir_lock, open(state, "w") as state_data:
-                            json.dump(stream_states, state_data)
-                        files_processed += len(paths_to_emit)
-                target_proc.stdin.close()
-                th.join(), target_proc.wait()
-                print(f"Processed {files_processed} file(s)")
-
-        def compact_reservoir(tap: str) -> None:
-            """Compact the reservoir.
-
-            This merges files with the same schema up to the maximum threshold. This is useful for
-            reducing the number of files in the reservoir and reducing the cost of running a
-            pipeline from the reservoir.
-            """
-            from collections import OrderedDict
-            from functools import reduce
-
-            # Acquire lock
-            base_path = f"reservoir/{self.alto['ENV']}/{tap}"
-            lock_path = self.filesystem._remote_path("_reservoir.lock", key=base_path)
-            if self.fs.exists(lock_path):
-                raise RuntimeError(f"Lock file {lock_path} exists, aborting")
-            self.fs.pipe(lock_path, f"{pipeline_id}".encode("utf-8"))
-
-            # Load the index
-            try:
-                reservoir = json.loads(
-                    self.fs.cat(self.filesystem._remote_path("_reservoir.json", key=base_path))
-                )
-            except FileNotFoundError:
-                print("Reservoir index not found, skipping compaction")
-                return
-
-            # Start the compact operation
-            changed = False
-            try:
-                for stream, paths in reservoir.items():
-                    if stream in (RESERVOIR_VERSION_KEY,):
-                        continue
-                    print(f"Inspecting {stream} ({len(paths)} paths)")
-                    if not len(paths) > 1:
-                        continue
-                    paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
-                    path: str
-                    for path in paths:
-                        schema = path.split("/")[-2]
-                        if schema not in paths_by_schema:
-                            paths_by_schema[schema] = []
-                        paths_by_schema[schema].append((path, self.fs.size(path)))
-                    for schema, paths_with_size in paths_by_schema.items():
-                        compactable = [(path, sz) for path, sz in paths_with_size if sz < 2.5e7]
-                        if len(compactable) < 2:
-                            continue
-                        merge_queue, queue_bytes = [], 0.0
-                        while compactable:
-                            path, sz = compactable.pop()
-                            merge_queue.append(path)
-                            queue_bytes += sz
-                            if queue_bytes > 2.5e7:
-                                print(
-                                    f"Merging {len(merge_queue)} file(s) for {stream} "
-                                    f"(schema_id: {schema})"
-                                )
-                                targets = list(sorted(merge_queue))
-                                self.fs.pipe(
-                                    targets[-1],
-                                    reduce(lambda acc, n: acc + n, self.fs.cat(targets).values()),
-                                )
-                                self.fs.rm(targets[:-1])
-                                merge_queue, queue_bytes = [], 0.0
-                                changed = True
-                        if merge_queue:
-                            print(
-                                f"Merging {len(merge_queue)} file(s) for {stream} "
-                                f"(schema_id: {schema})"
-                            )
-                            targets = list(sorted(merge_queue))
-                            self.fs.pipe(
-                                targets[-1],
-                                reduce(lambda acc, n: acc + n, self.fs.cat(targets).values()),
-                            ), self.fs.rm(targets[:-1])
-                            changed = True
-            except Exception as e:
-                print(f"Compacting failed: {e}, rebuilding index")
-                changed = True
-
-            # Rebuild the index
-            try:
-                if changed:
-                    reservoir[RESERVOIR_VERSION_KEY] = reservoir.get(RESERVOIR_VERSION_KEY, 0) + 1
-                    streams = [k for k in reservoir.keys() if k != RESERVOIR_VERSION_KEY]
-                    for stream in streams:
-                        reservoir[stream] = list(
-                            sorted(
-                                self.fs.glob(
-                                    self.filesystem._remote_path(
-                                        "**.singer.gz", key=f"{base_path}/{stream}"
-                                    )
-                                )
-                            )
-                        )
-                    self.fs.pipe(
-                        self.filesystem._remote_path("_reservoir.json", key=base_path),
-                        json.dumps(reservoir).encode("utf-8"),
-                    )
-                    print("Reservoir index rebuilt")
-                else:
-                    print("Reservoir index unchanged")
-            finally:
-                # Drop the lock file
-                self.fs.delete(lock_path)
-
         # Combinatorial product of all taps and targets
         for tap, target in itertools.product(
             self.configuration.plugins(PluginType.TAP),
@@ -1492,16 +825,22 @@ class AltoTaskEngine(DoitEngine):
                 AltoTask(name=target.name)
                 .set_basename(tap.name)
                 .set_actions(
-                    (get_remote_state, (tap.name, target.name, tap.supports_state)),
-                    (run_pipeline, (tap, target, pipeline_id)),
+                    (
+                        get_remote_state,
+                        (tap.name, target.name, self.filesystem, tap.supports_state),
+                    ),
+                    (run_pipeline, (tap, target, pipeline_id, self.filesystem)),
                 )
                 .set_task_dep(
                     f"{AltoCmd.BUILD}:{tap}", f"{AltoCmd.APPLY}:{tap}", f"{AltoCmd.BUILD}:{target}"
                 )
                 .set_setup(f"{AltoCmd.CONFIG}:{target}--{tap}", f"{AltoCmd.CONFIG}:{tap}")
                 .set_teardown(
-                    (update_remote_state, (tap.name, target.name, pipeline_id, tap.supports_state)),
-                    (upload_logs, (tap.name, target.name, pipeline_id)),
+                    (
+                        update_remote_state,
+                        (tap.name, target.name, pipeline_id, self.filesystem, tap.supports_state),
+                    ),
+                    (upload_logs, (tap.name, target.name, pipeline_id, self.filesystem)),
                 )
                 .set_clean(
                     (self.fs.rm, (self.filesystem.state_path(tap.name, target.name, remote=True),))
@@ -1523,14 +862,17 @@ class AltoTaskEngine(DoitEngine):
                 AltoTask(name=f"{tap}-{target}")
                 .set_basename("reservoir")
                 .set_actions(
-                    (get_remote_state, (tap_reservoir, target.name, True)),
-                    (reservoir_to_target, (tap, target, pipeline_id)),
+                    (get_remote_state, (tap_reservoir, target.name, self.filesystem, True)),
+                    (
+                        reservoir_to_target,
+                        (tap, target, pipeline_id, self.filesystem, self.alto["ENV"]),
+                    ),
                 )
                 .set_task_dep(f"{AltoCmd.BUILD}:{target}")
                 .set_setup(f"{AltoCmd.CONFIG}:{target}--{tap}")
                 .set_teardown(
-                    (update_remote_state_no_stdout, (tap_reservoir, target.name)),
-                    (upload_logs, (tap.name, target.name, pipeline_id)),
+                    (update_remote_state_no_stdout, (tap_reservoir, target.name, self.filesystem)),
+                    (upload_logs, (tap.name, target.name, pipeline_id, self.filesystem)),
                 )
                 .set_clean(
                     (
@@ -1548,20 +890,29 @@ class AltoTaskEngine(DoitEngine):
 
         for tap in self.configuration.plugins(PluginType.TAP):
             # Tap -> Reservoir
-            target = "reservoir"
             pipeline_id = uuid.uuid4()
+            target = "reservoir"
             yield (
                 AltoTask(name=target)
                 .set_basename(tap.name)
                 .set_actions(
-                    (get_remote_state, (tap.name, target, tap.supports_state)),
-                    (tap_to_reservoir, (tap, pipeline_id)),
+                    (get_remote_state, (tap.name, target, self.filesystem, tap.supports_state)),
+                    (
+                        tap_to_reservoir,
+                        (
+                            tap,
+                            pipeline_id,
+                            self.filesystem,
+                            self.alto["ENV"],
+                            self.alto.get("RESERVOIR_BUFFER_SIZE", RESERVOIR_BUFFER_SIZE),
+                        ),
+                    ),
                 )
                 .set_task_dep(f"{AltoCmd.BUILD}:{tap}", f"{AltoCmd.APPLY}:{tap}")
                 .set_setup(f"{AltoCmd.CONFIG}:{tap}")
                 .set_teardown(
-                    (update_remote_state_no_stdout, (tap.name, target)),
-                    (upload_logs, (tap.name, target, pipeline_id)),
+                    (update_remote_state_no_stdout, (tap.name, target, self.filesystem)),
+                    (upload_logs, (tap.name, target, pipeline_id, self.filesystem)),
                 )
                 .set_clean((compact_reservoir, (tap,)))
                 .set_uptodate(False)
@@ -1573,49 +924,10 @@ class AltoTaskEngine(DoitEngine):
     def task_test(self) -> AltoTaskGenerator:
         """[singer] Run tests for taps."""
 
-        def run_test(tap: AltoPlugin, auto: bool = False) -> None:
-            """Run the sync test for a tap."""
-
-            tap_bin, tap_config, tap_catalog = (
-                self.filesystem.executable_path(tap.pex_name),
-                self.filesystem.config_path(tap.name),
-                self.filesystem.catalog_path(tap.name),
-            )
-            cmd = [tap_bin, "--config", tap_config, "--catalog", tap_catalog]
-            if auto:
-                cmd.append("--test")
-            passed = False
-            with subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE if not auto else None,
-                env={**os.environ, **tap.environment},
-                cwd=self.filesystem.root_dir,
-            ) as proc:
-                if auto:
-                    # Use the --test flag to run the test, supported by certain taps
-                    proc.wait()
-                    passed = proc.returncode == 0
-                else:
-                    for line in proc.stdout:
-                        decoded_line = line.decode("utf-8")
-                        try:
-                            message = json.loads(decoded_line)
-                            # Ensure that the tap is producing RECORD messages
-                            if message.get("type") == "RECORD" and message["record"]:
-                                print(message)
-                                passed = True
-                                break
-                        except Exception:
-                            continue
-                    proc.terminate()
-                    proc.wait()
-                if not passed:
-                    raise RuntimeError(f"Test for {tap} failed. See output above.")
-
         for tap in self.configuration.plugins(PluginType.TAP):
             yield (
                 AltoTask(name=tap.name)
-                .set_actions((run_test, (tap, tap.supports_test)))
+                .set_actions((run_test, (tap, self.filesystem, tap.supports_test)))
                 .set_task_dep(f"{AltoCmd.BUILD}:{tap}", f"{AltoCmd.APPLY}:{tap}")
                 .set_setup(f"{AltoCmd.CONFIG}:{tap}")
                 .set_uptodate(False)
@@ -1641,3 +953,961 @@ class AltoTaskEngine(DoitEngine):
                 ),
             )
         )
+
+
+# ================= #
+# Stream Map Engine #
+# ================= #
+
+
+def map_worker(
+    instream: t.IO[bytes], outstream: t.IO[bytes], mappers: t.List[AltoStreamMap]
+) -> None:
+    """Read JSON lines from a stream and write them to another stream."""
+    for line in instream:
+        if not line.strip():
+            continue
+        try:
+            message = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if message["type"] == "RECORD":
+            for mapper in mappers:
+                message = mapper.transform_record(message)
+        elif message["type"] == "SCHEMA":
+            for mapper in mappers:
+                message = mapper.transform_schema(message)
+        else:
+            outstream.write(line)
+            continue
+        outstream.write(json.dumps(message).encode("utf-8") + b"\n")
+
+
+# ==================== #
+# Realtime Log Capture #
+# ==================== #
+
+
+def pipe_logger(stream: t.IO[bytes], path: str, lock: threading.Lock) -> None:
+    """Log a stream to the console."""
+    with open(path, "wb") as log_data:
+        for line in stream:
+            log_data.write(line)
+            with lock:
+                print(line.decode("utf-8"), end="", flush=True)
+
+
+# =============== #
+# Pipeline Runner #
+# =============== #
+
+
+def run_pipeline(
+    tap: AltoPlugin,
+    target: AltoPlugin,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+) -> None:
+    """Execute a data pipeline."""
+    tap_bin, tap_config, tap_catalog = (
+        filesystem.executable_path(tap.pex_name),
+        filesystem.config_path(tap.name),
+        filesystem.catalog_path(tap.name),
+    )
+    target_bin, target_config = (
+        filesystem.executable_path(target.pex_name),
+        filesystem.config_path(target.name, tap.name),
+    )
+    state = filesystem.state_path(tap.name, target.name)
+    cmd = [tap_bin, "--config", tap_config]
+    if os.path.isfile(state) and tap.supports_state:
+        cmd += ["--state", state]
+    if tap.supports_catalog:
+        cmd += ["--catalog", tap_catalog]
+    elif tap.supports_properties:
+        cmd += ["--properties", tap_catalog]
+    print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
+    stdout_lock = threading.Lock()
+    mappers: t.List[AltoStreamMap] = []
+    # Built in PII hasher
+    hash_rules: t.List[str] = []
+    for select in tap.select:
+        if select.startswith("~"):
+            hash_rules.append(select[1:])
+    if hash_rules:
+        print(f"🕵️‍♀️ Hashing {len(hash_rules)} fields for {tap} -> {target}")
+        mappers.append(HashStreamMap(config=DynaBox({"select": hash_rules})))
+    with subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env={**os.environ, **tap.environment},
+        cwd=filesystem.root_dir,
+    ) as tap_proc, open(
+        filesystem.log_path(f"state-{pipeline_id}.log"), "w"
+    ) as state_log, subprocess.Popen(
+        [target_bin, "--config", target_config],
+        stdin=tap_proc.stdout if not mappers else subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdout=state_log,
+        env={**os.environ, **target.environment},
+        cwd=filesystem.root_dir,
+    ) as target_proc:
+        t1 = threading.Thread(
+            target=pipe_logger,
+            args=(
+                tap_proc.stderr,
+                filesystem.log_path(f"tap-{pipeline_id}.log"),
+                stdout_lock,
+            ),
+            daemon=True,
+        )
+        t2 = threading.Thread(
+            target=pipe_logger,
+            args=(
+                target_proc.stderr,
+                filesystem.log_path(f"target-{pipeline_id}.log"),
+                stdout_lock,
+            ),
+            daemon=True,
+        )
+        t1.start(), t2.start()
+        if mappers:
+            # Prevent the mapper worker from blocking the pipeline
+            map_thread = threading.Thread(
+                target=map_worker,
+                args=(tap_proc.stdout, target_proc.stdin, mappers),
+                daemon=True,
+            )
+            map_thread.start()
+        tap_proc.wait()
+        print(f"Tap {tap} exited with code {tap_proc.returncode}")
+        if mappers:
+            print("Awaiting mapper to complete...")
+            map_thread.join()
+            target_proc.stdin.close()
+        print("Awaiting target process to complete...")
+        target_proc.wait()
+        print(f"Target {target} exited with code {target_proc.returncode}")
+        if tap_proc.returncode != 0:
+            raise subprocess.CalledProcessError(tap_proc.returncode, cmd)
+        if target_proc.returncode != 0:
+            raise subprocess.CalledProcessError(target_proc.returncode, cmd)
+        t1.join(), t2.join()
+
+
+# ================ #
+# State Management #
+# ================ #
+
+
+def get_remote_state(
+    tap: str,
+    target: str,
+    filesystem: AltoFileSystem,
+    execute: bool = True,
+) -> None:
+    """Download the remote state file."""
+    if execute:
+        remote_state = filesystem.state_path(tap, target, remote=True)
+        if filesystem.fs.exists(remote_state):
+            filesystem.fs.get(remote_state, filesystem.state_path(tap, target))
+
+
+def update_remote_state(
+    tap: str, target: str, pipeline_id: str, filesystem: AltoFileSystem, execute: bool = True
+) -> None:
+    """Update the remote state file."""
+    if execute:
+        stdout = Path(filesystem.log_path(f"state-{pipeline_id}.log"))
+        if not stdout.exists() or stdout.stat().st_size == 0:
+            return
+        state = Path(filesystem.state_path(tap, target))
+        remote_state = filesystem.state_path(tap, target, remote=True)
+        ensure_state(state)
+        update_state(state, stdout)
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M")
+        # Keep a mutable and immutable copy of the state file for recovery / analysis
+        filesystem.fs.put(filesystem.state_path(tap, target), remote_state)
+        filesystem.fs.put(
+            filesystem.state_path(tap, target),
+            remote_state[:-5] + f".{ts}.json",
+        )
+        stdout.unlink()
+
+
+def update_remote_state_no_stdout(
+    tap: str,
+    target: str,
+    filesystem: AltoFileSystem,
+) -> None:
+    """Update the remote state file directly.
+
+    Used for the reservoir emitter.
+    """
+    local_path, remote_state = (
+        filesystem.state_path(tap, target),
+        filesystem.state_path(tap, target, remote=True),
+    )
+    ensure_state(local_path)
+    ts = datetime.datetime.now().strftime("%Y%m%d%H%M")
+    # Keep a mutable and immutable copy of the state file for recovery / analysis
+    filesystem.fs.put(local_path, remote_state)
+    filesystem.fs.put(local_path, remote_state[:-5] + f".{ts}.json")
+    print(f"Updated state file for {tap} -> {target}.")
+    print(f"Remote state file: {remote_state}")
+
+
+# ================ #
+# Log Preservation #
+# ================ #
+
+
+def upload_logs(
+    tap: str,
+    target: str,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+) -> None:
+    """Upload the logs for a pipeline run and remove from system."""
+    ts = datetime.datetime.now().strftime("%Y%m%d%H%M")
+    tap_path, tap_dest = (
+        Path(filesystem.log_path(f"tap-{pipeline_id}.log")),
+        filesystem.log_path(f"{ts}--{tap}--{pipeline_id}.log", remote=True),
+    )
+    target_path, target_dest = (
+        Path(filesystem.log_path(f"target-{pipeline_id}.log")),
+        filesystem.log_path(f"{ts}--{target}--{pipeline_id}.log", remote=True),
+    )
+    if tap_path.exists():
+        filesystem.fs.put(str(tap_path.resolve()), tap_dest), tap_path.unlink()
+        print(f"Uploaded tap log for pipeline {pipeline_id} to {tap_dest}")
+    if target_path.exists():
+        filesystem.fs.put(str(target_path.resolve()), target_dest), target_path.unlink()
+        print(f"Uploaded target log for pipeline {pipeline_id} to {target_dest}")
+
+
+# ============== #
+# Data Reservoir #
+# ============== #
+
+
+def reservoir_ingestor(
+    stdout: t.IO[bytes],
+    reservoir: t.Dict[str, t.List[str]],
+    record_key: str,
+    state_path: str,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+    stream_states: t.Optional[t.Dict[str, t.Any]] = None,
+    buffer_size=RESERVOIR_BUFFER_SIZE,
+    mappers: t.Optional[t.List[AltoStreamMap]] = None,
+) -> None:
+    """Primary ingestion loop for the reservoir."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Set up
+    if stream_states is None:
+        stream_states = {}
+    if mappers is None:
+        mappers = []
+    record_buffer = {}
+    active_schemas = {}
+
+    # Start the ingestion loop
+    tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
+    for line in stdout:
+        try:
+            message = json.loads(line.decode("utf-8"))
+        except json.JSONDecodeError:
+            pass
+
+        # Handle the state message
+        if message["type"] == "STATE":
+            merge(message["value"], stream_states)
+            with open(state_path, "w") as f:
+                json.dump(stream_states, f)
+            continue
+        stream = message["stream"]
+
+        # Handle the schema message
+        if message["type"] == "SCHEMA":
+            for mapper in mappers:
+                message = mapper.transform_schema(message)
+            schema_id = md5(
+                json.dumps(message["schema"], sort_keys=True).encode("utf-8")
+            ).hexdigest()[:15]
+            if stream not in record_buffer or schema_id not in record_buffer[stream]:
+                # New stream
+                print(f"New stream: {stream} ({schema_id})")
+                buf, header = gzip.GzipFile(fileobj=io.BytesIO(), mode="wb"), line + b"\n"
+                buf.write(header)
+                record_buffer[stream] = {
+                    schema_id: {
+                        "count": 0,
+                        "schema": message,
+                        "header": header,
+                        "records": buf,
+                    }
+                }
+            active_schemas[stream] = schema_id
+
+        # Handle the record message
+        elif message["type"] == "RECORD":
+            for mapper in mappers:
+                message = mapper.transform_record(message)
+            container = record_buffer[stream][active_schemas[stream]]
+            container["count"] += 1
+            container["records"].write(line + b"\n")
+            if container["count"] >= buffer_size:
+                # Buffer is full, flush to filesystem
+                print(f"Flushing {stream} ({active_schemas[stream]})")
+                ts = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+                path = filesystem._remote_path(
+                    f"{ts}.singer.gz",
+                    key=record_key.format(stream=stream, schema_id=active_schemas[stream]),
+                )
+                _buf: gzip.GzipFile = container["records"]
+                inner_buf: io.BytesIO = _buf.fileobj
+                _buf.close()
+                inner_buf.flush(), inner_buf.seek(0)
+                tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
+                # Reset the buffer
+                container["count"] = 0
+                inner_buf.truncate(0), inner_buf.seek(0)
+                new_buf = gzip.GzipFile(fileobj=inner_buf, mode="wb")
+                new_buf.write(container["header"])
+                container["records"] = new_buf
+                # Update the index
+                if stream not in reservoir:
+                    reservoir[stream] = []
+                reservoir[stream].append(path)
+                # Write path to pipeline log file
+                with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
+                    f.write(f"{path}\n")
+                # Write actualized state to the remote storage directory
+                with open(state_path, "w") as state_data:
+                    json.dump(stream_states, state_data)
+
+    # Flush the remaining records
+    print("Flushing remaining records")
+    for stream, schemas in record_buffer.items():
+        for schema_id, container in schemas.items():
+            if container["count"] == 0:
+                continue
+            ts = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+            path = filesystem._remote_path(
+                f"{ts}.singer.gz",
+                key=record_key.format(stream=stream, schema_id=active_schemas[stream]),
+            )
+            _buf: gzip.GzipFile = container["records"]
+            inner_buf: io.BytesIO = _buf.fileobj
+            _buf.close()
+            inner_buf.flush(), inner_buf.seek(0)
+            tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
+            # Update the index
+            if stream not in reservoir:
+                reservoir[stream] = []
+            reservoir[stream].append(path)
+            # Write path to pipeline log file
+            with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
+                f.write(f"{path}\n")
+
+    # Write actualized state to the remote storage directory
+    tpe.shutdown()
+    print("Writing final state")
+    with open(state_path, "w") as state_data:
+        json.dump(stream_states, state_data)
+
+
+# TODO: Add retry decorator
+def reservoir_emitter(
+    stdin: t.IO[bytes], path: str, filesystem: AltoFileSystem, lock: threading.Lock
+) -> str:
+    """Emits records from the reservoir to the target.
+
+    This function is intended to be used as a target for a
+    concurrent.futures.ThreadPoolExecutor, and is responsible
+    for pulling data from the reservoir, decompressing, and
+    emitting it to the stdin handle of the target process.
+    """
+    stream = gzip.decompress(filesystem.fs.cat(path))
+    with lock:
+        # Write the records to the target's stdin handle with a lock
+        stdin.writelines((line + b"\n") for line in stream.splitlines() if line)
+    return path
+
+
+def tap_to_reservoir(
+    tap: AltoPlugin,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+    env: str,
+    buffer_size: int = RESERVOIR_BUFFER_SIZE,
+) -> None:
+    """Execute a data pipeline to the project reservoir."""
+    # Set up
+    target = "reservoir"
+    tap_bin, tap_config, tap_catalog = (
+        filesystem.executable_path(tap.pex_name),
+        filesystem.config_path(tap.name),
+        filesystem.catalog_path(tap.name),
+    )
+    stream_states = {}
+    state = filesystem.state_path(tap.name, target)
+    base_path = f"{target}/{env}/{tap}"
+
+    # Build the command to run the pipeline
+    cmd = [tap_bin, "--config", tap_config]
+    if os.path.isfile(state) and tap.supports_state:
+        # Load the last state
+        with open(state) as state_file:
+            stream_states = json.load(state_file)
+        cmd += ["--state", state]
+    if tap.supports_catalog:
+        cmd += ["--catalog", tap_catalog]
+    elif tap.supports_properties:
+        cmd += ["--properties", tap_catalog]
+
+    # Load the index
+    index_path = filesystem._remote_path("_reservoir.json", key=base_path)
+    reservoir = {}
+    if filesystem.fs.exists(index_path):
+        reservoir = json.loads(filesystem.fs.cat(index_path).decode("utf-8"))
+
+    # Create a lock file to prevent multiple runs of the same pipeline / env
+    lock_path = filesystem._remote_path("_reservoir.lock", key=base_path)
+    if filesystem.fs.exists(lock_path):
+        raise RuntimeError(f"Lock file {lock_path} exists, aborting")
+    filesystem.fs.pipe(lock_path, f"{pipeline_id}".encode("utf-8"))
+
+    mappers: t.List[AltoStreamMap] = []
+    # Built in PII hasher
+    hash_rules: t.List[str] = []
+    for select in tap.select:
+        if select.startswith("~"):
+            hash_rules.append(select[1:])
+    if hash_rules:
+        print(f"🕵️‍♀️ Hashing {len(hash_rules)} fields for {tap} -> {target}")
+        mappers.append(HashStreamMap(config=DynaBox({"select": hash_rules})))
+
+    try:
+        # Start the pipeline
+        print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
+        stdout_lock = threading.Lock()
+        with subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env={**os.environ, **tap.environment},
+            cwd=filesystem.root_dir,
+        ) as tap_proc:
+            # Stream stderr
+            t1 = threading.Thread(
+                target=pipe_logger,
+                args=(
+                    tap_proc.stderr,
+                    filesystem.log_path(f"tap-{pipeline_id}.log"),
+                    stdout_lock,
+                ),
+                daemon=True,
+            )
+            t1.start()
+            # Stream the tap output to the reservoir mutating the reservoir index and
+            # the state file. Blocks until the tap process exits. The `finally` statement
+            # updates the reservoir index and drops the lock file allowing the next run to proceed.
+            reservoir_ingestor(
+                stdout=tap_proc.stdout,
+                reservoir=reservoir,
+                record_key=base_path + "/{stream}/{schema_id}",
+                state_path=state,
+                pipeline_id=pipeline_id,
+                filesystem=filesystem,
+                stream_states=stream_states,
+                buffer_size=buffer_size,
+                mappers=mappers,
+            )
+            tap_proc.wait(), t1.join()
+    finally:
+        # Load the reservoir index from the remote storage directory
+        filesystem.fs.pipe(index_path, json.dumps(reservoir).encode("utf-8"))
+        # Drop the lock file
+        filesystem.fs.delete(lock_path)
+
+
+def reservoir_to_target(
+    tap: AltoPlugin,
+    target: AltoPlugin,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+    env: str,
+) -> None:
+    """Execute a data pipeline from the project reservoir."""
+    from collections import OrderedDict
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Set up
+    target_bin, target_config = (
+        filesystem.executable_path(target.pex_name),
+        filesystem.config_path(target.name, tap.name),
+    )
+    state = filesystem.state_path(tap.name.replace("tap", "reservoir"), target.name)
+
+    # Load the stream states
+    stream_states = {}
+    if os.path.isfile(state):
+        with open(state) as state_data:
+            stream_states = json.load(state_data)
+    stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
+
+    # Load the index
+    base_path = f"reservoir/{env}/{tap}"
+    index_path = filesystem._remote_path("_reservoir.json", key=base_path)
+    if not filesystem.fs.exists(index_path):
+        print("Reservoir index not found, rebuilding")
+        reservoir = {RESERVOIR_VERSION_KEY: 0}
+        streams = (
+            [
+                stream_directory.split("/")[-1]
+                for stream_directory in filesystem.fs.ls(base_path, detail=False)
+                if not filesystem.fs.isfile(stream_directory)
+            ]
+            if filesystem.fs.exists(base_path)
+            else []
+        )
+        for stream in streams:
+            reservoir[stream] = list(
+                sorted(
+                    filesystem.fs.glob(
+                        filesystem._remote_path("**.singer.gz", key=f"{base_path}/{stream}")
+                    )
+                )
+            )
+        filesystem.fs.pipe(
+            filesystem._remote_path("_reservoir.json", key=base_path),
+            json.dumps(reservoir).encode("utf-8"),
+        )
+        print("Reservoir index rebuilt")
+    else:
+        reservoir: t.Dict[str, t.List[str]] = json.loads(
+            filesystem.fs.cat(index_path).decode("utf-8")
+        )
+
+    # Recreate the state file if the index has changed (from a compaction)
+    stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
+    reservoir.setdefault(RESERVOIR_VERSION_KEY, 0)
+    if stream_states[RESERVOIR_VERSION_KEY] != reservoir[RESERVOIR_VERSION_KEY]:
+        print("Index has changed, recreating state file")
+        for stream, paths in reservoir.items():
+            # Skip stuff we never saw before
+            if stream in (RESERVOIR_VERSION_KEY,) or stream not in stream_states:
+                continue
+            # Update the state
+            for path in sorted(paths):
+                fname = path.split("/")[-1]
+                if fname > stream_states[stream]["emitted"]:
+                    stream_states[stream]["emitted"] = fname
+        stream_states[RESERVOIR_VERSION_KEY] = reservoir[RESERVOIR_VERSION_KEY]
+        with open(state, "w") as state_dest:
+            json.dump(stream_states, state_dest)
+        print("Index version:", stream_states[RESERVOIR_VERSION_KEY])
+
+    # Start the pipeline
+    print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
+    stdout_lock = threading.Lock()
+    reservoir_lock = threading.Lock()
+    with subprocess.Popen(
+        [target_bin, "--config", target_config],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        env={**os.environ, **target.environment},
+        cwd=filesystem.root_dir,
+    ) as target_proc:
+        # Stream stderr
+        th = threading.Thread(
+            target=pipe_logger,
+            args=(
+                target_proc.stderr,
+                filesystem.log_path(f"target-{pipeline_id}.log"),
+                stdout_lock,
+            ),
+            daemon=True,
+        )
+        th.start()
+
+        # Batch the reservoir paths by schema
+        tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
+        files_processed = 0
+        for stream, paths in reservoir.items():
+            # Gather the paths to process
+            if stream in (RESERVOIR_VERSION_KEY,):
+                continue
+            if stream not in stream_states:
+                # Our bookmarks are alphanumerically sortable, so gt is sufficient
+                stream_states[stream] = {"emitted": ""}
+            work_queue = [
+                path for path in paths if path.split("/")[-1] > stream_states[stream]["emitted"]
+            ]
+            if not work_queue:
+                continue
+
+            # Partition the paths by schema
+            paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
+            for path in work_queue:
+                schema = path.split("/")[-2]
+                if schema not in paths_by_schema:
+                    paths_by_schema[schema] = []
+                paths_by_schema[schema].append(path)
+
+            # Emit from the paths
+            for schema, paths_to_emit in paths_by_schema.items():
+                print(f"Loading {len(paths_to_emit)} path(s) for {stream} (schema_id: {schema})")
+                job_res = tpe.map(
+                    reservoir_emitter,
+                    itertools.repeat(target_proc.stdin),
+                    [path for path in paths_to_emit],
+                    itertools.repeat(filesystem),
+                    itertools.repeat(reservoir_lock),
+                )
+                stream_states[stream]["emitted"] = max(
+                    stream_states[stream]["emitted"],
+                    max(path.split("/")[-1] for path in job_res),
+                )
+                with reservoir_lock, open(state, "w") as state_data:
+                    json.dump(stream_states, state_data)
+                files_processed += len(paths_to_emit)
+
+        # Close the target
+        print("Closing target process")
+        target_proc.stdin.close()
+        th.join(), target_proc.wait()
+        print(f"Processed {files_processed} file(s)")
+
+
+def compact_reservoir(tap: str, filesystem: AltoFileSystem, env: str) -> None:
+    """Compact the reservoir.
+
+    This merges files with the same schema up to the maximum threshold. This is useful for
+    reducing the number of files in the reservoir and reducing the cost of running a
+    pipeline from the reservoir.
+    """
+    from collections import OrderedDict
+    from functools import reduce
+
+    # Acquire lock
+    base_path = f"reservoir/{env}/{tap}"
+    lock_path = filesystem._remote_path("_reservoir.lock", key=base_path)
+    if filesystem.fs.exists(lock_path):
+        raise RuntimeError(f"Lock file {lock_path} exists, aborting")
+    filesystem.fs.pipe(lock_path, "compaction in progress".encode("utf-8"))
+
+    # Load the index
+    try:
+        reservoir = json.loads(
+            filesystem.fs.cat(filesystem._remote_path("_reservoir.json", key=base_path))
+        )
+    except FileNotFoundError:
+        print("Reservoir index not found, skipping compaction")
+        return
+
+    # Start the compact operation
+    changed = False
+    try:
+        for stream, paths in reservoir.items():
+            if stream in (RESERVOIR_VERSION_KEY,):
+                continue
+            print(f"Inspecting {stream} ({len(paths)} paths)")
+            if not len(paths) > 1:
+                continue
+            # Partition the paths by schema
+            paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
+            path: str
+            for path in paths:
+                schema = path.split("/")[-2]
+                if schema not in paths_by_schema:
+                    paths_by_schema[schema] = []
+                paths_by_schema[schema].append((path, filesystem.fs.size(path)))
+            for schema, paths_with_size in paths_by_schema.items():
+                compactable = [(path, sz) for path, sz in paths_with_size if sz < 2.5e7]
+                if len(compactable) < 2:
+                    continue
+                merge_queue, queue_bytes = [], 0.0
+                while compactable:
+                    # Gather compaction-eligible files up to the threshold size and merge them
+                    path, sz = compactable.pop()
+                    merge_queue.append(path)
+                    queue_bytes += sz
+                    if queue_bytes > 2.5e7:
+                        print(
+                            f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})"
+                        )
+                        targets = list(sorted(merge_queue))
+                        filesystem.fs.pipe(
+                            targets[-1],
+                            reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
+                        )
+                        filesystem.fs.rm(targets[:-1])
+                        merge_queue, queue_bytes = [], 0.0
+                        changed = True
+                if merge_queue:
+                    # Merge the remaining files
+                    print(f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})")
+                    targets = list(sorted(merge_queue))
+                    filesystem.fs.pipe(
+                        targets[-1],
+                        reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
+                    ), filesystem.fs.rm(targets[:-1])
+                    changed = True
+    except Exception as e:
+        # If we fail, just rebuild the index
+        print(f"Compacting failed: {e}, rebuilding index")
+        changed = True
+
+    try:
+        if changed:
+            # Rebuild the index
+            reservoir[RESERVOIR_VERSION_KEY] = reservoir.get(RESERVOIR_VERSION_KEY, 0) + 1
+            streams = [k for k in reservoir.keys() if k != RESERVOIR_VERSION_KEY]
+            for stream in streams:
+                reservoir[stream] = list(
+                    sorted(
+                        filesystem.fs.glob(
+                            filesystem._remote_path("**.singer.gz", key=f"{base_path}/{stream}")
+                        )
+                    )
+                )
+            filesystem.fs.pipe(
+                filesystem._remote_path("_reservoir.json", key=base_path),
+                json.dumps(reservoir).encode("utf-8"),
+            )
+            print("Reservoir index rebuilt")
+        else:
+            # No changes, just print a message
+            print("Reservoir index unchanged")
+    finally:
+        # Drop the lock file
+        filesystem.fs.delete(lock_path)
+
+
+# ============ #
+# Sync Testing #
+# ============ #
+
+
+def run_test(
+    tap: AltoPlugin, filesystem: AltoFileSystem, test_flag_supported: bool = False
+) -> None:
+    """Run the sync test for a tap."""
+
+    tap_bin, tap_config, tap_catalog = (
+        filesystem.executable_path(tap.pex_name),
+        filesystem.config_path(tap.name),
+        filesystem.catalog_path(tap.name),
+    )
+    cmd = [tap_bin, "--config", tap_config, "--catalog", tap_catalog]
+    if test_flag_supported:
+        cmd.append("--test")
+    passed = False
+    with subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE if not test_flag_supported else None,
+        env={**os.environ, **tap.environment},
+        cwd=filesystem.root_dir,
+    ) as proc:
+        if test_flag_supported:
+            # Use the --test flag to run the test, supported by certain taps
+            proc.wait()
+            passed = proc.returncode == 0
+        else:
+            for line in proc.stdout:
+                decoded_line = line.decode("utf-8")
+                try:
+                    message = json.loads(decoded_line)
+                    # Ensure that the tap is producing RECORD messages
+                    if message.get("type") == "RECORD" and message["record"]:
+                        print(message)
+                        passed = True
+                        break
+                except Exception:
+                    continue
+            proc.terminate()
+            proc.wait()
+        if not passed:
+            raise RuntimeError(f"Test for {tap} failed. See output above.")
+
+
+# ================== #
+# Catalog Generation #
+# ================== #
+
+
+def generate_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> None:
+    """Generate a base catalog for a tap."""
+    bin, catalog, config = (
+        filesystem.executable_path(tap.pex_name),
+        filesystem.base_catalog_path(tap.name),
+        filesystem.config_path(tap.name),
+    )
+    Path(catalog).parent.mkdir(parents=True, exist_ok=True)
+    try:
+        # Run the tap in discovery mode
+        with open(catalog, "w") as f:
+            subprocess.run(
+                [bin, "--config", config, "--discover"],
+                stdout=f,
+                check=True,
+                env={**os.environ, **tap.environment},
+                cwd=filesystem.root_dir,
+            )
+    except subprocess.CalledProcessError:
+        # If the tap fails to discover, delete the compromised catalog
+        os.remove(catalog)
+        raise
+    # Upload the catalog to the remote cache
+    filesystem.fs.put(catalog, filesystem.base_catalog_path(tap.name, remote=True))
+
+
+def maybe_get_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> bool:
+    """Download a pex from the remote cache if it exists."""
+    local, remote = (
+        filesystem.base_catalog_path(tap.name),
+        filesystem.base_catalog_path(tap.name, remote=True),
+    )
+    if os.path.isfile(local):
+        # Check if the pex is already in the remote cache
+        if not filesystem.fs.exists(remote):
+            # If not, upload it
+            filesystem.fs.put(local, remote)
+        return True
+    try:
+        # If the pex is not in the local cache, download it
+        filesystem.fs.get(remote, local)
+    except Exception:
+        # If the pex is not in the remote cache, build it
+        return False
+    return True
+
+
+def clean_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> None:
+    """Remove a base catalog from the local cache."""
+    local, remote = (
+        filesystem.base_catalog_path(tap.name),
+        filesystem.base_catalog_path(tap.name, remote=True),
+    )
+    if os.path.isfile(local):
+        os.remove(local)
+    if filesystem.fs.exists(remote):
+        filesystem.fs.delete(remote)
+
+
+def render_modified_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> str:
+    """Download the base catalog for a tap and apply user config to it."""
+    catalog = filesystem.catalog_path(tap.name)
+    shutil.copy(filesystem.base_catalog_path(tap.name), catalog)
+    apply_selected(Path(catalog), tap.select)
+    apply_metadata(Path(catalog), tap.metadata)
+
+
+# ================ #
+# Config Rendering #
+# ================ #
+
+
+def render_config(
+    plugin: AltoPlugin,
+    lock: threading.Lock,
+    settings: t.Dict[str, t.Any],
+    filesystem: AltoFileSystem,
+    accent: t.Optional[AltoPlugin] = None,
+) -> None:
+    """Render a config file for a plugin."""
+    # Acquire the lock, this is necessary because the config rendering process
+    # is not thread-safe.
+    with lock:
+        # Set the namespace for the current plugin being rendered
+        original_namespace = deepcopy(settings["LOAD_PATH"])
+        namespace_override = accent.namespace if accent is not None else plugin.namespace
+        if namespace_override:
+            settings["LOAD_PATH"] = namespace_override
+
+        # Apply accent
+        if accent is not None:
+            config = plugin.config_relative_to(accent)
+        else:
+            config = plugin.config
+
+        # Render the config
+        config_path = Path(filesystem.config_path(plugin.name, accent.name if accent else None))
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump(config.to_dict(), f, indent=2)
+
+        # Reset the namespace
+        settings["LOAD_PATH"] = original_namespace
+
+
+# ============== #
+# PEX Management #
+# ============== #
+
+
+def build_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> None:
+    """Build a pex from the requirements string."""
+    output = filesystem.executable_path(plugin.pex_name)
+    # Build the pex (deferred import speeds up the CLI)
+    import pex.bin.pex
+
+    try:
+        pex.bin.pex.main(["-o", output, "--no-emit-warnings", *plugin.pip_url.split()])
+    except SystemExit as e:
+        # A failed pex build will exit with a non-zero code
+        # Successfully built pexes will exit with either 0 or None
+        if e.code is not None and e.code != 0:
+            # If the pex fails to build, delete the compromised pex
+            try:
+                os.remove(output)
+            except FileNotFoundError:
+                pass
+            raise
+
+    # Upload the pex to the remote cache
+    filesystem.fs.put(output, filesystem.executable_path(plugin.pex_name, remote=True))
+
+
+def maybe_get_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> bool:
+    """Download a pex from the remote cache if it exists."""
+    local, remote = (
+        filesystem.executable_path(plugin.pex_name),
+        filesystem.executable_path(plugin.pex_name, remote=True),
+    )
+    if os.path.isfile(local):
+        # Check if the pex is already in the remote cache
+        if not filesystem.fs.exists(remote):
+            # If not, upload it
+            filesystem.fs.put(local, remote)
+        return True
+    try:
+        # If the pex is not in the local cache, download it
+        filesystem.fs.get(remote, local)
+        os.chmod(local, 0o755)
+    except Exception:
+        # If the pex is not in the remote cache, build it
+        return False
+    return True
+
+
+def maybe_remove_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> bool:
+    """Remove a pex from the remote cache if it exists."""
+    local, remote = (
+        filesystem.executable_path(plugin.pex_name),
+        filesystem.executable_path(plugin.pex_name, remote=True),
+    )
+    if os.path.isfile(local):
+        os.unlink(local)
+    try:
+        # If the pex is in the remote cache, remove it
+        filesystem.fs.delete(remote)
+    except Exception:
+        raise RuntimeError(f"Could not remove {remote} from remote cache. It may not exist.")
+    return True
