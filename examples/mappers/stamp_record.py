@@ -1,6 +1,6 @@
 """Example of a custom mapper.
 
-This mapper adds a new field to the schema and populates it with a random value.
+This mapper stamps the current date and time to the record.
 """
 from datetime import datetime
 
@@ -8,11 +8,11 @@ from alto.engine import AltoStreamMap
 
 
 def register():
-    return AddField
+    return DateStampMapper
 
 
-class AddField(AltoStreamMap):
-    name: str = "Add Field Mapper"
+class DateStampMapper(AltoStreamMap):
+    name: str = "Date Stamp Mapper"
 
     def transform_schema(self, schema: dict) -> dict:
         schema["schema"]["properties"]["_alto_extracted_at"] = {
