@@ -21,12 +21,14 @@ import itertools
 import json
 import os
 import platform
+import queue
 import shutil
 import subprocess
 import sys
 import threading
 import typing as t
 import uuid
+from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from hashlib import md5, sha1
@@ -1120,6 +1122,10 @@ def map_worker(
     for line in instream:
         if not line.strip():
             continue
+        if not mappers:
+            # no mappers, just pass through
+            outstream.write(line)
+            continue
         try:
             message = json.loads(line)
         except json.JSONDecodeError:
@@ -1957,7 +1963,7 @@ def render_config(
     settings: t.Dict[str, t.Any],
     filesystem: AltoFileSystem,
     accent: t.Optional[AltoPlugin] = None,
-) -> None:
+) -> dict:
     """Render a config file for a plugin."""
     # Acquire the lock, this is necessary because the config rendering process
     # is not thread-safe.
@@ -1977,11 +1983,14 @@ def render_config(
         # Render the config
         config_path = Path(filesystem.config_path(plugin.name, accent.name if accent else None))
         config_path.parent.mkdir(parents=True, exist_ok=True)
+        runtime_config = config.to_dict()
         with open(config_path, "w") as f:
-            json.dump(config.to_dict(), f, indent=2)
+            json.dump(runtime_config, f, indent=2)
 
         # Reset the namespace
         settings["LOAD_PATH"] = original_namespace
+
+    return runtime_config
 
 
 # ============== #
@@ -2048,3 +2057,157 @@ def maybe_remove_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> bool:
     except Exception:
         raise RuntimeError(f"Could not remove {remote} from remote cache. It may not exist.")
     return True
+
+
+# ================== #
+# Python API Helpers #
+# ================== #
+
+
+def setup_tap_target(
+    tap_name: str,
+    target_name: str,
+    filesystem: AltoFileSystem,
+    configuration: AltoConfiguration,
+    settings: t.Dict[str, t.Any],
+) -> t.Tuple[AltoPlugin, AltoPlugin, t.Dict[str, dict]]:
+    """Setup a tap and target for execution.
+
+    This function will build the pexes for the tap and target, generate the
+    base catalog for the tap, and render the config files for both the tap
+    and target.
+    """
+    tap, target = make_plugins(
+        tap_name, target_name, filesystem=filesystem, configuration=configuration
+    )
+    if not maybe_get_catalog(tap, filesystem):
+        generate_catalog(tap, filesystem)
+    render_modified_catalog(tap, filesystem)
+    _lock = threading.Lock()
+    output_configs = {}
+    output_configs[tap_name] = render_config(tap, _lock, settings, filesystem)
+    output_configs[target_name] = render_config(target, _lock, settings, filesystem, tap)
+    return tap, target, output_configs
+
+
+def make_plugins(
+    *plugin_names: str,
+    filesystem: AltoFileSystem,
+    configuration: AltoConfiguration,
+) -> t.Tuple[AltoPlugin, ...]:
+    """Create a tuple of plugins from a list of plugin names.
+
+    This function will build the pexes for the plugins if they do not exist.
+    """
+    plugins = []
+    for plugin_name in plugin_names:
+        plugin = configuration.get_plugin(plugin_name)
+        if not maybe_get_pex(plugin, filesystem):
+            build_pex(plugin, filesystem)
+        plugins.append(plugin)
+    return tuple(plugins)
+
+
+class _QueueFile(io.BytesIO):
+    """A file-like object that writes to a queue."""
+
+    def __init__(self, max_wait: int = 5):
+        super().__init__()
+        self.queue = queue.Queue()
+        # The maximum time to wait for a new record,
+        # this is used to prevent the tap from hanging indefinitely
+        self.max_wait = max_wait
+
+    def write(self, data) -> int:
+        self.queue.put(data)
+        return len(data)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> dict:
+        try:
+            data = self.queue.get(timeout=self.max_wait)
+        except queue.Empty:
+            raise StopIteration
+        else:
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                pass
+            finally:
+                self.queue.task_done()
+
+    def close(self) -> None:
+        self.queue.join()
+
+
+@contextmanager
+def tap_runner(
+    tap: AltoPlugin,
+    filesystem: AltoFileSystem,
+    state_key: str,
+    max_wait: int = 5,
+) -> t.Generator[_QueueFile, None, None]:
+    """Run a tap and yield a file-like object that reads from the tap's stdout."""
+    tap_bin, tap_config, tap_catalog = (
+        filesystem.executable_path(tap.pex_name),
+        filesystem.config_path(tap.name),
+        filesystem.catalog_path(tap.name),
+    )
+    state = filesystem.state_path(tap.name, state_key)
+    cmd = [tap_bin, "--config", tap_config]
+    if os.path.isfile(state) and tap.supports_state:
+        cmd += ["--state", state]
+    if tap.supports_catalog:
+        cmd += ["--catalog", tap_catalog]
+    elif tap.supports_properties:
+        cmd += ["--properties", tap_catalog]
+    stdout_lock = threading.Lock()
+    mappers = tap.get_stream_maps(filesystem)
+    _tmp_id = str(uuid.uuid4())
+    with subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env={**os.environ, **tap.environment},
+        cwd=filesystem.root_dir,
+    ) as tap_proc:
+        t1 = threading.Thread(
+            target=pipe_logger,
+            args=(
+                tap_proc.stderr,
+                filesystem.log_path(f"tap-{_tmp_id}.log"),
+                stdout_lock,
+            ),
+            daemon=True,
+        )
+        t1.start()
+        _stream = _QueueFile(max_wait)
+        # map_worker is smart enough to just pass through the data
+        # if there are no mappers. This queue is used to prevent
+        # the tap from hanging indefinitely on read.
+        map_thread = threading.Thread(
+            target=map_worker,
+            args=(tap_proc.stdout, _stream, mappers),
+            daemon=True,
+        )
+        map_thread.start()
+        yield _stream
+        tap_proc.terminate()
+        tap_proc.wait()
+        t1.join(), map_thread.join()
+
+
+def get_engine(env: str, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
+    """Instantiate an AltoTaskEngine.
+
+    This is a convenience function for use in Python scripts. The
+    engine is configured entirely from the alto configuration file.
+    """
+    if root_dir is None:
+        root_dir = Path.cwd()
+    engine = AltoTaskEngine(root_dir)
+    engine.setup({})
+    engine.alto["ENV"] = os.environ["ALTO_ENV"] = env
+    return engine
