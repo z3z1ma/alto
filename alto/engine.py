@@ -596,9 +596,9 @@ class AltoStreamMap:
         """
         if value.get("type") == "object":
             for k, v in value.get("properties", {}).items():
-                self.recursive_schema_apply(v, f"{crumb}.{k}")
+                self.recursive_schema_apply(v, f"{crumb}.{k}", transformer)
         elif value.get("type") == "array":
-            self.recursive_schema_apply(value["items"], crumb)
+            self.recursive_schema_apply(value["items"], crumb, transformer)
         elif self.crumb_selected(crumb):
             value = transformer(value)
         return value
@@ -613,9 +613,12 @@ class AltoStreamMap:
         implementing their own stream maps.
         """
         if isinstance(value, dict):
-            return {k: self.recursive_record_apply(v, f"{crumb}.{k}") for k, v in value.items()}
+            return {
+                k: self.recursive_record_apply(v, f"{crumb}.{k}", transformer)
+                for k, v in value.items()
+            }
         if isinstance(value, list):
-            return [self.recursive_record_apply(v, crumb) for v in value]
+            return [self.recursive_record_apply(v, crumb, transformer) for v in value]
         elif self.crumb_selected(crumb):
             return transformer(value)
         return value
@@ -2163,9 +2166,13 @@ def tap_runner(
         cmd += ["--catalog", tap_catalog]
     elif tap.supports_properties:
         cmd += ["--properties", tap_catalog]
-    stdout_lock = threading.Lock()
+    lock = threading.Lock()
     mappers = tap.get_stream_maps(filesystem)
     _tmp_id = str(uuid.uuid4())
+    if not maybe_get_catalog(tap, filesystem):
+        generate_catalog(tap, filesystem)
+    render_modified_catalog(tap, filesystem)
+    render_config(tap, lock, {}, filesystem)
     with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -2178,7 +2185,7 @@ def tap_runner(
             args=(
                 tap_proc.stderr,
                 filesystem.log_path(f"tap-{_tmp_id}.log"),
-                stdout_lock,
+                lock,
             ),
             daemon=True,
         )

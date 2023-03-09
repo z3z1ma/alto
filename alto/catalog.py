@@ -97,7 +97,7 @@ def apply_selected(
 
     # All inverted selections take the stance all streams are selected by default
     # and then negated by the selection patterns
-    if all(selection.startswith("!") for selection in selections):
+    if all(selection.startswith(("!", "~")) for selection in selections):
         selections.insert(0, "*.*")
 
     patterns = [
@@ -108,6 +108,7 @@ def apply_selected(
                 selection.split(".", 1)[1:] if selection.count(".") > 0 else ["*"],
             )
             for selection in selections
+            if not selection.startswith("~")
         )
     ]
 
