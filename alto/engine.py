@@ -379,6 +379,9 @@ class AltoPlugin:
         self.type = typ
         self.alto = config
         self._spec = self.alto.spec_for(name)
+        # Permit dynamic select override local to the cls instance
+        self._select = None
+        self._retain_hash_rules = True
 
     @property
     def spec(self) -> DynaBox:
@@ -457,7 +460,19 @@ class AltoPlugin:
     @property
     def select(self) -> t.List[str]:
         """Return the select for the plugin."""
-        return self.spec.get("select", ["*.*"])
+        if self._select is None:
+            self._select = self.spec.get("select", ["*.*"])
+        return self._select
+
+    @select.setter
+    def select(self, value: t.List[str]) -> None:
+        """Set the select for the plugin."""
+        # If we're setting the select, we want to retain any hash rules
+        # as PII hashing is a global concern and it should be on the user
+        # to _explicitly_ disable it.
+        self._select = (value or ["*.*"]) + [
+            rule for rule in self.select if rule.startswith("#") and self._retain_hash_rules
+        ]
 
     @property
     def metadata(self) -> t.Dict[str, t.Any]:
@@ -2112,14 +2127,22 @@ def make_plugins(
 
 
 class _QueueFile(io.BytesIO):
-    """A file-like object that writes to a queue."""
+    """A file-like object that writes to a queue.
 
-    def __init__(self, max_wait: int = 5):
+    This is only intended to be used inside the `tap_runner` function. It
+    expects a thread to be writing to the queue and a thread to be reading
+    from the queue via the `__iter__` and `__next__` methods.
+    """
+
+    def __init__(self, max_wait: int = 5, records_only: bool = False):
         super().__init__()
         self.queue = queue.Queue()
         # The maximum time to wait for a new record,
         # this is used to prevent the tap from hanging indefinitely
         self.max_wait = max_wait
+        # Whether to only return records or all output, when records_only is
+        # True, the output will be a tuple of (stream, record)
+        self.records_only = records_only
 
     def write(self, data) -> int:
         self.queue.put(data)
@@ -2128,16 +2151,22 @@ class _QueueFile(io.BytesIO):
     def __iter__(self):
         return self
 
-    def __next__(self) -> dict:
+    def __next__(self) -> t.Union[dict, t.Tuple[str, dict]]:
         try:
             data = self.queue.get(timeout=self.max_wait)
         except queue.Empty:
             raise StopIteration
         else:
             try:
-                return json.loads(data)
+                rv = json.loads(data)
             except json.JSONDecodeError:
                 pass
+            else:
+                if self.records_only:
+                    if rv.get("type") == "RECORD":
+                        return (rv["stream"], rv["record"])
+                else:
+                    return rv
             finally:
                 self.queue.task_done()
 
@@ -2152,6 +2181,7 @@ def tap_runner(
     settings: t.Dict[str, t.Any],
     state_key: str,
     max_wait: int = 5,
+    records_only: bool = False,
 ) -> t.Generator[_QueueFile, None, None]:
     """Run a tap and yield a file-like object that reads from the tap's stdout."""
     tap_bin, tap_config, tap_catalog = (
@@ -2191,7 +2221,7 @@ def tap_runner(
             daemon=True,
         )
         t1.start()
-        _stream = _QueueFile(max_wait)
+        _stream = _QueueFile(max_wait, records_only)
         # map_worker is smart enough to just pass through the data
         # if there are no mappers. This queue is used to prevent
         # the tap from hanging indefinitely on read.
