@@ -2149,6 +2149,7 @@ class _QueueFile(io.BytesIO):
 def tap_runner(
     tap: AltoPlugin,
     filesystem: AltoFileSystem,
+    settings: t.Dict[str, t.Any],
     state_key: str,
     max_wait: int = 5,
 ) -> t.Generator[_QueueFile, None, None]:
@@ -2172,7 +2173,7 @@ def tap_runner(
     if not maybe_get_catalog(tap, filesystem):
         generate_catalog(tap, filesystem)
     render_modified_catalog(tap, filesystem)
-    render_config(tap, lock, {}, filesystem)
+    render_config(tap, lock, settings, filesystem)
     with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
