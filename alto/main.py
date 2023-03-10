@@ -208,11 +208,19 @@ class AltoInvoke(Command):
 
         engine = alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory)
         engine.setup(opt_values)
+
+        invoke_interpreter = pos_args and pos_args[0] == "python"
+        if invoke_interpreter:
+            # If the user is invoking python, we need to remove the first argument
+            # so that it doesn't get passed to the python interpreter
+            pos_args.pop(0)
+
         try:
             plugin_name = pos_args.pop(0)
         except IndexError:
             LOGGER.info("❌ Plugin name is required.")
             return 1
+
         from alto.engine import build_pex, maybe_get_pex
 
         plugin = engine.configuration.get_plugin(plugin_name)
@@ -220,12 +228,14 @@ class AltoInvoke(Command):
             LOGGER.info(f"🔨 Building {plugin.name}...")
             build_pex(plugin, engine.filesystem)
         exe = engine.filesystem.executable_path(plugin.pex_name)
-        LOGGER.info(f"🔨 Invoking {plugin.name}...")
-        with subprocess.Popen(
-            [exe, *pos_args],
-            env={**os.environ, **plugin.environment},
-            cwd=engine.filesystem.root_dir,
-        ) as proc:
+        env = {**os.environ, **plugin.environment}
+        if invoke_interpreter:
+            LOGGER.info(f"🔨 Spawning Python interpreter in `{plugin.name}` plugin context...")
+            env.pop("PEX_MODULE", None)
+            env.pop("PEX_SCRIPT", None)
+        else:
+            LOGGER.info(f"🔨 Invoking {plugin.name}...")
+        with subprocess.Popen([exe, *pos_args], env=env, cwd=engine.filesystem.root_dir) as proc:
             proc.wait()
 
 
@@ -432,11 +442,12 @@ def main(args=sys.argv[1:]) -> int:
     if "ALTO_ENV" not in os.environ:
         os.environ["ALTO_ENV"] = DEFAULT_ENVIRONMENT
     LOGGER.info(
-        f"🏗  Working directory: {alto.config.working_directory.resolve().relative_to(Path.cwd())}"
+        "🏗  Working directory: "
+        f"{alto.config.working_directory.resolve().relative_to(Path.cwd().resolve())}"
     )
     LOGGER.info(f"🌎 Environment: {os.environ['ALTO_ENV']}\n")
     return AltoMain(
-        alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory),
+        alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory.resolve()),
         extra_config={"list": {"status": True, "sort": "definition"}},
     ).run(args)
 

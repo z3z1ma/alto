@@ -64,7 +64,7 @@ from alto.utils import (
 )
 
 if t.TYPE_CHECKING:
-    from dynaconf import Validator
+    from dynaconf import Dynaconf, Validator
 
 __all__ = [
     "AltoConfiguration",
@@ -335,7 +335,9 @@ class AltoFileSystem:
             remote: Whether or not the path should be in the remote storage directory.
         """
         getter = self._remote_path if remote else self._temp_path
-        return getter(fname=f"{tap}-to-{target}.json", key=STATE_DIR.format(env=self.config["ENV"]))
+        return getter(
+            fname=f"{tap}-to-{target}.json", key=STATE_DIR.format(env=self.config.current_env)
+        )
 
     def base_catalog_path(self, name: str, remote: bool = False) -> str:
         """Return the path to the base catalog for a plugin.
@@ -367,7 +369,7 @@ class AltoFileSystem:
             remote: Whether or not the path should be in the remote storage directory.
         """
         getter = self._remote_path if remote else self._root_path
-        return getter(fname=fname, key=LOG_DIR.format(env=self.config["ENV"]))
+        return getter(fname=fname, key=LOG_DIR.format(env=self.config.current_env))
 
 
 class AltoPlugin:
@@ -488,7 +490,11 @@ class AltoPlugin:
     def environment(self) -> str:
         """Return env vars necessary to run our PEX executable."""
         typ = "MODULE" if "entrypoint" in self.spec else "SCRIPT"
-        return {f"PEX_{typ}": self.entrypoint, "ALTO_PLUGIN": self.name}
+        return {
+            f"PEX_{typ}": self.entrypoint,
+            "ALTO_PLUGIN": self.name,
+            **self.spec.get("environment", {}),
+        }
 
     def config_relative_to(self, other: "AltoPlugin") -> DynaBox:
         """Return the config for the plugin."""
@@ -787,21 +793,50 @@ class AltoTaskEngine(DoitEngine):
     def __init__(
         self,
         root_dir: Path = Path.cwd(),
+        config: t.Optional[t.Union["Dynaconf", t.Dict[str, t.Any]]] = None,
     ) -> None:
-        """Initialize the alto task engine."""
+        """Initialize the alto task engine.
+
+        Args:
+            root_dir: The root directory of the project. This is where the configuration is
+                loaded from if no configuration is provided. Defaults to the current working
+                directory.
+            config: The configuration to use. If this is a dictionary, it will be written to a
+                temporary file and loaded. If this is a Dynaconf object, it will be used directly.
+                If this is None, the configuration will be loaded from the root directory.
+        """
         super().__init__()
         from dynaconf import Dynaconf
 
-        self.alto = Dynaconf(
-            settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
-            secrets=[root_dir / f"alto.secrets.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
-            root_path=root_dir,
-            envvar_prefix="ALTO",
-            env_switcher="ALTO_ENV",
-            load_dotenv=True,
-            environments=True,
-            merge_enabled=True,
-        )
+        kwargs = {
+            "root_path": root_dir,
+            "envvar_prefix": "ALTO",
+            "env_switcher": "ALTO_ENV",
+            "load_dotenv": True,
+            "environments": True,
+            "merge_enabled": True,
+        }
+        if config is None:
+            # Default to loading the configuration from the root directory
+            self.alto = Dynaconf(
+                settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
+                secrets=[root_dir / f"alto.secrets.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
+                **kwargs,
+            )
+        elif isinstance(config, Dynaconf):
+            # Use the provided configuration
+            self.alto = config
+        elif isinstance(config, dict):
+            # Write the configuration to a temporary file and load it
+            from tempfile import NamedTemporaryFile
+
+            with NamedTemporaryFile(mode="w", suffix=".json") as f:
+                f.write(json.dumps(config))
+                self.alto = Dynaconf(
+                    settings_files=[f.name],
+                    root_path=root_dir,
+                    **kwargs,
+                )
         # Instantiate the filesystem and configuration
         self.configuration = AltoTaskEngine.Configuration(inner=self.alto)
         self.filesystem = AltoTaskEngine.FileSystem(root_dir, config=self.configuration)
@@ -812,9 +847,16 @@ class AltoTaskEngine(DoitEngine):
         """Return the filesystem."""
         return self.filesystem.fs
 
-    def setup(self, opt_values: t.Dict[str, t.Any]) -> None:
+    def setup(self, opt_values: t.Optional[t.Dict[str, t.Any]] = None) -> None:
         """Load extensions and filesystem interface. This is called by doit."""
+        if opt_values is None:
+            opt_values = {}
+        # Set the environment variables
+        for k, v in self.alto.get("ENVIRONMENT", {}).items():
+            os.environ[k] = v
+        # Load the extensions
         self._load_extensions()
+        # Validate the configuration
         self.alto.validators.validate_all()
 
     def _load_extensions(self) -> None:
@@ -1038,7 +1080,7 @@ class AltoTaskEngine(DoitEngine):
                     (get_remote_state, (tap_reservoir, target.name, self.filesystem, True)),
                     (
                         reservoir_to_target,
-                        (tap, target, pipeline_id, self.filesystem, self.alto["ENV"]),
+                        (tap, target, pipeline_id, self.filesystem, self.alto.current_env),
                     ),
                 )
                 .set_task_dep(f"{AltoCmd.BUILD}:{target}")
@@ -1076,7 +1118,7 @@ class AltoTaskEngine(DoitEngine):
                             tap,
                             pipeline_id,
                             self.filesystem,
-                            self.alto["ENV"],
+                            self.alto.current_env,
                             self.alto.get("RESERVOIR_BUFFER_SIZE", RESERVOIR_BUFFER_SIZE),
                         ),
                     ),
@@ -2245,7 +2287,7 @@ def get_engine(env: str, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
     """
     if root_dir is None:
         root_dir = Path.cwd()
+    os.environ["ALTO_ENV"] = env
     engine = AltoTaskEngine(root_dir)
-    engine.setup({})
-    engine.alto["ENV"] = os.environ["ALTO_ENV"] = env
+    engine.setup()
     return engine
