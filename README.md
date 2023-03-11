@@ -26,25 +26,18 @@ pipx install singer-alto  # install system wide
 pip install singer-alto   # or add it to your project!
 ```
 
-**Small Example Config (see the bottom of the readme for the same thing as TOML):**
+## Example config
 
-> Also see the massive [alto.example.yaml](./alto.example.yaml) in this repo based on a real-world project.
+> Also see the large [alto.example.yaml](./alto.example.yaml) in this repo based on a real-world project for a better idea.
 
 ```yaml
-# this key corresponds to the environment, default is a special key which applies to all environments.
-# name your environments whatever you want by having more keys
+# A bare minimum config
 default:
-  # each project has a unique project name
   project_name: 4c167d53
-  # there is an extension system that lets you add doit tasks to alto or enable built in extensions
   extensions: ["evidence"]
-  # the root load_path is often used by targets, it is overwritten by a taps `load_path` during EL
   load_path: raw
-  # taps, targets, and utilities are the 3 keys here
   taps:
-    # name the tap whatever you want, but naming it after the executable saves us from specifying it
     tap-carbon-intensity:
-      # this should all be almost identical to Meltano barring `load_path` which is explained above
       pip_url: git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity
       load_path: carbon_intensity
       capabilities:
@@ -57,7 +50,6 @@ default:
     target-jsonl:
       pip_url: target-jsonl==0.1.4
       config:
-        # an example of how to use the load_path set by a tap
         destination_path: "@format output/{this.load_path}"
 ```
 
@@ -72,9 +64,9 @@ Finally, Alto is scaffolded over [Doit](https://github.com/pydoit/doit), a Pytho
 
 > How is this different than what exists today; namely Meltano?
 
-### Pros
+### Differences
 
-I might recommend `alto` if Meltano seems like overkill for what you are doing. What does that mean? If you have a Python project where EL is one of many concerns and you want a dependency you can add that is lean, yet highly functional. You can use `alto` alongside [dbt](https://github.com/dbt-labs/dbt-core/) without conflict, along data science packages without conflict, and there is _very_ low risk for conflict in general. I would recommend `alto` if you don't want everything in your project running in different venvs because they would conflict with Meltano.
+I might recommend `alto` if Meltano seems like overkill for what you are doing. What does that mean? If you have a Python project where EL is one of many concerns and you want a dependency you can add that is lean, yet highly functional. You can use `alto` alongside [dbt](https://github.com/dbt-labs/dbt-core/) without conflict, along data science packages without conflict; there is _very_ low risk for conflict in general. I would recommend `alto` if you don't want everything in your project running in different venvs because they would conflict with Meltano.
 
 Alto is able to run taps -> targets with centralized environment-aware configuration, secret management, automatically managed state, automatic discovery, catalog caching to a remote backend, catalog manipulation via `select` & `metadata` keys, and all the things we love about Meltano. Given this, in most situations -- from a pure EL perspective, it stacks up fairly with Meltano since it is really the plugins that do most of the work once the previous conveniences are factored in. I don't claim `alto` does as much as Meltano but I do claim, in my experience, it does *enough*.
 
@@ -114,15 +106,10 @@ Outside of the prior points, there are some compelling features in `alto` in gen
 
 - Encourages use of `bash` instead of `meltano run` commands. Bash is _already_ a fantastic glue code where you can run multiple extract load blocks, background them via `&` to parallelize loads, run utilities the way they have always been ran since everything is not wrapped in a venv with env vars injected by Meltano which is both a convenience and a constraint. `meltano run tap1 target1 tap2 target2` is ~ functionally identical to `alto tap1:target1 && alto tap2:target2`.
 
-### Cons
 
-- No stream map support yet. This will change.
+## Hands on Example in 60 Seconds
 
-- No commands equivalent to `config set` or `add`. This will not change. The goal is not 1:1 with Meltano but rather lighter weight alternative for the power user. Configuration will be managed via YAML/config exclusively.
-
-## Example
-
-An entire timed end-to-end example can be carried out via the below script.
+An entire end-to-end example can be carried out via the below script.
 
 From start to finish, this script does:
 
@@ -132,24 +119,24 @@ From start to finish, this script does:
     1. Builds PEX plugins for `tap-carbon-intensity` and `target-jsonl` caching them so they won't be rebuilt again for this project
     2. Dynamically generates config for the Singer plugin based on the toml file (supports toml/yaml/json)
     3. Runs discovery and caches catalog to ~/.alto/(project-name)/catalog
-    4. Applies user configuration (`select` & `metadata`) to the catalog, ~ functionally equivalent to Meltano
+    4. Applies user configuration (`select` & `metadata`) to the catalog, attempts to be functionally equivalent to Meltano
     5. Checks for state in the remote backend
     6. Runs the pipeline
     7. Cleans up the staging directory
     8. Parses and persists the state to the remote backend
 
 ```bash
-# Create a dir
-mkdir example_project
-# Enter it
-cd example_project
+pipx install alto
+# Create a dir & enter dir
+mkdir example_project && cd example_project
 # Init a project
-alto init --no-prompt
+alto init
 # Run a pipeline immediately
 alto tap-carbon-intensity:target-jsonl
-# Verify the output
-cat output/* | head -8; ls -l output
-cd .. && tree example_project
+# Verify the output if you want
+ls -l output
+cat output/* | head -10
+tree .
 # Clean up
 rm -rf example_project
 ```
@@ -175,27 +162,91 @@ example_project
 5 directories, 8 files
 ```
 
-`>>> cat alto.toml`
+In the next section we will dive deeper into what the project looks like.
 
-```toml
-[default]
-project_name = "4c167d53"
-extensions = []
-load_path = "raw"
+___
 
-[default.taps.tap-carbon-intensity]
-pip_url = "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
-load_path = "carbon_intensity"
-capabilities = ["state", "catalog"]
-select = ["*.*"]
+## Local Files
 
-[default.taps.tap-carbon-intensity.config]
+Here is what the full structure of a project might look like. Alto itself is an extremely light dependency, so it would not be unrealistic to have a requirements.txt or pyproject.toml including many other deps such as `dbt`. One can also freely leverage the `utilities` section of the alto config file to have alto generate, cache, and manage PEX files for any python package you may want to use but _not_ install into your environemnt.
 
-[default.targets.target-jsonl]
-pip_url = "target-jsonl==0.1.4"
-
-[default.targets.target-jsonl.config]
-destination_path = "output"
 ```
+.
+├── .alto (gitignored)
+│   ├── logs
+│   │   └── dev 👇 logs for each plugin execution
+│   │       ├── tap-0ef414a6-e13e-4a83-9028-d5c179631116.log
+│   │       ├── tap-0f962970-0cc9-488d-87de-7c32543aad9c.log
+│   │       └── tap-1dc51319-e645-4061-985e-977162eb6922.log
+│   └── plugins 👇 PEX plugins which are kept here AND in the remote file store
+│       ├── 09627b302d6d0cf04269e2bea92debc709c7b6b5
+│       ├── 0ba9391fb58b961c59ee16fb9c28eb7b63f145fc
+│       ├── 8830cdd6bea9e20ce4481024a80019f14ad822d7
+│       ├── 92e48d3efe9639964e7f883e643c0240e7e5d326
+│       ├── a67b456bedecaae93717205c7b7dfe7a8a9d3750
+│       └── b7c86cd6a344f2a1ca7c9cf3a7294297e6a8c1f2
+├── .alto.json          👈 an internal cache of task up-to-date hashes (gitignored)
+├── .dlt
+│   ├── config.toml     👈 used to configure `dlt`
+│   └── secrets.toml    👈 used to configure `dlt` destinations (gitignored)
+├── .gitignore
+├── README.md
+├── alto.secrets.yaml   👈 exact same structure as alto.yaml and merged at runtime (gitignored)
+├── alto.yaml           👈 THE central configuration for `alto`
+├── asana_pipeline.py
+├── bls_pipeline.py     👈 these 3 py files are `dlt` pipelines fed by singer taps
+├── carbon_intensity_pipeline.py
+└── series.json
+```
+
+____
+
+## Remote Files
+
+Remote storage is a key concept baked into Alto from day 1. It was inspired by the simplicity of terraform and nix. A few concepts expressed here are you should never (rarely) need to build the same PEX twice for one Python/OS/Arch version. Especially when your working on a team with multiple devs and you are building and deploying containers. Containers are significantly smaller without needing multiple venvs and significantly faster to build. Another concept is that catalog caches should both be central and transparent and should be preserved in an exact state prior to user overrides. All teams leverage this catalog vs committing it to git and dealing with large diffs if it is generated in a different sort or users having multiple version in multiple branches. The next concept expressed is that we never delete state unless the user specifically does so, so we can always restart replicating from an old checkpoint. Lastly, the concept of a data reservoir as a built in staging area all taps can go to irrespective of any target and it can be pushed out to any target as many times as you want.
+
+```
+{gcs,s3,azdl,file}://<bucket name or `~` if file>/alto/<project name>/
+├── catalogs 👇 these are catalogs which are cached to the remote file store PRIOR to user overrides
+│   ├── tap-asana.base.json
+│   ├── tap-bls.base.json
+│   └── tap-carbon-intensity.base.json
+├── plugins  👇 these are cached PEX plugins
+│   ├── 09627b302d6d0cf04269e2bea92debc709c7b6b5
+│   ├── 0ba9391fb58b961c59ee16fb9c28eb7b63f145fc
+│   ├── 1676da47c022ede0cd691095bcf31c1e55e88b5e
+│   ├── 24103a27045b9da59ac31a33f9ca274792d450b8
+│   ├── 66605a6c1a0515b108ace90e5bd955149191a034
+│   ├── 8830cdd6bea9e20ce4481024a80019f14ad822d7
+│   ├── 92e48d3efe9639964e7f883e643c0240e7e5d326
+│   ├── a67b456bedecaae93717205c7b7dfe7a8a9d3750
+│   └── b7c86cd6a344f2a1ca7c9cf3a7294297e6a8c1f2
+├── reservoir 👇 the idea of a data reservoir is a * native * concept so you can extract once, load many, and never lose loads
+│   └── dev
+│       └── tap-carbon-intensity
+│           ├── _reservoir.json
+│           ├── entry
+│           │   └── db20736ab2d87e6
+│           │       └── 20230311065214549869.singer.gz
+│           ├── generationmix
+│           │   └── d79e10d690ea5e7
+│           │       └── 20230311065214556932.singer.gz
+│           └── region
+│               └── b6252a33b98191e
+│                   └── 20230311065214525346.singer.gz
+└── state
+    └── dev 👇 state is not deleted, but always backed up in the remote store by default
+        ├── tap-asana-to-dlt_tap-asana_dev.202303110353.json
+        ├── tap-asana-to-dlt_tap-asana_dev.202303110405.json
+        ├── tap-asana-to-dlt_tap-asana_dev.json
+        ├── tap-bls-to-dlt-tap-bls-dev.202303110601.json
+        ├── tap-bls-to-dlt-tap-bls-dev.json
+        ├── tap-carbon-intensity-to-dlt_tap-carbon-intensity_dev.202303102212.json
+        ├── tap-carbon-intensity-to-dlt_tap-carbon-intensity_dev.202303110343.json
+        ├── tap-carbon-intensity-to-dlt_tap-carbon-intensity_dev.json
+        ├── tap-carbon-intensity-to-reservoir.202303110652.json
+        └── tap-carbon-intensity-to-reservoir.json
+```
+
 
 [license]: https://github.com/z3z1ma/alto/blob/main/LICENSE

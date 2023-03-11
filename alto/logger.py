@@ -21,6 +21,6 @@ In the future, this module may be expanded to allow for more complex logging.
 import logging
 import sys
 
+logging.basicConfig(stream=sys.stderr, format="%(message)s")
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
-logging.basicConfig(stream=sys.stderr, format="%(message)s")

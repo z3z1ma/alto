@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "singer-alto"
-version = "0.2.9"
+version = "0.2.10"
 description = "A package for managing singer.io taps and targets"
 authors = ["z3z1ma <butler.alex2010@gmail.com>"]
 readme = "README.md"

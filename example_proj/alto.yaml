@@ -1,0 +1,55 @@
+default:
+  load_path: raw
+  project_name: 1b401cc3
+  taps:
+    tap-bls:
+      capabilities:
+        - state
+        - catalog
+      config:
+        {
+          "startyear": "2019",
+          "endyear": "2020",
+          "calculations": "true",
+          "annualaverage": "false",
+          "aspects": "false",
+          "disable_collection": "true",
+          "update_state": "false",
+          "series_list_file_location": "./series.json",
+        }
+      load_path: bls
+      pip_url: git+https://github.com/frasermarlow/tap-bls#egg=tap_bls
+      select:
+        - "*.*"
+    tap-carbon-intensity:
+      capabilities:
+        - state
+        - catalog
+      config: {}
+      load_path: carbon_intensity
+      pip_url: git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity
+      select:
+        - "*.*"
+    tap-asana:
+      pip_url: git+https://github.com/z3z1ma/tap-asana.git#egg=tap-asana
+      load_path: asana
+      capabilities: [catalog, state, about]
+      config:
+        redirect_uri: "urn:ietf:wg:oauth:2.0:oob"
+        start_date: "2021-01-01T00:00:00Z"
+      select:
+        - "*.*"
+        # EZ hashing of PII with a ~ prefix
+        - "~*.email"
+        - "~*.name"
+  targets:
+    target-jsonl:
+      config:
+        destination_path: "@format output/{this.load_path}"
+      pip_url: target-jsonl==0.1.4
+  utilities:
+    dlt:
+      pip_url: python-dlt[duckdb,bigquery]>=0.2.0a25
+      environment:
+        # This magic lets us import alto inside of the dlt utility
+        PEX_INHERIT_PATH: fallback
