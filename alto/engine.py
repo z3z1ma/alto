@@ -397,7 +397,10 @@ class AltoPlugin:
             # Utility plugins can optionally specify a pip_url
             return self.spec.get("pip_url")
         # All other plugins must specify a pip_url
-        return self.spec["pip_url"]
+        try:
+            return self.spec["pip_url"]
+        except KeyError:
+            raise KeyError(f"Plugin {self.name} is missing a pip_url.")
 
     @property
     def parent(self) -> t.Optional["AltoPlugin"]:
@@ -417,7 +420,10 @@ class AltoPlugin:
     @property
     def root_namespace(self) -> str:
         """Return the root namespace for the plugin."""
-        return self.alto.inner["LOAD_PATH"]
+        try:
+            return self.alto.inner["LOAD_PATH"]
+        except KeyError:
+            raise KeyError("Alto is missing a top-level LOAD_PATH.")
 
     @property
     def namespace(self) -> str:
@@ -473,7 +479,7 @@ class AltoPlugin:
         # as PII hashing is a global concern and it should be on the user
         # to _explicitly_ disable it.
         self._select = (value or ["*.*"]) + [
-            rule for rule in self.select if rule.startswith("#") and self._retain_hash_rules
+            rule for rule in self.select if rule.startswith("~") and self._retain_hash_rules
         ]
 
     @property
@@ -2173,7 +2179,11 @@ class _QueueFile(io.BytesIO):
 
     This is only intended to be used inside the `tap_runner` function. It
     expects a thread to be writing to the queue and a thread to be reading
-    from the queue via the `__iter__` and `__next__` methods.
+    from the queue via the `__iter__` and `__next__` methods. Instances of
+    this class should be used in a for loop to iterate over the records.
+    Some iterations can be None, these should be ignored. A StopIteration
+    exception will be raised when the queue is empty and no new records
+    have been added for `max_wait` seconds.
     """
 
     def __init__(self, max_wait: int = 5, records_only: bool = False):
@@ -2185,6 +2195,8 @@ class _QueueFile(io.BytesIO):
         # Whether to only return records or all output, when records_only is
         # True, the output will be a tuple of (stream, record)
         self.records_only = records_only
+        # Store state
+        self._state = {}
 
     def write(self, data) -> int:
         self.queue.put(data)
@@ -2193,7 +2205,7 @@ class _QueueFile(io.BytesIO):
     def __iter__(self):
         return self
 
-    def __next__(self) -> t.Union[dict, t.Tuple[str, dict]]:
+    def __next__(self) -> t.Union[dict, t.Tuple[str, dict], None]:
         try:
             data = self.queue.get(timeout=self.max_wait)
         except queue.Empty:
@@ -2204,9 +2216,14 @@ class _QueueFile(io.BytesIO):
             except json.JSONDecodeError:
                 pass
             else:
-                if self.records_only:
-                    if rv.get("type") == "RECORD":
-                        return (rv["stream"], rv["record"])
+                if "type" not in rv:
+                    pass
+                elif rv["type"] == "STATE":
+                    merge(rv["value"], self._state)
+                elif self.records_only and not rv["type"] == "RECORD":
+                    pass
+                elif self.records_only:
+                    return (rv["stream"], rv["record"])
                 else:
                     return rv
             finally:
@@ -2242,10 +2259,14 @@ def tap_runner(
     lock = threading.Lock()
     mappers = tap.get_stream_maps(filesystem)
     _tmp_id = str(uuid.uuid4())
+    # Config
+    render_config(tap, lock, settings, filesystem)
+    # Catalog
     if not maybe_get_catalog(tap, filesystem):
         generate_catalog(tap, filesystem)
     render_modified_catalog(tap, filesystem)
-    render_config(tap, lock, settings, filesystem)
+    # State
+    get_remote_state(tap.name, state_key, filesystem, execute=tap.supports_state)
     with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -2253,7 +2274,7 @@ def tap_runner(
         env={**os.environ, **tap.environment},
         cwd=filesystem.root_dir,
     ) as tap_proc:
-        t1 = threading.Thread(
+        log_thread = threading.Thread(
             target=pipe_logger,
             args=(
                 tap_proc.stderr,
@@ -2262,9 +2283,9 @@ def tap_runner(
             ),
             daemon=True,
         )
-        t1.start()
+        log_thread.start()
         _stream = _QueueFile(max_wait, records_only)
-        # map_worker is smart enough to just pass through the data
+        # The map_worker is smart enough to just pass through the data
         # if there are no mappers. This queue is used to prevent
         # the tap from hanging indefinitely on read.
         map_thread = threading.Thread(
@@ -2273,10 +2294,17 @@ def tap_runner(
             daemon=True,
         )
         map_thread.start()
+        # Yield the stream iterator
         yield _stream
+        # Cleanup
         tap_proc.terminate()
         tap_proc.wait()
-        t1.join(), map_thread.join()
+        log_thread.join(), map_thread.join()
+        # Commit State
+        if tap.supports_state:
+            with open(state, "w") as f:
+                json.dump(_stream._state, f)
+            update_remote_state_no_stdout(tap.name, state_key, filesystem)
 
 
 def get_engine(env: str, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
