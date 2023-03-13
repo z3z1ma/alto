@@ -37,7 +37,7 @@ class TestRunAlto(unittest.TestCase):
             path = _make_tmp_dir()
             self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
             self.assertTrue(os.path.exists(os.path.join(path, "alto.toml")))
-            self.assertTrue(os.path.exists(os.path.join(path, "alto.secrets.toml")))
+            self.assertTrue(os.path.exists(os.path.join(path, "alto.local.toml")))
         finally:
             shutil.rmtree(path)
 
@@ -56,7 +56,7 @@ class TestRunAlto(unittest.TestCase):
             path = _make_tmp_dir()
             self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
             self.assertTrue(os.path.exists(os.path.join(path, "alto.toml")))
-            self.assertTrue(os.path.exists(os.path.join(path, "alto.secrets.toml")))
+            self.assertTrue(os.path.exists(os.path.join(path, "alto.local.toml")))
             self.assertEqual(main(["tap-carbon-intensity:target-jsonl", "-r", path]), 0)
         finally:
             shutil.rmtree(path)
