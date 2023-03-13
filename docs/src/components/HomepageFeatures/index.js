@@ -11,8 +11,8 @@ const FeatureList = [
         Like Meltano, <b>Alto</b> wraps <a href="https://www.singer.io/">Singer</a> allowing you to centrally manage your
         configuration. Under the hood, Alto will do <i>everything</i> from building and
         caching <a href="https://github.com/pantsbuild/pex">PEX</a> plugins per integration
-        to managing catalog, state, and execution. Integrate hunreds of data sources in minutes without <i>any</i> code.
-        Prior art from Meltano makes the format familiar.
+        to managing catalog, state, and execution. Integrate <a href="https://hub.meltano.com/extractors">hundreds</a> of
+        data sources in minutes without <i>any</i> code. Prior art from Meltano makes the format familiar.
       </>
     ),
   },

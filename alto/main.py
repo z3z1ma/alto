@@ -67,6 +67,7 @@ class AltoInit(Command):
                 )
                 return 1
             format_ = "toml"
+            project_name = "default"
             while True and not opt_values["no-prompt"]:
                 format_ = input("❓ Preferred config format? [toml, yaml, json]: ")
                 if format_ not in SUPPORTED_CONFIG_FORMATS:
