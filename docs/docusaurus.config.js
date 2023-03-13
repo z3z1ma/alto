@@ -89,15 +89,12 @@ const config = {
             title: 'Docs',
             items: [
               {
-                type: 'doc',
-                docId: 'intro',
-                position: 'left',
+                type: '/docs/intro',
                 label: 'Tutorial',
               },
               {
                 to: '/docs/integrations/extensions',
                 label: 'Extensions',
-                position: 'left'
               },
             ],
           },
