@@ -20,7 +20,7 @@
 
 Jump into the [docs](https://z3z1ma.github.io/alto/) hosted on GitHub Pages to get started!
 
-![Docs](https://github.com/z3z1ma/alto/actions/workflows/pages/pages-build-deployment/badge.svg)
+[![Documentation](https://github.com/z3z1ma/alto/actions/workflows/pages/pages-build-deployment/badge.svg)](https://z3z1ma.github.io/alto/)
 
 ## Introduction
 

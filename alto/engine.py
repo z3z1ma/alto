@@ -15,7 +15,6 @@ import atexit
 import datetime
 import fnmatch
 import gzip
-import hashlib
 import io
 import itertools
 import json
@@ -734,7 +733,7 @@ class HashStreamMap(AltoStreamMap):
 
     def _pii_hash(self, value: t.Any) -> t.Any:
         """Hash a value."""
-        return hashlib.md5(str(value).encode("utf-8"), usedforsecurity=False).hexdigest()
+        return md5(str(value).encode("utf-8")).hexdigest()
 
     def transform_record(self, record: dict) -> dict:
         """Transform the record."""
