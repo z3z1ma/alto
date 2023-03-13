@@ -71,7 +71,7 @@ const config = {
             position: 'left'
           },
           {
-            to: '/docs/integrations/extensions',
+            to: '/docs/extensions/intro',
             label: 'Extensions',
             position: 'left'
           },
