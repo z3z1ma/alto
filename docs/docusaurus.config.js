@@ -46,7 +46,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/singer-etl-pipelines.png',
       navbar: {
         title: 'Alto',
         logo: {
@@ -103,7 +103,7 @@ const config = {
             items: [
               {
                 label: 'dbt Slack',
-                href: 'https://twitter.com/dbt_labs',
+                href: 'https://getdbt.slack.com/',
               },
             ],
           },
@@ -111,7 +111,7 @@ const config = {
             title: 'More',
             items: [
               {
-                label: 'z3z1ma GitHub',
+                label: 'GitHub Profile',
                 href: 'https://github.com/z3z1ma',
               },
             ],
