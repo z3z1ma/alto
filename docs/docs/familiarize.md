@@ -1,6 +1,6 @@
 # Alto Next Steps
 
-The quickstart guide is a great way to get to quickly get to the **a-ha moment** of Alto. However, it is helpful to move beyond the quickstart and see a more contrived example of what a _real_ project might look like. This will expose you to some more of the possibilities of Alto. While the rest of the learning content will have `toml`, `yaml`, and `json` examples, we will use `toml` in this brief exposure to a more refined project. Exposure is the key here, so don't worry about understanding everything right away. We will cover the details in the next section.
+The quickstart guide is a great way to get to quickly get to the **a-ha moment** of Alto. However, it is helpful to move beyond the quickstart and see a more contrived example of what a _real_ project might look like. This will expose you to some more of the possibilities of Alto. While the rest of the learning content will have `toml`, `yaml`, and `json` examples, we will use `toml` in this brief exposure to a more refined and terse config file. Exposure is the key here, so don't worry about understanding everything right away. We will cover the details in the next section.
 
 ## Configuration
 
