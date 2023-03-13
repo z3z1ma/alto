@@ -93,8 +93,8 @@ const config = {
                 label: 'Tutorial',
               },
               {
-                to: '/docs/integrations/extensions',
-                label: 'Extensions',
+                to: '/docs/integrations/intro',
+                label: 'Integrations',
               },
             ],
           },
