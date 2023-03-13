@@ -1,0 +1,86 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Environments
+
+## What is an Environment?
+
+Alto is designed to be used in a variety of environments. It is not uncommon to have a development environment, a staging environment, and a production environment. Alto allows you to define these environments in your configuration file.
+
+## Environment Configuration
+
+In order to define an environment, you must add a section to your `alto.toml` file. The section name must be the name of the environment. Here is an example of a configuration file with 3 environments:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default]
+# base environment
+project_name = "my-project"
+
+# environnment 1
+[dev]
+
+# environnment 2
+[github-actions]
+
+# environnment 3
+[prod]
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+# base environment
+default:
+  project_name: my-project
+
+# environnment 1
+dev: {}
+
+# environnment 2
+github-actions: {}
+
+# environnment 3
+prod: {}
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "project_name": "my-project"
+  },
+  "dev": {},
+  "github-actions": {},
+  "prod": {}
+}
+```
+
+</TabItem>
+</Tabs>
+
+The 3 environments defined in this file are `dev`, `github-actions`, and `prod`. Alto will use the `default` environment as a base for all environments. This means that any configuration defined in the `default` environment will be the base on top of which another environment can optionally be layered.
+
+:::tip Note
+
+The configuration structure is the same for all environments. You can often copy and paste configuration from one environment to another, slim it down, and only change the values that need to be changed.
+
+:::
+
+## The `ALTO_ENV` Environment Variable
+
+Alto uses the `ALTO_ENV` environment variable to determine which environment to use. Consider it the master control switch. If the `ALTO_ENV` environment variable is not set, Alto will use the `default` environment alone. The `ALTO_ENV` environment variable can be set in a number of ways. Here are the most common ways in order of precedence:
+
+1. Via prefixing an `alto` command
+    1. `ALTO_ENV={env} alto ...`
+2. In your shell environment
+    1. `export ALTO_ENV={env}`
+3. In the `.env` file in the root of your project
+    1. `ALTO_ENV={env}`
+
+As you can see this follows 12-factor app principles. Alto itself leverages Dynaconf to manage configuration so we will regularly refer to the [Dynaconf documentation](https://www.dynaconf.com/) for more information.

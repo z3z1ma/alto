@@ -1,0 +1,142 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Project Configuration
+
+## How is a project configured?
+
+There are two main units of configuration in `alto`. There is **project-level** configuration and there is **plugin-level** configuration. Project level configuration consists of top level keys in the `alto.toml` file. The project configuration supports general settings such as project name, filesystem, bucket, and so on. We will step through each of these now.
+
+## Example Project Configuration
+
+Here is an example of a project configuration file with all the knobs populated:
+
+:::tip Tip
+
+Remember the top level key `default` is special. It is the default environment that serves as the baseline upon which other environments are layered. You can have as many environments as you want, but you must specify an environment via the `ALTO_ENV` environment variable if you want to leverage them. This means all project-level config should ideally be under the `default` key and can be overridden per-env as needed.
+
+:::
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default]
+project_name = "alto-project"
+filesystem = "gcs"
+bucket = "my-bucket"
+extensions = [
+    "./path/to/extension.py",
+    "evidence",
+]
+environment.SOME_ENV_VAR = "some value"
+environment.ANOTHER_ENV_VAR = "another value"
+filesystem_settings.project = "my-project"
+filesystem_settings.token = "@format {env[GOOGLE_APPLICATION_CREDENTIALS]}"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  project_name: alto-project
+  filesystem: gcs
+  bucket: my-bucket
+  extensions:
+    - ./path/to/extension.py
+    - evidence
+
+  environment:
+    SOME_ENV_VAR: some value
+    ANOTHER_ENV_VAR: another value
+
+  filesystem_settings:
+    project: my-project
+    token: "@format {env[GOOGLE_APPLICATION_CREDENTIALS]}"
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "project_name": "alto-project",
+    "filesystem": "gcs",
+    "bucket": "my-bucket",
+    "extensions": [
+      "./path/to/extension.py",
+      "evidence"
+    ],
+    "environment": {
+      "SOME_ENV_VAR": "some value",
+      "ANOTHER_ENV_VAR": "another value"
+    },
+    "filesystem_settings": {
+      "project": "my-project",
+      "token": "@format {env[GOOGLE_APPLICATION_CREDENTIALS]}"
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Settings
+
+### `project_name`
+
+The name of the project. This is used to determine the subdirectory in the remote filesystem where the project will be stored. This allows multiple projects to be stored in the same bucket while also ensuring the same project name + bucket to be equivalent across machines. This was inspired by [terraform](https://www.terraform.io/). Changing this value will cause alto to treat the project as a new project and will not be able to find any existing data including cached PEX files, catalogs, and state.
+
+
+### `filesystem`
+
+The filesystem to use. This can be one of the following:
+
+- `gcs`     - Google Cloud Storage
+- `s3`      - Amazon S3
+- `azdl`    - Azure Data Lake
+- `file`    - Local filesystem (default)
+
+The filesystem support is driven entirely by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/).
+
+The default filesystem is `file`. This is useful for testing and development. It will store data in the `~/.alto/{project}/` directory on the local machine.
+
+Once it is time to move beyond your machine and potentially out to a team of devs, it is **highly** recommended to use a remote filesystem by `default` across _all_ configured environments. The remote filesystem utilization in `alto` will already **isolate data by project name and environment**. This means you do not need `file` for development and `gcs` for production. You can use the same filesystem across all environments and the data will be isolated. This allows you to have the remote filesystem be the source of truth for all environments. This is especially useful for CI/CD environments where you want to be able to run alto commands in a clean environment without having to worry about the state of the local filesystem. It draws on prior art from the DX (developer experience) of [terraform](https://www.terraform.io/) and [pulumi](https://www.pulumi.com/).
+
+### `bucket`
+
+The bucket to use. This is the name of the bucket to use. This is only used if the `filesystem` is set to `gcs`, `s3`, or `azdl`. If the `filesystem` is set to `file`, this value is ignored.
+
+### `extensions`
+
+Extensions consist of 2 varieties. There are built-in extensions and there are user-defined extensions. Built-in extensions are included with `alto` and are always available. User-defined extensions are defined by the user and can be used to extend alto with custom commands and functionality. The `extensions` key should be composed of a list of these 2 variants.
+
+#### User-defined extensions
+
+A user-defined extension is specified via a path to a python file relative to the `alto.toml`. These extensions will be loaded when `alto` is run. This allows you to extend alto with your _own_ custom commands and functionality. All extensions must be python files. Alto will look for the `register` function in each file and call it. This function should return a subclass of `alto.engine.AltoExtension`. Alto will register any commands that are defined in the extension via the `tasks` method. Tasks are [doit](https://pydoit.org/) tasks. You can read more about doit tasks [here](https://pydoit.org/tasks.html). We include a helper class which allows you to use a builder pattern to define tasks.
+
+#### Built-in extensions
+
+A built-in extension can be enabled by adding the extension name to the `extensions` list. For example, to enable the `evidence` extension, you would simply add `evidence` to the `extensions` list.
+
+The following extensions are built-in to `alto`:
+
+- `evidence` - This extension allows you to run [Evidence.dev](https://evidence.dev/) tasks.
+- `dbt` - This extension allows you to run recipes of [dbt](https://www.getdbt.com/) tasks. (Coming soon)
+
+Built-in extensions are not intended to replace any package but rather augment them with additional generic conveniences that would expedite the workflow for a majority of users. User-defined extensions on the other hand, can be much more specific.
+
+### `environment`
+
+Key value pairs to inject into the environment. These environment variables will be available to all tasks. This is useful for setting environment variables that are used by multiple tasks or utilities.
+
+### `filesystem_settings`
+
+The filesystem settings to use. This is a dictionary of settings to use for the filesystem. These settings will be passed to the [fspsec](https://filesystem-spec.readthedocs.io/en/latest/) filesystem. This gives the user the ability to configure the filesystem as they see fit.
+
+## Considerations
+
+In the example above, we used the `default` environment exclusively. You can imagine how these layers can be used to further customize the configuration. It is worth noting though, in my experience, project level configuration is best set in the `default` environment with the exception of the `environment` key. It is strongly advised that one project uses one remote storage to reap maximum benefits. A reasonable exception would be routing to another project / bucket for more secure storage of sensitive data in specific environments.

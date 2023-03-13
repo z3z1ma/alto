@@ -1,0 +1,117 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Target Configuration
+
+Adding a new target to your project is **as simple as adding a new key** to the `targets` section of the `alto.toml` file. The key is a user defined name for the tap and the value is a dictionary of configuration options for that tap.
+
+## Example Target Configuration
+
+Here is a mock example of 2 target configurations, as you can see it can be quite concise:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default.targets.target-jsonl]
+pip_url = "target-jsonl"
+config.output = "@format output/{this.load_path}"
+config.do_timestamp_file = true
+
+[default.targets.target-parquet]
+pip_url = "git+hhttps://github.com/estrategiahq/target-parquet.git#egg=target-parquet"
+config.destination_path = "@format output/{this.load_path}"
+config.file_size = 100000
+config.compression_method = "snappy"
+config.streams_in_separate_folder = true
+config.add_record_metadata = true
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  targets:
+    target-jsonl:
+      pip_url: target-jsonl
+      config:
+        output: "@format output/{this.load_path}"
+        do_timestamp_file: true
+    target-parquet:
+      pip_url: "git+https://github.com/estrategiahq/target-parquet.git#egg=target-parquet"
+      config:
+        destination_path: "@format output/{this.load_path}"
+        file_size: 100000
+        compression_method: snappy
+        streams_in_separate_folder: true
+        add_record_metadata: true
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "targets": {
+      "target-jsonl": {
+        "pip_url": "target-jsonl",
+        "config": {
+          "output": "@format output/{this.load_path}",
+          "do_timestamp_file": true
+        }
+      },
+      "target-parquet": {
+        "pip_url": "git+hhps://github.com/estrategiahq/target-parquet.git#egg=target-parquet",
+        "config": {
+          "destination_path": "@format output/{this.load_path}",
+          "file_size": 100000,
+          "compression_method": "snappy",
+          "streams_in_separate_folder": true,
+          "add_record_metadata": true
+        }
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Below, we will go over each of the configuration options for a target.
+
+___
+
+## Settings
+
+### `pip_url`
+
+The `pip_url` is the pip installable URL of the target. This is the same URL that you would use to install the target via `pip install`. This is the only required field for a target configuration.
+
+:::tip Tip
+
+Remember pip installable URLs can be a local path to a directory, tarball, zip file, or a git repo. Anything that can be used by `pip` can be used by `alto`.
+
+:::
+
+### `config`
+
+This is the configuration for the target. This is exactly what you would put in the `config.json` if running the target manually. The only difference is that you can use the `@format` directive to reference environment variables and other config values via `this`. This is useful for sensitive information like passwords and API keys. Both the Meltano Hub and most github repos will tell you exactly what to put here.
+
+### `executable` and `entrypoint`
+
+By default, `alto` will assume that the target exposes a script named after the target key name in the alto config. For example, if the target is named `target-snowflake`, `alto` will assume that the target exposes a script named `target-snowflake`. If this is not the case, you can specify the `executable` explicitly. You can alternatively specify the `entrypoint` if the package does not expose a script or you want to use something other than the default.
+
+:::tip Tip
+
+Up until now, we have always used `target-name` as the name of our plugins. This is convenient because often it means we don't have to specifiy the `executable` however there is **nothing** stopping you from using a completely different name. You could call a target **prod_db** or **stg_db** or **local_csvs**. It doesn't matter. As long as you specify the `executable` or `entrypoint` correctly, `alto` will be able to run it. It also means commands might be more meaningful to you and your team.
+
+IE, `alto pg_platform_data:sf_staging_db` may be more meaningful than `alto tap-postgres:target-snowflake`.
+
+:::
+
+### `environment`
+
+The `environment` field is a dictionary of environment variables that will be set when running the target. It is fully scoped to the target and will not affect other processes.

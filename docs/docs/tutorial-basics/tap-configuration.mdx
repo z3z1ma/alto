@@ -1,0 +1,392 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Tap Configuration
+
+Adding a new tap to your project is **as simple as adding a new key** to the `taps` section of the `alto.toml` file. The key is a user defined name for the tap and the value is a dictionary of configuration options for that tap.
+
+## Example Tap Configuration
+
+Here is an example of 1 tap configuration, as you can see it can be quite concise:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default.taps.tap-postgres]
+pip_url = "pipelinewise-tap-postgres"
+load_path = "raw_pg"
+capabilities = ["state", "catalog"]
+# These can all be in the .env file or in the environment
+config.host = "@format {env[PG_HOST]}"
+config.port = "@format {env[PG_PORT]}"
+config.user = "@format {env[PG_USER]}"
+config.password = "@format {env[PG_PASSWORD]}"
+config.dbname = "prod"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  taps:
+    tap-postgres:
+      pip_url: pipelinewise-tap-postgres
+      load_path: raw_pg
+      capabilities:
+        - state
+        - catalog
+      config:
+        # These can all be in the .env file or in the environment
+        host: "@format {env[PG_HOST]}"
+        port: "@format {env[PG_PORT]}"
+        user: "@format {env[PG_USER]}"
+        password: "@format {env[PG_PASSWORD]}"
+        dbname: prod
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "taps": {
+      "tap-postgres": {
+        "pip_url": "pipelinewise-tap-postgres",
+        "load_path": "raw_pg",
+        "capabilities": [
+          "state",
+          "catalog"
+        ],
+        "config": {
+          "host": "@format {env[PG_HOST]}",
+          "port": "@format {env[PG_PORT]}",
+          "user": "@format {env[PG_USER]}",
+          "password": "@format {env[PG_PASSWORD]}",
+          "dbname": "prod"
+        }
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Below, we will go over each of the configuration options for a tap.
+
+___
+
+## Settings
+
+### `pip_url`
+
+The `pip_url` is the pip installable URL of the tap. This is the same URL that you would use to install the tap via `pip install`. This is the only required field for a tap configuration.
+
+:::tip Tip
+
+Remember pip installable URLs can be a local path to a directory, tarball, zip file, or a git repo. Anything that can be used by `pip` can be used by `alto`.
+
+:::
+
+### `load_path`
+
+The `load_path` of a tap overrides the project-level load path during configuration rendering. This means that targets can uniformly access the context-specific `load_path` by using the `this.load_path` variable. It would specifically look like this:
+
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default.targets.target-snowflake]
+config.schema = "@format {this.load_path}"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  targets:
+    target-snowflake:
+      config:
+        schema: "@format {this.load_path}"
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "targets": {
+      "target-snowflake": {
+        "config": {
+          "schema": "@format {this.load_path}"
+        }
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+This is useful since targets almost **always** need to have _some_ context of the tap that is feeding them data in order to write the data to the correct location. This makes it as convenient as possible. If you don't specify a `load_path` for a tap, the project-level `load_path` will be used.
+
+### `capabilities`
+
+The `capabilities` of a tap are a list of capabilities that the tap has. These flags determine how `alto` should interface with the tap. The available capabilities are:
+
+- `state` - The tap supports state management
+- `catalog` - The tap supports catalog management
+- `properties` - The tap supports (legacy) property management
+- `about` - The tap supports the `about` command
+- `test` - The tap supports the `test` command
+
+#### `state`
+
+The `state` capability indicates that the tap supports state management. This means that the tap can be used to extract data incrementally. If not specified, the `--state` flag will not be passed by `alto`.
+
+#### `catalog` or `properties`
+
+These 2 capabilities are very similar. They both indicate that the tap supports catalog management. The difference is that `catalog` is the preferred capability and `properties` is a legacy capability. I recommend going with `catalog` if you are unsure.
+
+#### `about` and `test`
+
+These capabilities enable the `about` and `test` commands for the tap. These commands are useful for debugging and testing the tap. They are not required for the tap to work and are only implemented by Meltano SDK taps.
+
+:::tip Pro-Tip
+
+The 2 most common capabilities you will specify are `state` + `catalog`. These are not set by default as we prefer explicitness here.
+
+:::
+
+
+### `config`
+
+This is the configuration for the tap. This is exactly what you would put in the `config.json` if running the tap manually. The only difference is that you can use the `@format` directive to reference environment variables and other config values via `this`. This is useful for sensitive information like passwords and API keys. Both the Meltano Hub and most GitHub repos will tell you exactly what to put here.
+
+### `executable` and `entrypoint`
+
+By default, `alto` will assume that the tap exposes a script named after the tap key name in the alto config. For example, if the tap is named `tap-postgres`, `alto` will assume that the tap exposes a script named `tap-postgres`. If this is not the case, you can specify the `executable` explicitly. You can alternatively specify the `entrypoint` if the package does not expose a script or you want to use something other than the default.
+
+:::tip Tip
+
+Up until now, we have always used `tap-name` as the name of our plugins. This is convenient because often it means we don't have to specifiy the `executable` however there is **nothing** stopping you from using a completely different name. You could call a tap **platform_data** or **marketing_saas** or **master_extractor**. It doesn't matter. As long as you specify the `executable` or `entrypoint` correctly, `alto` will be able to run it. It also means commands might be more meaningful to you and your team.
+
+IE, `alto pg_platform_data:sf_staging_db` may be more meaningful than `alto tap-postgres:target-snowflake`.
+
+:::
+
+### `select`
+
+The `select` field is a list of patterns that will be used to prune the catalog. This allows you to selectively replicate streams. This is useful if you want to replicate a subset of the data in a database. The patterns are matched against the stream name. The patterns are matched using the [fnmatch](https://docs.python.org/3/library/fnmatch.html) module. This means that you can use `*` to match any number of characters and `?` to match a single character. It is also possible to use `!` to negate a pattern. This is useful if you want to replicate everything except a few streams. It should be functionally similar to Meltano as is documented [here](https://docs.meltano.com/concepts/plugins#select-extra).
+
+#### PII Hashing
+
+`alto` has extended the `select` syntax to allow for PII hashing. It works by prefixing a pattern with `~`. This will cause the tap to hash any fields that match the pattern. This is useful if you want to replicate a subset of the data but don't want to replicate any PII.
+
+### `metadata`
+
+The `metadata` field is again familiar to users of Meltano. It allows you to mutate the catalog more efficiently. It is a dictionary where each key is a stream name (glob syntax is supported) and the value is a dictionary to merge into the catalog entry. This is useful if you want to change the replication method or key properties of a stream. It is also useful if you want to add custom metadata to a stream. It should be functionally similar to Meltano as is documented [here](https://docs.meltano.com/concepts/plugins#metadata-extra).
+
+### `environment`
+
+The `environment` field is a dictionary of environment variables that will be set when running the tap. It is fully scoped to the tap and will not affect other processes.
+
+### `stream_maps`
+
+The `stream_maps` field is a dictionary of stream maps. Stream maps are a way to mutate the JSON objects moving between a tap and a target. They are useful if you want to rename a field or add a field to every record. They are also useful if you want to add custom metadata to every record. `alto` has opted for the approach of, excluding the PII hash feature, having users create their own stream maps. This gives users the most flexibility and allows them to create stream maps that are specific to their use case.
+
+Adding a stream map looks like this:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[[default.targets.tap-salesforce.stream_maps]]
+path = "./path/to/custom_map.py"
+select = ["*.*"]
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  targets:
+    tap-salesforce:
+      stream_maps:
+        - path: ./path/to/custom_map.py
+          select: ["*.*"]
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "targets": {
+      "tap-salesforce": {
+        "stream_maps": [
+          {
+            "path": "./path/to/custom_map.py",
+            "select": ["*.*"]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+You will notice that the `select` field is similar to the `select` field at the top level of the tap. This is because stream maps need to be able to be selectively applied. You can alternatively just supply a path and `alto` will assume that you want to apply the stream map to all streams.
+
+### `inherit_from`
+
+The `inherit_from` key is a way to inherit config from another tap. This is useful if you have a tap that is very similar to another tap and you want to reuse the config. It supports chaining. For example, if you have a tap named `tap-salesforce` and a tap named `tap-salesforce-rest` and you want `tap-salesforce-rest` to inherit from `tap-salesforce`, you can do this:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default.taps.tap-salesforce]
+pip_url = "tap-salesforce"
+config.api_type = "bulk"
+config.username = "..."
+config.security_token = "..."
+
+[default.taps.tap-salesforce-rest]
+inherit_from = "tap-salesforce"
+config.api_type = "rest"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  taps:
+    tap-salesforce:
+      pip_url: tap-salesforce
+      config:
+        api_type: "bulk"
+        username: "..."
+        security_token: "..."
+    tap-salesforce-rest:
+      inherit_from: tap-salesforce
+      config:
+        api_type: "rest"
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "taps": {
+      "tap-salesforce": {
+        "pip_url": "tap-salesforce",
+        "config": {
+          "api_type": "bulk",
+          "username": "...",
+          "security_token": "..."
+        }
+      },
+      "tap-salesforce-rest": {
+        "inherit_from": "tap-salesforce",
+        "config": {
+          "api_type": "rest",
+        }
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Accents
+
+Alto supports the idea of accents. An accent is a way for a tap to override target config when used in combination with the target. This is useful if you are using a target that supports different load methods and you want a particular tap to use a particular method.
+
+Accents are searched for during configuration rendering based on the tap containing a key of the same name as the target. For example, if you have a tap named `tap-salesforce` and a target named `target-bigquery`, an accent may look like this:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default.taps.tap-salesforce]
+pip_url = "tap-salesforce"
+# This key will override the target config
+# when the tap is used with a target matching the key
+target-bigquery.denormalized = true
+
+[default.targets.target-bigquery]
+pip_url = "z3-target-bigquery"
+config.project = "my-project"
+config.denormalized = false
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  taps:
+    tap-salesforce:
+      pip_url: tap-salesforce
+      target-bigquery:
+        # This key will override the target config
+        # when the tap is used with a target matching the key
+        denormalized: true
+  targets:
+    target-bigquery:
+      pip_url: z3-target-bigquery
+      config:
+        project: "my-project"
+        denormalized: false
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "taps": {
+      "tap-salesforce": {
+        "pip_url": "tap-salesforce",
+        "target-bigquery": {
+          "denormalized": true
+        }
+      }
+    },
+    "targets": {
+      "target-bigquery": {
+        "pip_url": "z3-target-bigquery",
+        "config": {
+          "project": "my-project",
+          "denormalized": false
+        }
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+This says, when the `tap-salesforce` tap is used with the `target-bigquery` target, the `denormalized` key will be set to `true` in the target config. Ex. `alto tap-salesforce:target-bigquery`.

@@ -24,7 +24,7 @@ from doit.doit_cmd import DoitConfig, DoitMain
 
 import alto.config
 import alto.engine
-from alto.constants import DEFAULT_ENVIRONMENT, SUPPORTED_CONFIG_FORMATS
+from alto.constants import SUPPORTED_CONFIG_FORMATS
 from alto.logger import LOGGER
 from alto.repl import AltoCmd
 from alto.version import __version__
@@ -54,9 +54,9 @@ class AltoInit(Command):
     def execute(self, opt_values, pos_args):
         """Initialize a new project."""
         config_fname = "alto.{ext}"
-        secret_fname = "alto.secrets.{ext}"
+        local_fname = "alto.local.{ext}"
         config_path = alto.config.working_directory.joinpath(config_fname)
-        secret_path = alto.config.working_directory.joinpath(secret_fname)
+        local_path = alto.config.working_directory.joinpath(local_fname)
         try:
             if any(
                 (alto.config.working_directory / config_fname.format(ext=ext)).exists()
@@ -66,37 +66,21 @@ class AltoInit(Command):
                     "❌ An Alto file already exists in {}".format(alto.config.working_directory)
                 )
                 return 1
-
             format_ = "toml"
-            kwargs = {}
-            from dynaconf.vendor.toml import dump
-
             while True and not opt_values["no-prompt"]:
-                format_ = input("Preferred config format? [toml, yaml, json]: ")
+                format_ = input("❓ Preferred config format? [toml, yaml, json]: ")
                 if format_ not in SUPPORTED_CONFIG_FORMATS:
                     LOGGER.info("❌ Invalid format")
                     return 1
-                if format_ == "toml":
-                    # TOML is the default
-                    pass
-                elif format_ == "yaml":
-                    from dynaconf.vendor.ruamel.yaml import dump  # noqa: F811
-
-                    kwargs = {"default_flow_style": False}
-                elif format_ == "json":
-                    from json import dump  # noqa: F811
-
-                    kwargs = {"indent": 2}
-                else:
-                    raise ValueError("Invalid format")
+                project_name = input("❓ Project name [default]: ") or "default"
                 LOGGER.info(
-                    "🙋 Files to generate:\n\n"
+                    f"\n🙋 Files to generate for project `{project_name}`:\n\n"
                     "1️⃣ "
                     f" {alto.config.working_directory.joinpath(config_fname.format(ext=format_))}\n"
                     "2️⃣ "
-                    f" {alto.config.working_directory.joinpath(secret_fname.format(ext=format_))}\n"
+                    f" {alto.config.working_directory.joinpath(local_fname.format(ext=format_))}\n"
                 )
-                confirm = input("Proceed? [y/N]: ")
+                confirm = input("❓ Proceed? [y/N]: ")
                 if confirm in ("y", "Y", "yes", "Yes", "YES"):
                     break
                 else:
@@ -105,71 +89,33 @@ class AltoInit(Command):
             # A default template for the config file
             # that lets users get started quickly and immediately run the project
             LOGGER.info(f"🏗  Building project in {alto.config.working_directory.resolve()}")
+            config_template_path = Path(__file__).parent.joinpath("incl", "alto.template.{ext}")
+            local_template_path = Path(__file__).parent.joinpath(
+                "incl", "alto.local.template.{ext}"
+            )
             with open(config_path.with_suffix("." + format_), "w") as conf, open(
-                secret_path.with_suffix("." + format_), "w"
-            ) as secret:
-                dump(
-                    {
-                        "default": {
-                            "project_name": os.urandom(4).hex(),
-                            "extensions": ["evidence"],
-                            "load_path": "raw",
-                            "taps": {
-                                "tap-carbon-intensity": {
-                                    "pip_url": (
-                                        "git+https://gitlab.com/meltano/tap-carbon-intensity.git"
-                                        "#egg=tap_carbon_intensity"
-                                    ),
-                                    "load_path": "carbon_intensity",
-                                    "config": {
-                                        "any_key": (
-                                            "**This will end up in a config.json passed to the"
-                                            " tap**"
-                                        ),
-                                        "other_key": (
-                                            "**You can find config on Github or MeltanoHub**"
-                                        ),
-                                    },
-                                    "capabilities": ["state", "catalog"],
-                                    "select": ["*.*"],
-                                }
-                            },
-                            "targets": {
-                                "target-jsonl": {
-                                    "pip_url": "target-jsonl==0.1.4",
-                                    "config": {
-                                        "destination_path": "@format output/{this.load_path}"
-                                    },
-                                }
-                            },
-                        }
-                    },
-                    conf,
-                    **kwargs,
-                )
-                dump(
-                    {
-                        "default": {
-                            "_note_1": (
-                                f"Notice the structure of this file is the same as alto.{format_}"
-                            ),
-                            "_note_2": "Anything in here is merged into the main config file",
-                            "taps": {
-                                "tap-carbon-intensity": {
-                                    "some_secret": f"**I will be merged into alto.{format_}**"
-                                }
-                            },
-                            "targets": {
-                                "target-jsonl": {
-                                    "other_secret": "**use this file for secret management**",
-                                    "final_secret": "**exclude it from source control**",
-                                }
-                            },
-                        }
-                    },
-                    secret,
-                    **kwargs,
-                )
+                local_path.with_suffix("." + format_), "w"
+            ) as local, open(
+                config_template_path.with_suffix("." + format_), "r"
+            ) as conf_template, open(
+                local_template_path.with_suffix("." + format_), "r"
+            ) as local_template:
+                conf.write(conf_template.read().replace("{project}", project_name))
+                local.write(local_template.read())
+            if not os.path.isfile(".env"):
+                with open(".env", "w") as env:
+                    env.write("ALTO_STARTER_PROJECT=1\n")
+            if not os.path.isfile(".gitignore"):
+                with open(".gitignore", "w") as gitignore:
+                    gitignore.write(".alto/\n")
+                    gitignore.write(".alto.json\n")
+                    gitignore.write(".env\n")
+                    gitignore.write("alto.local.*\n")
+                    gitignore.write("alto.secrets.*\n")
+            bls_asset = Path(__file__).parent.joinpath("incl", "bls-series.json")
+            with open("series.json", "w") as f:
+                f.write(bls_asset.read_text() + "\n")
+            LOGGER.info("✅ Done!")
         except Exception as e:
             LOGGER.info("Failed to initialize project: {}".format(e))
             return 1
@@ -240,8 +186,12 @@ class AltoInvoke(Command):
 
 
 class AltoFs(Command):
-    doc_purpose = "Interact with the remote filesystem"
+    doc_purpose = "interact with the remote filesystem"
     doc_usage = "alto fs [push|pull|rm] [src] [dest]"
+    doc_description = (
+        "Interact with the remote filesystem. "
+        "Push and pull files to and from the remote filesystem or remove files."
+    )
     cmd_options = [
         {
             "name": "truncate",
@@ -395,6 +345,33 @@ class AltoList(List):
             self.outstream.write("\n")
 
 
+class AltoDump(Command):
+    doc_purpose = "dump the project configuration"
+    doc_usage = "alto dump"
+    doc_description = (
+        "Dump the project configuration. This is useful for debugging. "
+        "It can also be used to run your exact configuration on a different "
+        "machine by copying the output to an `alto.json` and shipping it."
+    )
+
+    def execute(self, opt_values, pos_args):
+        """Execute the command."""
+        import json
+
+        engine = alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory)
+        engine.setup(opt_values)
+        if not pos_args:
+            print(json.dumps({"default": engine.alto.to_dict()}, indent=2))
+            return
+        ptr = engine.alto
+        for k in pos_args:
+            ptr = ptr[k]
+        if isinstance(ptr, (type(engine.alto), dict, list)):
+            print(json.dumps(ptr.to_dict(), indent=2))
+        else:
+            print(ptr)
+
+
 class AltoMain(DoitMain):
     """Main entry point for the CLI."""
 
@@ -410,8 +387,8 @@ class AltoMain(DoitMain):
         # New commands
         commands["invoke"] = AltoInvoke
         commands["init"] = AltoInit
-        commands["repl"] = AltoRepl
         commands["fs"] = AltoFs
+        commands["dump"] = AltoDump
         # Remove commands
         del commands["reset-dep"]
         del commands["dumpdb"]
@@ -423,6 +400,7 @@ def main(args=sys.argv[1:]) -> int:
     args = args[:]
     LOGGER.info(f"📦 Alto version: {__version__}")
     alto.config.working_directory = _get_root_scrub_args(args)
+    # Find the root directory traversing up the tree
     _init_dir = alto.config.working_directory
     while (
         not any(
@@ -439,15 +417,23 @@ def main(args=sys.argv[1:]) -> int:
                 "alto with -r/--root to specify a directory..."
             )
             return 1
+    # Initialize the engine
+    engine = alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory.resolve())
+    # Set the environment if not already set
     if "ALTO_ENV" not in os.environ:
-        os.environ["ALTO_ENV"] = DEFAULT_ENVIRONMENT
-    LOGGER.info(
-        "🏗  Working directory: "
-        f"{alto.config.working_directory.resolve().relative_to(Path.cwd().resolve())}"
-    )
+        os.environ["ALTO_ENV"] = engine.alto.current_env
+    # Report the working directory
+    try:
+        _work_dir = alto.config.working_directory.resolve().relative_to(Path.cwd().resolve())
+    except ValueError:
+        _work_dir = alto.config.working_directory.resolve()
+    LOGGER.info(f"🏗  Working directory: {_work_dir}")
+    # Report the environment
     LOGGER.info(f"🌎 Environment: {os.environ['ALTO_ENV']}\n")
+    # Run the CLI
+    engine.alto._wrapped
     return AltoMain(
-        alto.engine.AltoTaskEngine(root_dir=alto.config.working_directory.resolve()),
+        engine,
         extra_config={"list": {"status": True, "sort": "definition"}},
     ).run(args)
 

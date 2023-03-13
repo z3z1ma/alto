@@ -1,0 +1,81 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Utility Configuration
+
+Adding a new utility to your project is **as simple as adding a new key** to the `utilities` section of the `alto.toml` file. The key is a user defined name for the tap and the value is a dictionary of configuration options for that tap.
+
+## Example Utility Configuration
+
+Here is a mock example of 1 utility configuration, as you can see it can be quite concise:
+
+<Tabs>
+<TabItem value="toml" label="TOML" default>
+
+```toml title="alto.toml"
+[default.utilities.dlt] # https://dlthub.com/docs/intro
+pip_url = "python-dlt[duckdb]>=0.2.0a25"
+environment.PEX_INHERIT_PATH = "fallback"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML">
+
+```yaml title="alto.yaml"
+default:
+  utilities:
+    dlt: # https://dlthub.com/docs/intro
+      pip_url: "python-dlt[duckdb]>=0.2.0a25"
+      environment:
+        PEX_INHERIT_PATH: "fallback"
+```
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+```json title="alto.json"
+{
+  "default": {
+    "utilities": {
+      "dlt": {
+        "pip_url": "python-dlt[duckdb]>=0.2.0a25",
+        "environment": {
+          "PEX_INHERIT_PATH": "fallback"
+        }
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Below, we will go over each of the configuration options for a utility.
+
+___
+
+## Settings
+
+### `pip_url`
+
+The `pip_url` is the pip installable URL of the utility. This is the same URL that you would use to install the utility via `pip install`. This is the only required field for a utility configuration.
+
+:::tip Tip
+
+Remember pip installable URLs can be a local path to a directory, tarball, zip file, or a git repo. Anything that can be used by `pip` can be used by `alto`.
+
+:::
+
+### `executable` and `entrypoint`
+
+By default, `alto` will assume that the target exposes a script named after the target key name in the alto config. For example, if the target is named `sqlfluff`, `alto` will assume that the target exposes a script named `sqlfluff`. If this is not the case, you can specify the `executable` explicitly. You can alternatively specify the `entrypoint` if the package does not expose a script or you want to use something other than the default.
+
+### `environment`
+
+The `environment` field is a dictionary of environment variables that will be set when running the target. It is fully scoped to the target and will not affect other processes.
+
+
+## Closing Thoughts on Utilities
+
+A utility is **any** python package that you want to use in your project that is not a tap or a target. These are things you want to use in your project but might not want to install into the Docker container / venv. For example, you might want to use sqlfluff to lint your SQL files. You can add it to the `utilities` section and `alto` will automatically manage building it, caching it, and running it for you. It is easily accessible via `alto invoke [plugin_name] [args]`. The `alto invoke [plugin_name]` command will pull the plugin just-in-time if needed. This keeps your Docker container and dependency tree lighter. `alto` itself is still lean enough to sit next to heavier data tools like `dbt`, `pandas`, `duckdb`, and `airflow` and not have much risk for conflict whilst enabling this new path for utility management.

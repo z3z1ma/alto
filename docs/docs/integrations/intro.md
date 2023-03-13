@@ -1,0 +1,5 @@
+# Overview
+
+Integrations are based entirely on the Singer ecosystem. [Singer](https://singer.io) is an open source [specification](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md) for the interchange format between a data extractor and a data loader referred to as `taps` and `targets` respectively. Due to the open nature of the specification, there are many taps and targets available. The Singer ecosystem is a great place to start if you are looking for a way to extract data from a source or load data into a destination without writing any code. The best source for the available taps and targets is the [Meltano Hub](https://hub.meltano.com/). The Meltano Hub is a community driven repository of Singer tap and target metadata. They expose metadata describing what configuration options are available for each tap and target and have a nice user interface. Outside of the Meltano Hub, [GitHub](https://github.com/) is a great place to search for Singer taps and targets.
+
+We expose an index of taps and targets from Meltano hub as a convenience in the following sections. Feel free to use this index get an idea of the available taps and targets.

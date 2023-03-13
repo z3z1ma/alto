@@ -1,0 +1,68 @@
+# Alto Starter Project
+
+# Anything in the default section is applied to all environments
+# you can have an arbitrary number of environments. The ALTO_ENV
+# environment variable is used to determine which environment to
+# layer over the default section.
+default:
+  project_name: "{project}"
+  # Enable builtin extensions or bring your own
+  extensions:
+    - evidence
+  load_path: raw
+  environment:
+    # Set env vars that will be available to all plugins
+    STARTER_PROJECT: 1
+  taps:
+    tap-carbon-intensity: # https://gitlab.com/meltano/tap-carbon-intensity
+      pip_url: "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
+      load_path: carbon_intensity
+      capabilities:
+        - state
+        - catalog
+      select:
+        - "*.*"
+        - ~*.dnoregion
+      config: {}
+    tap-bls: # https://hub.meltano.com/extractors/tap-bls
+      pip_url: "git+https://github.com/frasermarlow/tap-bls#egg=tap_bls"
+      capabilities:
+        - state
+        - catalog
+      load_path: bls
+      select:
+        - JTU000000000000000JOR
+        - JTU000000000000000JOL
+      config:
+        startyear: "2019"
+        endyear: "2020"
+        calculations: "true"
+        annualaverage: "false"
+        aspects: "false"
+        disable_collection: "true"
+        update_state: "false"
+        series_list_file_location: ./series.json
+  targets:
+    target-jsonl: # https://hub.meltano.com/loaders/target-singer-jsonl
+      pip_url: target-jsonl==0.1.4
+      config:
+        # this.load_path is a reference to the load_path of the tap
+        destination_path: "@format output/{this.load_path}"
+  utilities:
+    dlt:
+      pip_url: "python-dlt[duckdb]>=0.2.0a25"
+      environment:
+        # Set plugin specific env vars
+        PEX_INHERIT_PATH: fallback
+
+# Example of a custom environment
+# This environment will be layered over the default section
+# and will override any values that are the same in both sections.
+# Dicts are merged, lists are appended. This would be active if
+# the environment variable ALTO_ENV=github_actions
+github_actions:
+  load_path: cicd
+  targets:
+    target-jsonl:
+      config:
+        destination_path: "@format /github/workspace/output/{this.load_path}"

@@ -1,0 +1,75 @@
+{
+    "default": {
+        "project_name": "{project}",
+        "extensions": [
+            "evidence"
+        ],
+        "load_path": "raw",
+        "environment": {
+            "STARTER_PROJECT": 1
+        },
+        "taps": {
+            "tap-carbon-intensity": {
+                "pip_url": "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity",
+                "load_path": "carbon_intensity",
+                "capabilities": [
+                    "state",
+                    "catalog"
+                ],
+                "select": [
+                    "*.*",
+                    "~*.dnoregion"
+                ],
+                "config": { }
+            },
+            "tap-bls": {
+                "pip_url": "git+https://github.com/frasermarlow/tap-bls#egg=tap_bls",
+                "capabilities": [
+                    "state",
+                    "catalog"
+                ],
+                "load_path": "bls",
+                "select": [
+                    "JTU000000000000000JOR",
+                    "JTU000000000000000JOL"
+                ],
+                "config": {
+                    "startyear": "2019",
+                    "endyear": "2020",
+                    "calculations": "true",
+                    "annualaverage": "false",
+                    "aspects": "false",
+                    "disable_collection": "true",
+                    "update_state": "false",
+                    "series_list_file_location": "./series.json"
+                }
+            }
+        },
+        "targets": {
+            "target-jsonl": {
+                "pip_url": "target-jsonl==0.1.4",
+                "config": {
+                    "destination_path": "@format output/{this.load_path}"
+                }
+            }
+        },
+        "utilities": {
+            "dlt": {
+                "pip_url": "python-dlt[duckdb]>=0.2.0a25",
+                "environment": {
+                    "PEX_INHERIT_PATH": "fallback"
+                }
+            }
+        }
+    },
+    "github_actions": {
+        "load_path": "cicd",
+        "targets": {
+            "target-jsonl": {
+                "config": {
+                    "destination_path": "@format /github/workspace/output/{this.load_path}"
+                }
+            }
+        }
+    }
+}

@@ -34,6 +34,7 @@ from enum import Enum
 from hashlib import md5, sha1
 from pathlib import Path
 
+import dynaconf.utils
 import fsspec
 from doit.cmd_base import DoitCmdBase as AltoCmdBase
 from doit.cmd_base import TaskLoader2 as DoitEngine
@@ -77,6 +78,28 @@ RESERVOIR_VERSION_KEY = "__version__"
 """The key used to store the version of the reservoir format."""
 RESERVOIR_BUFFER_SIZE = 10_000
 """The default number of records to buffer before flushing to reservoir filesystem."""
+
+
+def find_hyphen_key(key: str, data: dict[str, t.Any]) -> t.Optional[str]:
+    """Find a key in a dict that matches the given key, allowing for hyphens."""
+    if key in data:
+        return key
+    for k in data.keys():
+        if k.replace("-", "_") == key:
+            return k
+    return None
+
+
+# Patch dynaconf to support hyphenated keys
+# this allows us to override config values with env vars
+# even when the config key contains a hyphen.
+# ie. `ALTO_TAPS__MY_TAP__SOMETHING` will override `taps.my-tap.something`
+# If the hypenated key is not found, the original dynaconf lookup is used.
+# This means non-hyphenated keys will still work as expected if they exist.
+__case_lookup = dynaconf.utils.find_the_correct_casing
+dynaconf.utils.find_the_correct_casing = lambda key, data: find_hyphen_key(
+    key, data
+) or __case_lookup(key, data)
 
 
 class AltoCmd(str, Enum):
@@ -258,7 +281,7 @@ class AltoFileSystem:
                 self._fs = DirFileSystem(
                     f"{self.config['BUCKET']}/{path}/{self.config['PROJECT_NAME']}",
                     fs=fsspec.filesystem(
-                        fsystem.lower(), **self.config.get(f"{fsystem}_KWARGS", DynaBox())
+                        fsystem.lower(), **self.config.get(f"{fsystem}_SETTINGS", DynaBox())
                     ),
                 )
             else:
@@ -826,7 +849,11 @@ class AltoTaskEngine(DoitEngine):
             # Default to loading the configuration from the root directory
             self.alto = Dynaconf(
                 settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
-                secrets=[root_dir / f"alto.secrets.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
+                secrets=[
+                    root_dir / f"alto.{segment}.{fmt}"
+                    for fmt in SUPPORTED_CONFIG_FORMATS
+                    for segment in ("secrets", "local")
+                ],
                 **kwargs,
             )
         elif isinstance(config, Dynaconf):
@@ -859,7 +886,7 @@ class AltoTaskEngine(DoitEngine):
             opt_values = {}
         # Set the environment variables
         for k, v in self.alto.get("ENVIRONMENT", {}).items():
-            os.environ[k] = v
+            os.environ[k] = str(v)
         # Load the extensions
         self._load_extensions()
         # Validate the configuration

@@ -1,0 +1,12 @@
+# this file should be gitignored
+# it is merged into the main config file at runtime
+# and follows the exact same structure,
+# use it to include personal settings
+
+[default.environment]
+
+[default.taps]
+
+[default.targets]
+
+[default.utilities]
