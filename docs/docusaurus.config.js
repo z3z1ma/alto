@@ -89,12 +89,15 @@ const config = {
             title: 'Docs',
             items: [
               {
+                type: 'doc',
+                docId: 'intro',
+                position: 'left',
                 label: 'Tutorial',
-                to: '/docs/intro',
               },
               {
-                label: 'Concepts',
-                to: '/concepts',
+                to: '/docs/integrations/extensions',
+                label: 'Extensions',
+                position: 'left'
               },
             ],
           },
@@ -111,8 +114,8 @@ const config = {
             title: 'More',
             items: [
               {
-                label: 'GitHub',
-                href: 'https://github.com/z3z1ma/alto',
+                label: 'z3z1ma GitHub',
+                href: 'https://github.com/z3z1ma',
               },
             ],
           },

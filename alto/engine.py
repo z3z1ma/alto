@@ -80,7 +80,7 @@ RESERVOIR_BUFFER_SIZE = 10_000
 """The default number of records to buffer before flushing to reservoir filesystem."""
 
 
-def find_hyphen_key(key: str, data: dict[str, t.Any]) -> t.Optional[str]:
+def find_hyphen_key(key: str, data: t.Dict[str, t.Any]) -> t.Optional[str]:
     """Find a key in a dict that matches the given key, allowing for hyphens."""
     if key in data:
         return key
