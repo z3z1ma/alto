@@ -39,7 +39,9 @@ Running the `alto list --all` command in the default starter project will show y
 
 ![default-config](./assets/alto-list-default-project.png)
 
-As you can see, the default project has a _lot_ of tasks scaffolded right off the bat! Remember, all of these tasks are derived entirely from your configuration. We will dive deeper into configuration later. Now that we have verified your project is ready to go, lets run a data pipeline (wait, already?!).
+As you can see, the default project has a _lot_ of tasks scaffolded right off the bat! Remember, all of these tasks are derived entirely from your configuration. We will dive deeper into configuration later, but do take a glance at the config file in your project when your ready.
+
+Now that we have verified your project is ready to go, lets run a data pipeline (wait, already?!).
 
 ## Run a data pipeline
 
@@ -79,3 +81,5 @@ pipx install singer-alto
 alto init
 alto tap-carbon-intensity:target-jsonl
 ```
+
+The next section will give you more exposure to the flexibility of the configuration.

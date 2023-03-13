@@ -338,12 +338,18 @@ class AltoList(List):
             self.outstream.write("📤 " + template.format(**line_data))
         elif task.name.startswith("reservoir"):
             self.outstream.write("💧 " + template.format(**line_data))
+        elif "data pipeline" in task.doc:
+            self.outstream.write("🔌 " + template.format(**line_data))
         else:
             self.outstream.write("🚀 " + template.format(**line_data))
         if list_deps:
             for dep in task.file_dep:
                 self.outstream.write(" - ✨  %s\n" % dep)
             self.outstream.write("\n")
+
+
+# Patch the list command to ensure our sort order
+AltoList.cmd_options[-1]["default"] = "definition"
 
 
 class AltoDump(Command):

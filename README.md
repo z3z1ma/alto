@@ -38,18 +38,87 @@ pip install singer-alto
 
 ___
 
-## Overview
+## Example Configuration
 
-Alto uses the popular [Singer](https://www.singer.io/) ETL framework to execute data extraction and transformation tasks, which means you can use any of the [hundreds](https://hub.meltano.com/) of existing Singer taps and targets to connect to the systems you need. Additionally, Alto provides a powerful and flexible way to build [PEX](https://github.com/pantsbuild/pex) files, which are self-contained executable files that encapsulate your code and dependencies, making it easy to distribute your data integration workflows to other systems. All of the existing ecosystem as well as all plugins built via the [Meltano SDK](https://sdk.meltano.com/en/latest/) are usable out of the box.
+The following is an example configuration file for Alto. It is a TOML file but you can use YAML or JSON as well. Alto will automatically detect the file type and load the configuration accordingly. I recommend using TOML for the most readable config file. I also recommend reading the [docs](https://z3z1ma.github.io/alto/) to get a better understanding of the config file structure.
 
-Another standout features of Alto is its data reservoir, which allows you to store and manage your data in a centralized location. This can be especially useful for teams that need to share data across multiple targets or replay loads when target plugins change. It provides a consistent and reliable source of truth for your data. It also allows you to run taps and targets independently even on different machines. This persistence is powered by [fsspec](https://github.com/fsspec/filesystem_spec) and for the end user its as simple as `alto tap-github:reservoir` to send data in and `alto reservoir:tap-github-target-*` to send data out where `*` can be any configured target.
+```toml title="alto.toml"
+[default]
+project_name = "{project}"
+load_path = "raw"
+extensions = ["evidence"]
+environment.STARTER_PROJECT = 1
+# https://github.com/dlt-hub/dlt
+utilities.dlt.pip_url = "python-dlt[duckdb]>=0.2.0a25"
+utilities.dlt.environment.PEX_INHERIT_PATH = "fallback"
 
-Finally, Alto is scaffolded over [Doit](https://github.com/pydoit/doit), a Python-based task automation tool, to manage and execute your data integration workflows. This means it is more like Make and will build dependencies if they do not exist meaning data integrations are executed with a single command.
+[default.taps]
+# https://gitlab.com/meltano/tap-carbon-intensity
+carbon-data.pip_url = "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
+carbon-data.executable = "tap-carbon-intensity"
+carbon-data.load_path = "carbon_intensity"
+carbon-data.capabilities = ["state", "catalog"]
+carbon-data.select = ["*.*", "~*.dnoregion"]
 
+# https://hub.meltano.com/extractors/tap-bls
+labor-data.pip_url = "git+https://github.com/frasermarlow/tap-bls#egg=tap_bls"
+labor-data.executable = "tap-bls"
+labor-data.capabilities = ["state", "catalog"]
+labor-data.load_path = "bls"
+labor-data.select = ["JTU000000000000000JOR", "JTU000000000000000JOL"]
+labor-data.config.startyear = "2019"
+labor-data.config.endyear = "2020"
+labor-data.config.calculations = "true"
+labor-data.config.annualaverage = "false"
+labor-data.config.aspects = "false"
+labor-data.config.disable_collection = "true"
+labor-data.config.update_state = "false"
+labor-data.config.series_list_file_location = "./series.json"
+
+[default.targets]
+# https://hub.meltano.com/loaders/target-singer-jsonl
+jsonl.pip_url = "target-jsonl==0.1.4"
+jsonl.executable = "target-jsonl"
+jsonl.config.destination_path = "@format output/{this.load_path}"
+
+[github_actions]
+load_path = "cicd"
+targets.jsonl.config.destination_path = "@format /github/workspace/output/{this.load_path}"
+```
+
+Given the above configuration, you can run the following command to extract data from the BLS and Carbon Intensity APIs and load it into JSONL files.
+
+```bash
+alto carbon-data:jsonl
+alto labor-data:jsonl
+```
+
+Or send them to the project reservoir.
+
+```bash
+alto carbon-data:reservoir
+alto labor-data:reservoir
+```
+
+And from the reservoir, you can replay to any number of targets.
+
+```bash
+alto reservoir:carbon-data-jsonl
+alto reservoir:carbon-data-snowflake  # here as example, not in config
+alto reservoir:carbon-data-parquet    # here as example, not in config
+```
+
+Lastly, you can invoke the utility defined above (you can invoke any plaugin this way).
+
+```bash
+alto invoke dlt --help  # invoke an executable
+alto invoke python dlt  # drop into a python shell with dlt installed
+alto invoke python dlt ./path/to/pipeline.py  # run a python script
+```
 
 ## Comparison
 
-> How is this different than what exists today; namely Meltano?
+> How is this different than what exists today; namely Meltano? Outside of some of what we covered above.
 
 ### Differences
 

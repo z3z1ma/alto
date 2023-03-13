@@ -15,6 +15,7 @@
 const sidebars = {
   tutorialSidebar: [
     'intro',
+    'familiarize',
     {
       type: 'category',
       label: 'Alto Fundamentals',
