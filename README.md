@@ -22,9 +22,11 @@ Jump into the [docs](https://z3z1ma.github.io/alto/) hosted on GitHub Pages to g
 
 [![Documentation](https://github.com/z3z1ma/alto/actions/workflows/pages/pages-build-deployment/badge.svg)](https://z3z1ma.github.io/alto/)
 
+✨ We have a lightweight, searchable **[tap](https://z3z1ma.github.io/alto/docs/integrations/taps)** index and **[target](https://z3z1ma.github.io/alto/docs/integrations/targets)** index embedded in the docs if you want to peruse the available integrations too! All links there forward to the integration documentation on Meltano Hub. ⏩
+
 ## Introduction
 
-👋 Alto is a versatile data integration tool that allows you to easily run [Singer](https://www.singer.io/) plugins, build and cache [PEX](https://github.com/pantsbuild/pex) files encapsulating those plugins, and create a data reservoir 💧 whereby you can extract once and replay to as many destinations as you want as many times as you want. With Alto, you can seamlessly connect to various data sources, store your data in a centralized reservoir (singerlake), and manage lean, efficient extract load flows. Throw it into a `dbt` project, a data science project, or a passion project without fear of conflicting dependencies and watch it *just work*. The alto config file can sit right next to your dbt project yaml with no other changes to your repo beyond adding `singer-alto` to your requirements and you can be running data pipelines, today!
+👋 Alto is a versatile data integration tool that allows you to easily run [Singer](https://www.singer.io/) plugins, build and cache [PEX](https://github.com/pantsbuild/pex) files encapsulating those plugins, and create a data reservoir 💧 whereby you can extract once and replay to as many destinations as you want as many times as you want. With Alto, you can seamlessly connect to various data sources, store your data in a centralized reservoir (singerlake), and manage lean, efficient extract load flows. Throw it into a `dbt` project, a data science project, or a passion project without fear of conflicting dependencies and watch it *just work*. The alto config file can sit right next to your dbt project yaml with no other changes to your repo beyond adding `singer-alto` to your requirements and you can be running data pipelines, today! 🎯
 
 Like [Meltano](https://github.com/meltano/meltano), Alto is driven **entirely by configuration** and the config structure drew much of its inspiration from Meltano. Alto supports YAML, TOML, and JSON leveraging [Dynaconf](https://github.com/dynaconf/dynaconf) for robust features. Because of the similarities to Meltano, using one or the other is a fairly straightforward process!
 
@@ -40,7 +42,7 @@ ___
 
 ## Example Configuration
 
-The following is an example configuration file for Alto. It is a TOML file but you can use YAML or JSON as well. Alto will automatically detect the file type and load the configuration accordingly. I recommend using TOML for the most readable config file. I also recommend reading the [docs](https://z3z1ma.github.io/alto/) to get a better understanding of the config file structure.
+The following is an example configuration file for Alto. It is a TOML file but you can use YAML or JSON as well. Alto will automatically detect the file type and load the configuration accordingly. I recommend using TOML for the most concise yet readable config file. I also recommend reading the [docs](https://z3z1ma.github.io/alto/) to get a better understanding of the config file structure.
 
 ```toml title="alto.toml"
 [default]
@@ -112,6 +114,7 @@ Lastly, you can invoke the utility defined above (you can invoke any plaugin thi
 
 ```bash
 alto invoke dlt --help  # invoke an executable
+
 alto invoke python dlt  # drop into a python shell with dlt installed
 alto invoke python dlt ./path/to/pipeline.py  # run a python script
 ```
@@ -122,11 +125,11 @@ alto invoke python dlt ./path/to/pipeline.py  # run a python script
 
 ### Differences
 
-I would recommend `alto` if you want something lighter than Meltano. What does that mean? If you have a Python project where EL is one of many concerns and you want a dependency you can add that is lean, highly functional, and can stand alongside other dependencies without concern of conflict. I would recommend `alto` if you want a light snappy CLI with emphasis on less-is-more. I would recommend `alto` if you want to use Singer taps and targets but don't want to deal with the Meltano system db, migrations, or system directory. I would recommend `alto` if you want a codebase you can easily contribute to, fork, or modify. I would recommend `meltano` if you want a tool that _is_ heavier but has a large community and more exposure and features. I would recommend `alto` if those extra features are not necessary for your use case.
+I would recommend `alto` if you want something lighter than Meltano. If you have a Python project where EL is one of many existing concerns and you want a dependency you can add that is lean, highly functional, and can stand alongside other dependencies without concern of conflict, I would recommend `alto`. I would recommend `alto` if you want a light snappy CLI with emphasis on less-is-more. I would recommend `alto` if you want to use Singer taps and targets but don't want to deal with the Meltano system db, migrations, or system directory. I would recommend `alto` if you want a codebase small enough to quickly iterate on or play with. I would recommend `meltano` if you want a tool that has a large community, more exposure, and features. I would recommend `alto` if those extra features are not necessary for your use case or your just looking to explore whats out there.
 
-Alto is able to run taps -> targets with centralized environment-aware configuration, secret management, automatically managed state, automatic discovery, catalog caching to a remote backend, catalog manipulation via `select` & `metadata` keys, and many of the things users love about Meltano. Given this, in most situations -- from a pure EL perspective, it stacks up decently with Meltano since, given all else aside, it is really the plugins that do most of the work once state, config, and catalog is managed.
+Alto is able to run taps -> targets with centralized environment-aware configuration, secret management, automatically managed state, automatic discovery, catalog caching to a remote backend, catalog manipulation via `select` & `metadata` keys, and many of the things users love about Meltano. Given this, in most situations -- from a pure EL perspective, it stacks up well with Meltano since, given all else aside, it is the plugins that do much of the work once the state, configuration, and catalog are managed.
 
-There are some compelling features in `alto` in general around how it manages plugins as cached PEX files, the built in reservoir, and its light footprint. Continuing to use Meltano as the baseline of comparison (since it was the inspiration), here are some noteworthy differences:
+There are some compelling features in `alto` in general around how it manages plugins as cached PEX files, the built in reservoir as an available-by-default source & destination, and its _light_ footprint. Continuing to use Meltano as the baseline of comparison (since it was the inspiration!), here are some noteworthy differences:
 
 - The CLI is extremely fast due to the lightness of the package.
 
@@ -136,11 +139,11 @@ There are some compelling features in `alto` in general around how it manages pl
     - **Meltano**: >100
     - **Alto**: 7
 
-- Because of its dependency footprint, it can be installed in very tiny Docker containers and wheels are cross platform compatible. It also installs extremely quickly.
+- Because of its dependency footprint, it can be installed in very tiny Docker containers and wheels are cross platform compatible, naturally. It installs extremely quickly.
 
 - We use `PEX` (PythonEXecutable) for all plugins instead of loose venvs making plugins single files that are straightforward to cache.
 
-- We use a (simple) caching algorithm that makes the plugins re-usable across machines when combined with a remote filesystem and re-usable on the same system in general. This means, most of the time, you will build a PEX artifact once and **never** build it again. This makes an already lightweight `alto` even more portable.
+- We use a (simple) caching algorithm that makes the plugins re-usable across machines when combined with a remote filesystem and re-usable on the same system in general. This means, most of the time, you will build a PEX artifact once and **never** build it again. This makes an already lightweight `alto` even more portable. The benefits are applicable for your whole team.
 
 - Docker containers do not require you to "install" the plugins during the build process since the plugins are instantly pulled from a remote cache. This can **significantly** reduce image size if you are working with enough plugins.
 
@@ -168,7 +171,7 @@ There are some compelling features in `alto` in general around how it manages pl
 
 ## Closing Remarks
 
-Remember, everything in software is a tradeoff. I offer `alto` as another tool in the ecosystem which gets the job done in a radically different way. I hope you find it useful and if you do, please consider contributing to the project. I am always looking for contributors and I am happy to help onboard new contributors. I am also happy to help with any questions you may have about the project.
+Remember, everything in software is a tradeoff. I offer `alto` as another tool in the ecosystem which gets the job done in a radically different way. I hope you find it useful and if you do, please consider contributing to the project or having the interesting discussions about what the ideal is. I am also happy to help with any questions you may have about the project.
 
 Hats off to Meltano 🎉 for being a great inspiration and for being a great tool that helped to shape the ideal of what I wanted to build. I hope you find this interesting and divergent enough to warrant a look.
 
