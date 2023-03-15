@@ -38,7 +38,10 @@ const sidebars = {
     'integrations/taps',
     'integrations/targets',
   ],
-  extensionsSidebar: [],
+  extensionsSidebar: [
+    'extensions/intro',
+    'extensions/evidence',
+  ],
 };
 
 module.exports = sidebars;

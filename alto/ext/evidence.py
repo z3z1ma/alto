@@ -34,11 +34,18 @@ class Evidence(AltoExtension):
 
     def init_hook(self) -> None:
         """Initialize the extension."""
-        _path = os.path.expanduser(self.spec.config.home)
-        if _path.startswith("/"):
-            self.spec.config.home = _path
+        # Set the Evidence home directory
+        root = os.path.expanduser(os.getenv("EVIDENCE_HOME", self.spec.config.home))
+        if root.startswith("/"):
+            self.spec.config.home = root
         else:
-            self.spec.config.home = str(self.filesystem.root_dir / _path)
+            self.spec.config.home = str(self.filesystem.root_dir / root)
+        # Set the adapter
+        adapter = self.spec.config.get("database")
+        if adapter is not None:
+            os.environ["DATABASE"] = adapter
+        # This will be suppressed if the user has a config file so alto can use its
+        # environment aware configuration to manage the Evidence project.
         self._config_file = os.path.join(
             self.spec.config.home,
             ".evidence",
