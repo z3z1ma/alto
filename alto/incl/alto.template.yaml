@@ -13,6 +13,9 @@ default:
   environment:
     # Set env vars that will be available to all plugins
     STARTER_PROJECT: 1
+    # Configure Evidence
+    DATABASE: "duckdb"
+    DUCKDB_FILENAME: "needful_things.duckdb"
   taps:
     tap-carbon-intensity: # https://gitlab.com/meltano/tap-carbon-intensity
       pip_url: "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
@@ -22,7 +25,7 @@ default:
         - catalog
       select:
         - "*.*"
-        - ~*.dnoregion
+        - ~*.dnoregion # Simple PII hashing
       config: {}
     tap-bls: # https://hub.meltano.com/extractors/tap-bls
       pip_url: "git+https://github.com/frasermarlow/tap-bls#egg=tap_bls"

@@ -105,17 +105,20 @@ class AltoInit(Command):
                 local.write(local_template.read())
             if not os.path.isfile(".env"):
                 with open(".env", "w") as env:
-                    env.write("ALTO_STARTER_PROJECT=1\n")
+                    env.write("MY_SECRET=1\n")
             if not os.path.isfile(".gitignore"):
                 with open(".gitignore", "w") as gitignore:
+                    gitignore.write(".env\n\n")
                     gitignore.write(".alto/\n")
                     gitignore.write(".alto.json\n")
-                    gitignore.write(".env\n")
                     gitignore.write("alto.local.*\n")
                     gitignore.write("alto.secrets.*\n")
             bls_asset = Path(__file__).parent.joinpath("incl", "bls-series.json")
             with open("series.json", "w") as f:
                 f.write(bls_asset.read_text() + "\n")
+            dlt_asset = Path(__file__).parent.joinpath("incl", "dlt_example.py")
+            with open("carbon_pipeline_dlt.py", "w") as f:
+                f.write(dlt_asset.read_text() + "\n")
             LOGGER.info("✅ Done!")
         except Exception as e:
             LOGGER.info("Failed to initialize project: {}".format(e))

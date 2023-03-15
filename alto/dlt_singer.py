@@ -1,6 +1,7 @@
 import os
+import time
 import typing as t
-from queue import Queue
+from queue import Empty, Queue
 from threading import Thread
 
 import alto.constants
@@ -23,10 +24,13 @@ class SingerTapDemux(Thread):
 
     def __init__(self, source: str, env: str, *streams: t.List[str]) -> None:
         """Initialize the demuxer."""
-        super().__init__()
+        super().__init__(daemon=True)
         self.streams = {stream: Queue() for stream in streams}
         self.source = source
         self.env = env
+        # Lifecycle flags
+        self.setup_complete = False
+        self.graceful_exit = False
 
     def run(self) -> None:
         """Run the demuxer thread."""
@@ -44,6 +48,7 @@ class SingerTapDemux(Thread):
             state_key=f"dlt-{self.source}-{self.env}",
             records_only=True,
         ) as tap_stream:
+            self.setup_complete = True
             for payload in tap_stream:
                 if payload is None:
                     continue
@@ -52,6 +57,7 @@ class SingerTapDemux(Thread):
         # Put a None on each stream to signal the end of the stream
         for stream in self.streams.values():
             stream.put(None)
+        self.graceful_exit = True
 
 
 @dlt.source
@@ -69,11 +75,21 @@ def singer(
     # Ensure the env is set
     os.environ["ALTO_ENV"] = env
     # Create the demuxer
-    demux = SingerTapDemux(source, env, *streams)
-    demux.start()
+    producer = SingerTapDemux(source, env, *streams)
+    producer.start()
+    # Wait for the producer to start
+    start_time = time.time()
+    while not producer.is_alive() or not producer.setup_complete:
+        time.sleep(0.1)
+        if time.time() - start_time > 180.0:
+            # Timeout after 180 seconds, this is arbitrary but we are
+            # trying to account for build time of a non-cached plugin.
+            raise RuntimeError("Singer tap failed to start, aborting.")
     # Create the dlt resources
     return tuple(
-        singer_stream_factory(stream, resource_options.get(stream, {}))(demux.streams[stream])
+        singer_stream_factory(stream, resource_options.get(stream, {}))(
+            producer.streams[stream], producer
+        )
         for stream in streams
     )
 
@@ -84,11 +100,19 @@ def singer_stream_factory(
     """Factory for creating a dlt.resource function for each stream."""
 
     @dlt.resource(name=stream, **resource_options)
-    def _singer_stream(_queue: Queue) -> t.Iterator[t.Any]:
-        while True:
-            item = _queue.get()
-            if item is None:
-                break
-            yield item
+    def _singer_stream(_queue: Queue, producer: SingerTapDemux) -> t.Iterator[t.Any]:
+        while producer.is_alive() or not _queue.empty():
+            try:
+                item = _queue.get(timeout=1.0)
+            except Empty:
+                continue
+            else:
+                if item is None:
+                    _queue.task_done()
+                    break  # End of stream
+                yield item
+                _queue.task_done()
+        if not producer.graceful_exit:
+            raise RuntimeError("Singer tap exited unexpectedly.")
 
     return _singer_stream

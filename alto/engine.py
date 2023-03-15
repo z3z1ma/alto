@@ -35,6 +35,7 @@ from pathlib import Path
 
 import dynaconf.utils
 import fsspec
+from doit.cmd_base import CmdAction
 from doit.cmd_base import DoitCmdBase as AltoCmdBase
 from doit.cmd_base import TaskLoader2 as DoitEngine
 from doit.loader import generate_tasks
@@ -807,6 +808,17 @@ class AltoExtension:
         """Return the tasks for the extension."""
         yield from ()
 
+    def _tasks(self) -> t.Generator[AltoTaskData, None, None]:
+        """Return the tasks for the extension.
+
+        Not used but exists as reference to a good pattern.
+        """
+        for task in self.tasks():
+            for i, action in enumerate(task["actions"]):
+                if isinstance(action, str):
+                    task["actions"][i] = CmdAction(action, env=os.environ)
+            yield task
+
 
 class AltoTaskEngine(DoitEngine):
     """The alto task engine builds on top of doit to provide a simple interface for Singer tasks.
@@ -1196,7 +1208,7 @@ class AltoTaskEngine(DoitEngine):
                 generate_tasks(AltoCmd.ABOUT, self.task_about(), self.task_about.__doc__),
                 *(
                     generate_tasks(ext.name, ext.tasks(), f"[extension] {ext.__doc__}")
-                    for n, ext in enumerate(self.extensions)
+                    for ext in self.extensions
                 ),
             )
         )

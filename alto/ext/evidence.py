@@ -11,13 +11,17 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """This module implements the Evidence.dev extension."""
+import json
 import os
 import typing as t
 
 from dynaconf import Validator
 
 from alto.engine import AltoExtension
-from alto.models import AltoTask
+from alto.models import AltoTask, AltoTaskData
+
+__all__ = ["register"]
+__version__ = "0.1.0"
 
 
 def register():
@@ -34,8 +38,18 @@ class Evidence(AltoExtension):
         if _path.startswith("/"):
             self.spec.config.home = _path
         else:
-            self.spec.config.home = os.path.join(self.filesystem.root_dir, _path)
-        os.makedirs(self.spec.config.home, exist_ok=True, mode=0o755)
+            self.spec.config.home = str(self.filesystem.root_dir / _path)
+        self._config_file = os.path.join(
+            self.spec.config.home,
+            ".evidence",
+            "template",
+            "evidence.settings.json",
+        )
+        if os.path.exists(self._config_file):
+            with open(self._config_file, "r") as f:
+                self._config_file_cached = json.load(f)
+        else:
+            self._config_file_cached = None
 
     @staticmethod
     def get_validators() -> t.List["Validator"]:
@@ -56,36 +70,57 @@ class Evidence(AltoExtension):
             ),
         ]
 
-    def initialize(self):
+    def _restore_config_if_cached(self) -> None:
+        if self._config_file_cached is not None:
+            with open(self._config_file, "w", encoding="utf-8") as f:
+                json.dump(self._config_file_cached, f)
+
+    def suppress_config(self) -> None:
+        def _suppress_config() -> None:
+            if os.path.exists(self._config_file):
+                os.remove(self._config_file)
+
+        return AltoTask(name="_suppress_config").set_actions(_suppress_config).data
+
+    def initialize(self) -> AltoTaskData:
         """Run 'npx degit' to generate Evidence project from template."""
         return (
             AltoTask(name="initialize")
-            .set_actions(f"npx --yes degit evidence-dev/template {self.spec.config.home}")
+            .set_actions(
+                f"mkdir -p {self.spec.config.home}",
+                f"npx --yes degit evidence-dev/template {self.spec.config.home}",
+            )
             .set_doc("Generate Evidence project from template.")
             .set_clean(f"rm -rf {self.spec.config.home}")
-            .set_uptodate(f"test -f {self.spec.config.home}/package.json")
+            .set_uptodate((os.path.exists, (f"{self.spec.config.home}/package.json",)))
             .set_targets(f"{self.spec.config.home}/package.json")
             .set_verbosity(2)
             .data
         )
 
-    def build(self):
+    def build(self) -> AltoTaskData:
         """Run 'npm run build' in the Evidence home dir."""
+        if self.spec.config.get("strict", False):
+            build = "build:strict"
+        else:
+            build = "build"
         task = (
             AltoTask(name="build")
-            .set_actions(f"npm --prefix {self.spec.config.home} install")
-            .set_file_dep(f"{self.spec.config.home}/package.json")
+            .set_actions(
+                f"npm --prefix {self.spec.config.home} install",
+                f"npm --prefix {self.spec.config.home} run {build}",
+            )
+            .set_setup(f"{self.name}:_suppress_config")
+            .set_teardown((self._restore_config_if_cached,))
+            .set_task_dep(f"{self.name}:initialize")
             .set_doc("Build the Evidence dev reports.")
             .set_clean(f"rm -rf {self.spec.config.home}/build")
+            .set_uptodate(False)
             .set_verbosity(2)
         )
-        if self.spec.config.get("strict", False):
-            task.set_actions(f"npm --prefix {self.spec.config.home} run build:strict")
-        else:
-            task.set_actions(f"npm --prefix {self.spec.config.home} run build")
         return task.data
 
-    def dev(self):
+    def dev(self) -> AltoTaskData:
         """Run 'npm run dev' in the Evidence home dir."""
         return (
             AltoTask(name="dev")
@@ -93,14 +128,68 @@ class Evidence(AltoExtension):
                 f"npm --prefix {self.spec.config.home} install",
                 f"npm --prefix {self.spec.config.home} run dev",
             )
-            .set_file_dep(f"{self.spec.config.home}/package.json")
+            .set_task_dep(f"{self.name}:initialize")
+            .set_setup(f"{self.name}:_suppress_config")
+            .set_teardown((self._restore_config_if_cached,))
             .set_doc("Run the Evidence dev server.")
+            .set_uptodate(False)
             .set_verbosity(2)
             .data
         )
 
-    def tasks(self):
+    def vars(self) -> AltoTaskData:
+        """Get help knowing what vars to configure per adapter. Not documented anywhere. 🤷‍♀️"""
+
+        def _print_env_vars() -> t.Dict[str, t.List[str]]:
+            import re
+            import urllib.request
+
+            adapters = (
+                "bigquery",
+                "duckdb",
+                "mysql",
+                "postgres",
+                "snowflake",
+                "sqlite",
+            )
+            output = {}
+            for adapter in adapters:
+                url = (
+                    "https://raw.githubusercontent.com/"
+                    f"evidence-dev/evidence/main/packages/{adapter}/index.cjs"
+                )
+                with urllib.request.urlopen(url) as response:
+                    content = response.read().decode("utf-8")
+                matches = re.findall(
+                    rf'process.env\["{adapter.upper()}_([A-Z_]+)"\]',
+                    content,
+                    flags=re.DOTALL,
+                )
+                output[adapter] = []
+                if matches:
+                    print(f"# {adapter}", "& redshift" if adapter == "postgres" else "")
+                    for match in matches:
+                        print(f"{adapter.upper()}_{match}")
+                        output[adapter].append(f"{adapter.upper()}_{match}")
+                print()
+            return output
+
+        return (
+            AltoTask(name="vars")
+            .set_actions((_print_env_vars,))
+            .set_doc(
+                "Dump env vars used to configure evidence. These must be set in your environment, "
+                "in your .env file, or in your alto configuration file."
+            )
+            .set_verbosity(2)
+            .set_uptodate(False)
+            .data
+        )
+
+    def tasks(self) -> t.Iterator[AltoTaskData]:
         """Yields tasks."""
         yield self.initialize()
         yield self.build()
         yield self.dev()
+        yield self.vars()
+        yield self.suppress_config()

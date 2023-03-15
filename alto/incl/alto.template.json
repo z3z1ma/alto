@@ -6,7 +6,9 @@
         ],
         "load_path": "raw",
         "environment": {
-            "STARTER_PROJECT": 1
+            "STARTER_PROJECT": 1,
+            "DATABASE": "duckdb",
+            "DUCKDB_FILENAME": "needful_things.duckdb"
         },
         "taps": {
             "tap-carbon-intensity": {

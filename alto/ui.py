@@ -225,7 +225,7 @@ class AltoEmojiUI(ConsoleReporter):
         """called when execution starts"""
         # ignore tasks that do not define actions
         # ignore private/hidden tasks (tasks that start with an underscore)
-        if task.actions and (task.name[0] != "_"):
+        if task.actions and (task.name.split(":")[-1][0] != "_"):
             self.write("🧱 %s\n" % task.title())
 
     def skip_uptodate(self, task):

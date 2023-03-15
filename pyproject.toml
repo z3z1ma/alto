@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "singer-alto"
-version = "0.2.11"
+version = "0.2.12"
 description = "A package for managing singer.io taps and targets"
 authors = ["z3z1ma <butler.alex2010@gmail.com>"]
 readme = "README.md"
@@ -9,14 +9,18 @@ license = "MIT"
 keywords = ["alto", "singer", "tap", "target", "etl", "data", "pipeline"]
 homepage = "https://github.com/z3z1ma/alto"
 repository = "https://github.com/z3z1ma/alto"
+documentation = "https://z3z1ma.github.io/alto/"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 

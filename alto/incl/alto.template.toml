@@ -11,16 +11,16 @@ extensions = ["evidence"]
 load_path = "raw"
 # Set env vars that will be available to all plugins
 environment.STARTER_PROJECT = 1
+# Configure Evidence
+environment.DATABASE = "duckdb"
+environment.DUCKDB_FILENAME = "needful_things.duckdb"
 
 [default.taps.tap-carbon-intensity] # https://gitlab.com/meltano/tap-carbon-intensity
 pip_url = "git+https://gitlab.com/meltano/tap-carbon-intensity.git#egg=tap_carbon_intensity"
 load_path = "carbon_intensity"
 capabilities = ["state", "catalog"]
-select = [
-    "*.*",
-    # PII hashing
-    "~*.dnoregion",
-]
+# Simple PII hashing via `~`
+select = ["*.*", "~*.dnoregion"]
 
 [default.taps.tap-bls] # https://hub.meltano.com/extractors/tap-bls
 pip_url = "git+https://github.com/frasermarlow/tap-bls#egg=tap_bls"
