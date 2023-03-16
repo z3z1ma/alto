@@ -38,7 +38,7 @@ Never serve broken reports again.
 
 Firstly, to enable the Evidence.dev extension, you must add `evidence` to the `extensions` key in your `alto` configuration file.
 
-The Evidence.dev extension is configured primarily through environment variables. You can set these in your `.env` file, in your `alto` configuration file, or in your environment. There are a few exceptions to this rule, which are documented below. You can set the home directory for Evidence.dev in your `alto` configuration file, but you can also set the `EVIDENCE_HOME` environment variable to override this. You can also set the `strict` key in your `alto` configuration file to set the build mode to strict. This will cause the build to fail if any of the Evidence.dev reports fail to build. Lastly, you can set the `database` key in your `alto` configuration file to set the database adapter to use. This will override the `DATABASE` environment variable if set.
+The Evidence.dev extension is configured primarily through environment variables. You can set these in your `.env` file, in your `alto` configuration file, or in your environment. There are a few exceptions to this rule, which are documented below. You can set the home directory for Evidence.dev in your `alto` configuration file, but you can also set the `EVIDENCE_HOME` environment variable to override this. You can also set the `strict` key in your `alto` configuration file to set the build mode to strict. This will cause the build to fail if any of the Evidence.dev reports fail to build. Lastly, you can set the `database` key in your `alto` configuration file to set the database adapter to use. The `database` key can be set to one of `bigquery`, `duckdb`, `mysql`, `postgres`, `redshift`, `snowflake`, `sqlite`. The `DATABASE` environment variable will override this if set.
 
 ```toml title="alto.toml"
 [default]
@@ -47,11 +47,11 @@ extensions = ["evidence"]
 
 [default.utilities.evidence]
 # set the database adapter to use
-config.database = "duckdb"
+database = "duckdb"
 # set the home directory for evidence, the env var EVIDENCE_HOME will override this
-config.home = "./report"
+home = "./report"
 # set build mode to strict
-config.strict = false
+strict = false
 ```
 
 ## Environment Variables
@@ -66,7 +66,7 @@ We are awaiting better documentation from Evidence.dev on adapter configuration.
 
 ### ALL
 
-- `DATABASE` - The database adapter to use. One of `bigquery`, `duckdb`, `mysql`, `postgres`, `redshift`, `snowflake`, `sqlite`
+- `DATABASE` - The database adapter to use. One of `bigquery`, `duckdb`, `mysql`, `postgres`, `redshift`, `snowflake`, `sqlite`. Overrides the `config.database` key in your `alto` configuration file if set.
 - `EVIDENCE_HOME` - (optional) The path to the Evidence project. Defaults to `./report`. Overrides the `config.home` key in your `alto` configuration file if set.
 
 ### Bigquery
@@ -130,4 +130,4 @@ Run `evidence:build` to build your Evidence reports. This will run the Evidence 
 
 Run `evidence:dev` to run the Evidence dev server. This will run the Evidence dev dev command and output the results to the `build` directory.
 
-Run `evidence:vars` to dump the environment variables used to configure Evidence.dev. These must be set in your environment, in your `.env` file, or in your `alto` configuration file.
+Run `evidence:vars` to dump the environment variables used to configure Evidence.dev. These should be set in your environment, in your `.env` file, or in your `alto` configuration file for your appropriate adapter. The command exists as a useful reference.

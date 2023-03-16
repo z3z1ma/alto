@@ -13,6 +13,7 @@
 """This module implements the Evidence.dev extension."""
 import json
 import os
+import shutil
 import typing as t
 
 from dynaconf import Validator
@@ -34,20 +35,25 @@ class Evidence(AltoExtension):
 
     def init_hook(self) -> None:
         """Initialize the extension."""
+        # Quick check for executables
+        if not (shutil.which("npx") and shutil.which("npm")):
+            raise RuntimeError(
+                "The `evidence` extension is enabled but npm/npx is not installed. Please "
+                "visit https://nodejs.dev/en/download/package-manager/ to get set up."
+            )
         # Set the Evidence home directory
-        root = os.path.expanduser(os.getenv("EVIDENCE_HOME", self.spec.config.home))
+        root = os.path.expanduser(os.getenv("EVIDENCE_HOME", self.spec.home))
         if root.startswith("/"):
-            self.spec.config.home = root
+            self.spec.home = root
         else:
-            self.spec.config.home = str(self.filesystem.root_dir / root)
+            self.spec.home = str(self.filesystem.root_dir / root)
         # Set the adapter
-        adapter = self.spec.config.get("database")
-        if adapter is not None:
-            os.environ["DATABASE"] = adapter
+        adapter = os.getenv("DATABASE", self.spec.database)
+        os.environ["DATABASE"] = adapter
         # This will be suppressed if the user has a config file so alto can use its
         # environment aware configuration to manage the Evidence project.
         self._config_file = os.path.join(
-            self.spec.config.home,
+            self.spec.home,
             ".evidence",
             "template",
             "evidence.settings.json",
@@ -62,18 +68,24 @@ class Evidence(AltoExtension):
     def get_validators() -> t.List["Validator"]:
         return [
             Validator(
-                "UTILITIES.evidence.config.home",
+                "utilities.evidence.home",
                 default="./reports",
                 cast=str,
                 apply_default_on_none=True,
                 description="Evidence home directory.",
             ),
             Validator(
-                "UTILITIES.evidence.config.strict",
+                "utilities.evidence.strict",
                 default=False,
                 cast=bool,
-                apply_default_on_none=True,
                 description="Run Evidence in strict mode.",
+            ),
+            Validator(
+                "utilities.evidence.database",
+                default="duckdb",
+                cast=str,
+                apply_default_on_none=True,
+                description="Database adapter to use.",
             ),
         ]
 
@@ -94,34 +106,34 @@ class Evidence(AltoExtension):
         return (
             AltoTask(name="initialize")
             .set_actions(
-                f"mkdir -p {self.spec.config.home}",
-                f"npx --yes degit evidence-dev/template {self.spec.config.home}",
+                f"mkdir -p {self.spec.home}",
+                f"npx --yes degit evidence-dev/template {self.spec.home}",
             )
             .set_doc("Generate Evidence project from template.")
-            .set_clean(f"rm -rf {self.spec.config.home}")
-            .set_uptodate((os.path.exists, (f"{self.spec.config.home}/package.json",)))
-            .set_targets(f"{self.spec.config.home}/package.json")
+            .set_clean(f"rm -rf {self.spec.home}")
+            .set_uptodate((os.path.exists, (f"{self.spec.home}/package.json",)))
+            .set_targets(f"{self.spec.home}/package.json")
             .set_verbosity(2)
             .data
         )
 
     def build(self) -> AltoTaskData:
         """Run 'npm run build' in the Evidence home dir."""
-        if self.spec.config.get("strict", False):
+        if self.spec.get("strict", False):
             build = "build:strict"
         else:
             build = "build"
         task = (
             AltoTask(name="build")
             .set_actions(
-                f"npm --prefix {self.spec.config.home} install",
-                f"npm --prefix {self.spec.config.home} run {build}",
+                f"npm --prefix {self.spec.home} install",
+                f"npm --prefix {self.spec.home} run {build}",
             )
             .set_setup(f"{self.name}:_suppress_config")
             .set_teardown((self._restore_config_if_cached,))
             .set_task_dep(f"{self.name}:initialize")
             .set_doc("Build the Evidence dev reports.")
-            .set_clean(f"rm -rf {self.spec.config.home}/build")
+            .set_clean(f"rm -rf {self.spec.home}/build")
             .set_uptodate(False)
             .set_verbosity(2)
         )
@@ -132,8 +144,8 @@ class Evidence(AltoExtension):
         return (
             AltoTask(name="dev")
             .set_actions(
-                f"npm --prefix {self.spec.config.home} install",
-                f"npm --prefix {self.spec.config.home} run dev",
+                f"npm --prefix {self.spec.home} install",
+                f"npm --prefix {self.spec.home} run dev",
             )
             .set_task_dep(f"{self.name}:initialize")
             .set_setup(f"{self.name}:_suppress_config")

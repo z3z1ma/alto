@@ -314,8 +314,10 @@ class AltoFs(Command):
 class AltoList(List):
     """List the tasks."""
 
-    def _print_task(self, template, task, status, list_deps, tasks):
+    def _print_task(self, template, task, status, list_deps, tasks) -> None:
         """print a single task"""
+        if task.name.split(":")[-1][0] == "_":
+            return None
         line_data = {"name": task.name, "doc": task.doc}
         if status:
             if self.dep_manager.status_is_ignore(task):
@@ -441,9 +443,9 @@ def main(args=sys.argv[1:]) -> int:
     # Report the environment
     LOGGER.info(f"🌎 Environment: {os.environ['ALTO_ENV']}\n")
     # Run the CLI
-    engine.alto._wrapped
     return AltoMain(
         engine,
+        config_filenames=(),
         extra_config={"list": {"status": True, "sort": "definition"}},
     ).run(args)
 

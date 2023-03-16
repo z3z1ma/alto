@@ -19,6 +19,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Alto Fundamentals',
+      collapsed: false,
       items: [
         'tutorial-basics/create-a-project',
         'tutorial-basics/example-configuration',
@@ -31,6 +32,7 @@ const sidebars = {
         'tutorial-basics/utility-configuration',
       ],
     },
+    'cli',
   ],
   conceptsSidebar: [],
   integrationsSidebar: [

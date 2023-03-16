@@ -471,6 +471,17 @@ class AltoTask:
         self._data["verbosity"] = verbosity
         return self
 
+    def set_params(self, *params: str, extend: bool = True) -> "AltoTask":
+        """Set the setup tasks for the task.
+
+        These are the tasks that must be run before this task.
+        """
+        if extend:
+            self._data.setdefault("params", []).extend(params)
+        else:
+            self._data["params"] = params
+        return self
+
     def __dict__(self) -> AltoTaskData:
         """Return the task data as a dictionary.
 

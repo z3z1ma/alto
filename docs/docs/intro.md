@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Alto Quickstart
 
 Let's run our first pipeline with **Alto in 2 minutes**.

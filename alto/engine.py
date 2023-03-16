@@ -752,10 +752,12 @@ class AltoExtension:
         self,
         filesystem: AltoFileSystem,
         configuration: AltoConfiguration,
+        run_task: t.Callable[[t.List[str]], int],
     ) -> None:
         """Initialize the extension."""
         self.filesystem = filesystem
         self.configuration = configuration
+        self.run_task = run_task
         self.init_hook()
 
     @property
@@ -858,17 +860,24 @@ class AltoTaskEngine(DoitEngine):
         }
         if config is None:
             # Default to loading the configuration from the root directory
+            stack = itertools.chain(
+                root_dir.glob("alto.*.toml"),
+                root_dir.glob("alto.*.json"),
+                root_dir.glob("alto.*.yaml"),
+            )
+            # Load the configuration
             self.alto = Dynaconf(
-                settings_files=[root_dir / f"alto.{fmt}" for fmt in SUPPORTED_CONFIG_FORMATS],
+                settings_files=[
+                    root_dir.joinpath(f"alto.{fmt}") for fmt in SUPPORTED_CONFIG_FORMATS
+                ],
+                includes=[str(s) for s in stack if s.is_file() and "secrets" not in s.name],
                 secrets=[
-                    root_dir / f"alto.{segment}.{fmt}"
-                    for fmt in SUPPORTED_CONFIG_FORMATS
-                    for segment in ("secrets", "local")
+                    root_dir.joinpath(f"alto.secrets.{fmt}") for fmt in SUPPORTED_CONFIG_FORMATS
                 ],
                 **kwargs,
             )
         elif isinstance(config, Dynaconf):
-            # Use the provided configuration
+            # Use the user-provided configuration object
             self.alto = config
         elif isinstance(config, dict):
             # Write the configuration to a temporary file and load it
@@ -913,14 +922,18 @@ class AltoTaskEngine(DoitEngine):
         """
         for extension in t.cast(t.List[str], self.alto.get("EXTENSIONS", [])):
             # Built-in extensions
-            if extension in {"evidence"}:
+            if extension in {"evidence", "rill"}:
                 ns = load_extension_from_spec(f"alto.ext.{extension}")
                 ext_cls = ns.register()
                 for validator in ext_cls.get_validators():
                     # Validators can also seed configuration
                     # so we must run them before instantiating the extension
                     validator.validate(self.alto)
-                ext = ext_cls(filesystem=self.filesystem, configuration=self.configuration)
+                ext = ext_cls(
+                    filesystem=self.filesystem,
+                    configuration=self.configuration,
+                    run_task=self.__call__,
+                )
                 self.extensions.append(ext)
                 continue
             # External extensions
@@ -964,6 +977,17 @@ class AltoTaskEngine(DoitEngine):
             par_type="thread",
             failure_verbosity=2,
         )
+
+    def __call__(self, *args) -> int:
+        """Execute a configured task by name with the alto task engine."""
+        from alto.main import AltoRun
+
+        return AltoRun(
+            task_loader=self,
+            bin_name="alto",
+            config={},
+            opt_vals={},
+        ).parse_execute(list(args))
 
     # ===== #
     # Tasks #
@@ -2271,6 +2295,8 @@ class _QueueFile(io.BytesIO):
         self.queue.join()
 
 
+# TODO: Support user-defined record selectors
+# IE: pass-through state and (unpacked?) record messages
 @contextmanager
 def tap_runner(
     tap: AltoPlugin,
@@ -2279,6 +2305,7 @@ def tap_runner(
     state_key: str,
     max_wait: int = 5,
     records_only: bool = False,
+    state_dict: t.Optional[dict] = None,
 ) -> t.Generator[_QueueFile, None, None]:
     """Run a tap and yield a file-like object that reads from the tap's stdout."""
     tap_bin, tap_config, tap_catalog = (
@@ -2303,8 +2330,12 @@ def tap_runner(
     if not maybe_get_catalog(tap, filesystem):
         generate_catalog(tap, filesystem)
     render_modified_catalog(tap, filesystem)
-    # State
-    get_remote_state(tap.name, state_key, filesystem, execute=tap.supports_state)
+    # State (permit override from alto filesystem state)
+    if state_dict and tap.supports_state:
+        with open(state, "w") as f:
+            json.dump(state_dict, f)
+    else:
+        get_remote_state(tap.name, state_key, filesystem, execute=tap.supports_state)
     with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -2340,9 +2371,14 @@ def tap_runner(
         log_thread.join(), map_thread.join()
         # Commit State
         if tap.supports_state:
-            with open(state, "w") as f:
-                json.dump(_stream._state, f)
-            update_remote_state_no_stdout(tap.name, state_key, filesystem)
+            if state_dict is not None:
+                # If state_dict is provided, merge the tap's state with it
+                # as this is "ephemeral" state preserved by the tap runner
+                merge(_stream._state, state_dict)
+            else:
+                with open(state, "w") as f:
+                    json.dump(_stream._state, f)
+                update_remote_state_no_stdout(tap.name, state_key, filesystem)
 
 
 def get_engine(env: str, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
