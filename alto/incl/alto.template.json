@@ -1,9 +1,7 @@
 {
     "default": {
         "project_name": "{project}",
-        "extensions": [
-            "evidence"
-        ],
+        "extensions": [ ],
         "load_path": "raw",
         "environment": {
             "STARTER_PROJECT": 1,

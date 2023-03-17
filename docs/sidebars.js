@@ -43,6 +43,7 @@ const sidebars = {
   extensionsSidebar: [
     'extensions/intro',
     'extensions/evidence',
+    'extensions/rill',
   ],
 };
 

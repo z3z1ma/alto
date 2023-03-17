@@ -12,7 +12,9 @@
 # copies or substantial portions of the Software.
 """This module implements the Rill-Developer extension."""
 import os
+import shlex
 import shutil
+import subprocess
 import typing as t
 from pathlib import Path
 
@@ -21,7 +23,7 @@ from dynaconf import Validator
 
 from alto.engine import AltoExtension
 from alto.models import AltoTask, AltoTaskData
-from alto.providers.serde import SerdeFormat, serialize
+from alto.providers.serde import SerdeFormat, deserialize
 
 __all__ = ["register"]
 __version__ = "0.1.0"
@@ -69,11 +71,38 @@ class RillDeveloper(AltoExtension):
         )
 
     def start(self) -> AltoTaskData:
-        """Run Rill web server."""
+        """Run Rill web server. Optional hooks can be run before starting the server."""
+
+        def _run_hooks(hooks: t.List[str]) -> None:
+            """Run hooks before starting the Rill web server.
+
+            Useful for generating or refreshing data sources before starting the server.
+            """
+            for hook in hooks:
+                src = self.root.joinpath("sources", f"{hook}.yaml")
+                if not src.exists():
+                    raise RuntimeError(f"Source {hook} does not exist.")
+                data: dict = deserialize(SerdeFormat.YAML, src.read_text())
+                for action in data.get("_hooks", []):
+                    subprocess.run(shlex.split(action), check=True)
+
         return (
             AltoTask(name="start")
-            .set_actions(LongRunning(f"rill start --project {self.root}"))
+            .set_actions(
+                (_run_hooks,),
+                LongRunning(f"rill start --project {self.root}"),
+            )
             .set_task_dep(f"{self.name}:initialize")
+            .set_params(
+                {
+                    "name": "hooks",
+                    "short": "h",
+                    "long": "hook",
+                    "type": list,
+                    "default": [],
+                    "help": "Run hooks before starting the Rill web server.",
+                }
+            )
             .set_doc(
                 "When you run rill start, it parses your project and ingests any missing data "
                 "sources into a local DuckDB database. After your project has been re-hydrated, it "
@@ -83,35 +112,25 @@ class RillDeveloper(AltoExtension):
             .data
         )
 
-    def managed_sources(self) -> t.Iterator[AltoTaskData]:
-        """Yields managed sources with optional hooks.
+    def sync(self) -> t.Iterator[AltoTaskData]:
+        """Sync all sources with hooks."""
 
-        This provide a way to both create rill sources from the alto configuration
-        and to further add hooks to the source creation process. For example, you
-        can use this to run `bq extract` to refresh a parquet that the source points to.
-        Or run dbt, or run a custom python script, a dlt pipeline, etc.
-        """
+        def _run_hooks() -> None:
+            for src in self.root.glob("sources/**/*.yaml"):
+                data: dict = deserialize(SerdeFormat.YAML, src.read_text())
+                for action in data.get("_hooks", []):
+                    print(f"{src} -> hook: {action}")
+                    subprocess.run(shlex.split(action), check=True)
 
-        def _dump_source(name: str, source_settings: t.Dict[str, t.Any]) -> None:
-            with open(self.root.joinpath(f"sources/{name}.yaml"), "w") as file:
-                serialize(SerdeFormat.YAML, data=dict(source_settings), destination=file)
-
-        for name, source in self.spec.get("sources", {}).items():
-            hooks = source.pop("hooks", [])
-            if not isinstance(hooks, list):
-                raise ValueError(
-                    f"Invalid hooks definition in rill.sources.{name} (must be a list)."
-                )
-            task = AltoTask(name=f"sync-{name}")
-            for hook in hooks:
-                task.set_actions(hook)
-            task.set_actions((_dump_source, (name, source))).set_doc(
-                f"Create Rill source {name} and execute hooks."
-            )
-            yield task.data
+        return (
+            AltoTask(name="sync")
+            .set_actions(_run_hooks)
+            .set_doc("Run hooks for all sources containing a _hooks array.")
+            .data
+        )
 
     def tasks(self) -> t.Iterator[AltoTaskData]:
         """Yields tasks."""
         yield self.initialize()
         yield self.start()
-        yield from self.managed_sources()
+        yield self.sync()

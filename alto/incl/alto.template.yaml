@@ -7,8 +7,7 @@
 default:
   project_name: "{project}"
   # Enable builtin extensions or bring your own
-  extensions:
-    - evidence
+  extensions: []
   load_path: raw
   environment:
     # Set env vars that will be available to all plugins

@@ -17,7 +17,7 @@ class SingerTapDemux(Thread):
     """Singer taps output all records to a single stream.
 
     This class demuxes the records into separate streams for each tap stream. This permits
-    each stream to be processed in parallel and dlt to manage each as a separate target.
+    each stream to be processed in parallel and dlt to manage each as a separate resource.
     """
 
     daemon = True
@@ -45,8 +45,10 @@ class SingerTapDemux(Thread):
             tap,
             engine.filesystem,
             engine.alto,
-            state_key=f"dlt-{self.source}-{self.env}",
+            max_wait=int(os.getenv("ALTO_MAX_WAIT", 60)),
+            state_key=f"{self.source}-{self.env}",
             records_only=True,
+            state_dict=dlt.state().setdefault(f"{self.source}-{self.env}", {}),
         ) as tap_stream:
             self.setup_complete = True
             for payload in tap_stream:
