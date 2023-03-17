@@ -123,15 +123,11 @@ def singer_stream_factory(
 
     @dlt.resource(name=stream, **resource_options)
     def _singer_stream(_queue: Queue, producer: SingerTapDemux) -> t.Iterator[t.Any]:
-        cycle = 0
         poll_interval = 1
         while producer.is_alive() or not _queue.empty():
             try:
                 item = _queue.get(timeout=poll_interval)
             except Empty:
-                cycle += poll_interval
-                if cycle > int(os.getenv("ALTO_MAX_WAIT", 60)):
-                    raise RuntimeError("Singer tap consumer timed out, aborting.")
                 continue
             else:
                 if item is None:
@@ -139,7 +135,6 @@ def singer_stream_factory(
                     break  # End of stream
                 yield item
                 _queue.task_done()
-                cycle = 0
         if not producer.graceful_exit:
             raise RuntimeError("Singer tap exited unexpectedly.")
 
