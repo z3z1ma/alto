@@ -22,33 +22,30 @@ class SingerTapDemux(Thread):
 
     daemon = True
 
-    def __init__(self, source: str, env: str, *streams: t.List[str]) -> None:
+    def __init__(
+        self, tap: alto.engine.AltoPlugin, engine: alto.engine.AltoTaskEngine, *streams: t.List[str]
+    ) -> None:
         """Initialize the demuxer."""
         super().__init__(daemon=True)
+        self.tap = tap
+        self.engine = engine
         self.streams = {stream: Queue() for stream in streams}
-        self.source = source
-        self.env = env
         # Lifecycle flags
         self.setup_complete = False
         self.graceful_exit = False
 
     def run(self) -> None:
         """Run the demuxer thread."""
-        engine = alto.engine.get_engine(env=self.env)
-        (tap,) = alto.engine.make_plugins(
-            self.source,
-            filesystem=engine.filesystem,
-            configuration=engine.configuration,
-        )
-        tap.select = list(self.streams.keys())
+        t = self.tap
+        e = self.engine
         with alto.engine.tap_runner(
-            tap,
-            engine.filesystem,
-            engine.alto,
+            t,
+            e.filesystem,
+            e.alto,
             max_wait=int(os.getenv("ALTO_MAX_WAIT", 60)),
-            state_key=f"{self.source}-{self.env}",
+            state_key=f"{t.name}-{e.alto.current_env}",
             records_only=True,
-            state_dict=dlt.state().setdefault(f"{self.source}-{self.env}", {}),
+            state_dict=dlt.state().setdefault(f"{t.name}-{e.alto.current_env}", {}),
         ) as tap_stream:
             self.setup_complete = True
             for payload in tap_stream:
@@ -65,7 +62,7 @@ class SingerTapDemux(Thread):
 @dlt.source
 def singer(
     source: str,
-    streams: t.List[str],
+    streams: t.Optional[t.List[str]] = None,
     env: t.Optional[str] = None,
     resource_options: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Sequence[t.Any]:
@@ -76,8 +73,31 @@ def singer(
         env = os.getenv("ALTO_ENV", alto.constants.DEFAULT_ENVIRONMENT)
     # Ensure the env is set
     os.environ["ALTO_ENV"] = env
+    # Prepare engine and data structures
+    engine = alto.engine.get_engine(env)
+    (tap,) = alto.engine.make_plugins(
+        source,
+        filesystem=engine.filesystem,
+        configuration=engine.configuration,
+    )
+    catalog = alto.engine.get_and_render_catalog(tap, engine.filesystem)
+    # Use the streams from the catalog if not provided
+    baseline_streams = [stream.tap_stream_id for stream in catalog.streams]
+    if streams is None:
+        streams = baseline_streams
+    if not streams:
+        raise ValueError("No streams were found in the catalog or selected by the user.")
+    for stream in streams:
+        if stream not in baseline_streams:
+            raise ValueError(
+                f"Stream '{stream}' was not found in the catalog. "
+                f"Available streams: {baseline_streams}"
+            )
+    # TODO: use the catalog to determine some resource props?
+    # otherwise its pure append streams...
     # Create the demuxer
-    producer = SingerTapDemux(source, env, *streams)
+    tap.select = streams
+    producer = SingerTapDemux(tap, engine, *streams)
     producer.start()
     # Wait for the producer to start
     start_time = time.time()
@@ -103,10 +123,15 @@ def singer_stream_factory(
 
     @dlt.resource(name=stream, **resource_options)
     def _singer_stream(_queue: Queue, producer: SingerTapDemux) -> t.Iterator[t.Any]:
+        cycle = 0
+        poll_interval = 1
         while producer.is_alive() or not _queue.empty():
             try:
-                item = _queue.get(timeout=1.0)
+                item = _queue.get(timeout=poll_interval)
             except Empty:
+                cycle += poll_interval
+                if cycle > int(os.getenv("ALTO_MAX_WAIT", 60)):
+                    raise RuntimeError("Singer tap consumer timed out, aborting.")
                 continue
             else:
                 if item is None:
@@ -114,6 +139,7 @@ def singer_stream_factory(
                     break  # End of stream
                 yield item
                 _queue.task_done()
+                cycle = 0
         if not producer.graceful_exit:
             raise RuntimeError("Singer tap exited unexpectedly.")
 

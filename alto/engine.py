@@ -54,7 +54,14 @@ from alto.constants import (
     STATE_DIR,
     SUPPORTED_CONFIG_FORMATS,
 )
-from alto.models import AltoEngineConfig, AltoTask, AltoTaskData, AltoTaskGenerator, PluginType
+from alto.models import (
+    AltoEngineConfig,
+    AltoTask,
+    AltoTaskData,
+    AltoTaskGenerator,
+    PluginType,
+    SingerCatalog,
+)
 from alto.state import ensure_state, update_state
 from alto.ui import AltoEmojiUI, AltoRichUI
 from alto.utils import (
@@ -2072,12 +2079,24 @@ def clean_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> None:
         filesystem.fs.delete(remote)
 
 
-def render_modified_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> str:
+def render_modified_catalog(
+    tap: AltoPlugin, filesystem: AltoFileSystem, return_obj: bool = False
+) -> SingerCatalog:
     """Download the base catalog for a tap and apply user config to it."""
     catalog = filesystem.catalog_path(tap.name)
     shutil.copy(filesystem.base_catalog_path(tap.name), catalog)
-    apply_selected(Path(catalog), tap.select)
-    apply_metadata(Path(catalog), tap.metadata)
+    disk_path_obj = Path(catalog)
+    apply_selected(disk_path_obj, tap.select)
+    rv = apply_metadata(disk_path_obj, tap.metadata)
+    if return_obj:
+        return rv
+
+
+def get_and_render_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> SingerCatalog:
+    """Download the base catalog generating it if it does not exist. Apply user config."""
+    if not maybe_get_catalog(tap, filesystem):
+        generate_catalog(tap, filesystem)
+    return render_modified_catalog(tap, filesystem, return_obj=True)
 
 
 # ================ #
@@ -2208,9 +2227,7 @@ def setup_tap_target(
     tap, target = make_plugins(
         tap_name, target_name, filesystem=filesystem, configuration=configuration
     )
-    if not maybe_get_catalog(tap, filesystem):
-        generate_catalog(tap, filesystem)
-    render_modified_catalog(tap, filesystem)
+    get_and_render_catalog(tap, filesystem)
     _lock = threading.Lock()
     output_configs = {}
     output_configs[tap_name] = render_config(tap, _lock, settings, filesystem)
@@ -2236,7 +2253,7 @@ def make_plugins(
     return tuple(plugins)
 
 
-class _QueueFile(io.BytesIO):
+class _QueueFileIterator(io.BytesIO):
     """A file-like object that writes to a queue.
 
     This is only intended to be used inside the `tap_runner` function. It
@@ -2248,12 +2265,20 @@ class _QueueFile(io.BytesIO):
     have been added for `max_wait` seconds.
     """
 
-    def __init__(self, max_wait: int = 5, records_only: bool = False):
+    def __init__(
+        self,
+        liveness_probe: t.Callable[[], bool],
+        poll_interval: int = 1,
+        max_wait: int = 5,
+        records_only: bool = False,
+    ):
         super().__init__()
         self.queue = queue.Queue()
-        # The maximum time to wait for a new record,
-        # this is used to prevent the tap from hanging indefinitely
+        # Manage the queue
         self.max_wait = max_wait
+        self.cycle = 0
+        self.poll_interval = poll_interval
+        self.liveness_probe = liveness_probe
         # Whether to only return records or all output, when records_only is
         # True, the output will be a tuple of (stream, record)
         self.records_only = records_only
@@ -2268,10 +2293,21 @@ class _QueueFile(io.BytesIO):
         return self
 
     def __next__(self) -> t.Union[dict, t.Tuple[str, dict], None]:
+        """Callers should expect None values and should ignore them.
+
+        A StopIteration exception will be raised when the queue is empty. To the caller,
+        we will appear to be a generator that yields Option<Record> when iterated over with
+        an organic termination.
+        """
         try:
-            data = self.queue.get(timeout=self.max_wait)
+            data = self.queue.get(timeout=self.poll_interval)
         except queue.Empty:
-            raise StopIteration
+            if not self.liveness_probe():
+                raise StopIteration
+            self.cycle += self.poll_interval
+            if self.cycle > self.max_wait:
+                raise RuntimeError(f"Tap reader (demux) timed out after {self.max_wait} seconds.")
+            return None
         else:
             try:
                 rv = json.loads(data)
@@ -2289,6 +2325,7 @@ class _QueueFile(io.BytesIO):
                 else:
                     return rv
             finally:
+                self.cycle = 0
                 self.queue.task_done()
 
     def close(self) -> None:
@@ -2306,7 +2343,7 @@ def tap_runner(
     max_wait: int = 5,
     records_only: bool = False,
     state_dict: t.Optional[dict] = None,
-) -> t.Generator[_QueueFile, None, None]:
+) -> t.Generator[_QueueFileIterator, None, None]:
     """Run a tap and yield a file-like object that reads from the tap's stdout."""
     tap_bin, tap_config, tap_catalog = (
         filesystem.executable_path(tap.pex_name),
@@ -2326,10 +2363,8 @@ def tap_runner(
     _tmp_id = str(uuid.uuid4())
     # Config
     render_config(tap, lock, settings, filesystem)
-    # Catalog
-    if not maybe_get_catalog(tap, filesystem):
-        generate_catalog(tap, filesystem)
-    render_modified_catalog(tap, filesystem)
+    # Catalog (low overhead if already rendered)
+    get_and_render_catalog(tap, filesystem)
     # State (permit override from alto filesystem state)
     if state_dict and tap.supports_state:
         with open(state, "w") as f:
@@ -2353,10 +2388,17 @@ def tap_runner(
             daemon=True,
         )
         log_thread.start()
-        _stream = _QueueFile(max_wait, records_only)
+        # This queue is used to prevent
+        # the tap from hanging indefinitely on read and give us some nice
+        # awareness of the tap's liveness while mocking an iterator.
+        _stream = _QueueFileIterator(
+            liveness_probe=lambda: tap_proc.poll() is None,
+            poll_interval=1,
+            max_wait=max_wait,
+            records_only=records_only,
+        )
         # The map_worker is smart enough to just pass through the data
-        # if there are no mappers. This queue is used to prevent
-        # the tap from hanging indefinitely on read.
+        # if there are no mappers.
         map_thread = threading.Thread(
             target=map_worker,
             args=(tap_proc.stdout, _stream, mappers),
