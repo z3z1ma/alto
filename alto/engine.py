@@ -49,6 +49,7 @@ from alto.constants import (
     ALTO_ROOT,
     CATALOG_DIR,
     CONFIG_DIR,
+    DEFAULT_ENVIRONMENT,
     LOG_DIR,
     PLUGIN_DIR,
     STATE_DIR,
@@ -2390,16 +2391,17 @@ def tap_runner(
                 update_remote_state_no_stdout(tap.name, state_key, filesystem)
 
 
-def get_engine(env: str, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
+def get_engine(env: str = DEFAULT_ENVIRONMENT, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
     """Instantiate an AltoTaskEngine.
 
-    This is a convenience function for use in Python scripts. The
-    engine is configured entirely from the alto configuration file.
-    This mutates the environment variable `ALTO_ENV`.
+    This is a convenience function for use in Python scripts. The engine is configured
+    entirely from the alto configuration file. This mutates the environment variable `ALTO_ENV`
+    to be in sync with the `env` argument.
     """
     if root_dir is None:
         root_dir = Path.cwd()
-    os.environ["ALTO_ENV"] = env
+    if os.getenv("ALTO_ENV") != env:
+        os.environ["ALTO_ENV"] = env or DEFAULT_ENVIRONMENT
     engine = AltoTaskEngine(root_dir)
     engine.setup()
     return engine

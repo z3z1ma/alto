@@ -47,7 +47,7 @@ class SingerTapDemux(Thread):
             t,
             e.filesystem,
             e.alto,
-            state_key=f"{t.name}-dlt-{e.alto.current_env}",
+            state_key=f"{t.name}-dlt",
             state_dict=self.init_state,
         ) as tap_stream:
             self.setup_complete = True
@@ -104,9 +104,7 @@ def singer(
             )
     # Create the demuxer
     tap.select = streams
-    producer = SingerTapDemux(
-        tap, engine, dlt.state().setdefault(f"{tap.name}-{engine.alto.current_env}", {}), *streams
-    )
+    producer = SingerTapDemux(tap, engine, dlt.state().setdefault(tap.name, {}), *streams)
     producer.start()
     # Use the catalog to determine some resource props
     for stream in streams:
@@ -136,9 +134,7 @@ def singer_stream_factory(
 
     @dlt.resource(name=stream, **resource_options)
     def _singer_stream(_queue: Queue, producer: SingerTapDemux) -> t.Iterator[t.Any]:
-        state_dict = dlt.state().setdefault(
-            f"{producer.tap.name}-{producer.engine.alto.current_env}", {}
-        )
+        state_dict = dlt.state().setdefault(producer.tap.name, {})
         poll_interval = 1
         while producer.is_alive() or not _queue.empty():
             try:
