@@ -1,11 +1,11 @@
 import os
-import time
 import typing as t
 from queue import Empty, Queue
 from threading import Thread
 
 import alto.constants
 import alto.engine
+from alto.utils import merge
 
 try:
     import dlt  # type: ignore
@@ -23,13 +23,18 @@ class SingerTapDemux(Thread):
     daemon = True
 
     def __init__(
-        self, tap: alto.engine.AltoPlugin, engine: alto.engine.AltoTaskEngine, *streams: t.List[str]
+        self,
+        tap: alto.engine.AltoPlugin,
+        engine: alto.engine.AltoTaskEngine,
+        init_state: dict,
+        *streams: str,
     ) -> None:
         """Initialize the demuxer."""
         super().__init__(daemon=True)
         self.tap = tap
         self.engine = engine
         self.streams = {stream: Queue() for stream in streams}
+        self.init_state = init_state
         # Lifecycle flags
         self.setup_complete = False
         self.graceful_exit = False
@@ -42,20 +47,26 @@ class SingerTapDemux(Thread):
             t,
             e.filesystem,
             e.alto,
-            max_wait=int(os.getenv("ALTO_MAX_WAIT", 60)),
-            state_key=f"{t.name}-{e.alto.current_env}",
-            records_only=True,
-            state_dict=dlt.state().setdefault(f"{t.name}-{e.alto.current_env}", {}),
+            state_key=f"{t.name}-dlt-{e.alto.current_env}",
+            state_dict=self.init_state,
         ) as tap_stream:
             self.setup_complete = True
             for payload in tap_stream:
                 if payload is None:
                     continue
-                stream, record = payload
-                self.streams[stream].put(record)
+                typ, maybe_stream, message = payload
+                stream: str
+                if typ == "STATE":
+                    stream = next(iter(self.streams.keys()))
+                    self.streams[stream].put((typ, message["value"]))
+                elif typ == "RECORD":
+                    stream = maybe_stream
+                    self.streams[stream].put((typ, message["record"]))
+                elif typ == "SCHEMA":
+                    pass
         # Put a None on each stream to signal the end of the stream
-        for stream in self.streams.values():
-            stream.put(None)
+        for queue in self.streams.values():
+            queue.put(None)
         self.graceful_exit = True
 
 
@@ -71,8 +82,6 @@ def singer(
         resource_options = {}
     if env is None:
         env = os.getenv("ALTO_ENV", alto.constants.DEFAULT_ENVIRONMENT)
-    # Ensure the env is set
-    os.environ["ALTO_ENV"] = env
     # Prepare engine and data structures
     engine = alto.engine.get_engine(env)
     (tap,) = alto.engine.make_plugins(
@@ -94,19 +103,11 @@ def singer(
                 f"Available streams: {baseline_streams}"
             )
     # TODO: use the catalog to determine some resource props?
-    # otherwise its pure append streams...
-    # Create the demuxer
     tap.select = streams
-    producer = SingerTapDemux(tap, engine, *streams)
+    producer = SingerTapDemux(
+        tap, engine, dlt.state().setdefault(f"{tap.name}-{engine.alto.current_env}", {}), *streams
+    )
     producer.start()
-    # Wait for the producer to start
-    start_time = time.time()
-    while not producer.is_alive() or not producer.setup_complete:
-        time.sleep(0.1)
-        if time.time() - start_time > 180.0:
-            # Timeout after 180 seconds, this is arbitrary but we are
-            # trying to account for build time of a non-cached plugin.
-            raise RuntimeError("Singer tap failed to start, aborting.")
     # Create the dlt resources
     return tuple(
         singer_stream_factory(stream, resource_options.get(stream, {}))(
@@ -123,6 +124,9 @@ def singer_stream_factory(
 
     @dlt.resource(name=stream, **resource_options)
     def _singer_stream(_queue: Queue, producer: SingerTapDemux) -> t.Iterator[t.Any]:
+        state_dict = dlt.state().setdefault(
+            f"{producer.tap.name}-{producer.engine.alto.current_env}", {}
+        )
         poll_interval = 1
         while producer.is_alive() or not _queue.empty():
             try:
@@ -133,7 +137,11 @@ def singer_stream_factory(
                 if item is None:
                     _queue.task_done()
                     break  # End of stream
-                yield item
+                typ, message = item
+                if typ == "STATE":
+                    merge(message, state_dict)
+                elif typ == "RECORD":
+                    yield message
                 _queue.task_done()
         if not producer.graceful_exit:
             raise RuntimeError("Singer tap exited unexpectedly.")

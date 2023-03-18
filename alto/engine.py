@@ -2261,28 +2261,24 @@ class _QueueFileIterator(io.BytesIO):
     from the queue via the `__iter__` and `__next__` methods. Instances of
     this class should be used in a for loop to iterate over the records.
     Some iterations can be None, these should be ignored. A StopIteration
-    exception will be raised when the queue is empty and no new records
-    have been added for `max_wait` seconds.
+    exception will be raised organically when the producer is finished.
     """
 
     def __init__(
         self,
         liveness_probe: t.Callable[[], bool],
         poll_interval: int = 1,
-        max_wait: int = 5,
         records_only: bool = False,
     ):
         super().__init__()
         self.queue = queue.Queue()
         # Manage the queue
-        self.max_wait = max_wait
-        self.cycle = 0
         self.poll_interval = poll_interval
         self.liveness_probe = liveness_probe
         # Whether to only return records or all output, when records_only is
         # True, the output will be a tuple of (stream, record)
         self.records_only = records_only
-        # Store state
+        # Store internal state
         self._state = {}
 
     def write(self, data) -> int:
@@ -2292,55 +2288,43 @@ class _QueueFileIterator(io.BytesIO):
     def __iter__(self):
         return self
 
-    def __next__(self) -> t.Union[dict, t.Tuple[str, dict], None]:
+    def __next__(self) -> t.Union[t.Tuple[str, t.Optional[str], dict], None]:
         """Callers should expect None values and should ignore them.
 
         A StopIteration exception will be raised when the queue is empty. To the caller,
-        we will appear to be a generator that yields Option<Record> when iterated over with
-        an organic termination.
+        we will appear to be a generator that yields Option<type, maybeStreamName, message>
+        when iterated over with an organic termination.
         """
         try:
             data = self.queue.get(timeout=self.poll_interval)
         except queue.Empty:
             if not self.liveness_probe():
                 raise StopIteration
-            self.cycle += self.poll_interval
-            if self.cycle > self.max_wait:
-                raise RuntimeError(f"Tap reader (demux) timed out after {self.max_wait} seconds.")
             return None
         else:
             try:
-                rv = json.loads(data)
+                msg = json.loads(data)
             except json.JSONDecodeError:
                 pass
             else:
-                if "type" not in rv:
+                if "type" not in msg:
                     pass
-                elif rv["type"] == "STATE":
-                    merge(rv["value"], self._state)
-                elif self.records_only and not rv["type"] == "RECORD":
-                    pass
-                elif self.records_only:
-                    return (rv["stream"], rv["record"])
-                else:
-                    return rv
+                if msg["type"] == "STATE":
+                    merge(msg["value"], self._state)
+                return msg["type"], msg.get("stream"), msg
             finally:
-                self.cycle = 0
                 self.queue.task_done()
 
     def close(self) -> None:
         self.queue.join()
 
 
-# TODO: Support user-defined record selectors
-# IE: pass-through state and (unpacked?) record messages
 @contextmanager
 def tap_runner(
     tap: AltoPlugin,
     filesystem: AltoFileSystem,
     settings: t.Dict[str, t.Any],
     state_key: str,
-    max_wait: int = 5,
     records_only: bool = False,
     state_dict: t.Optional[dict] = None,
 ) -> t.Generator[_QueueFileIterator, None, None]:
@@ -2358,11 +2342,8 @@ def tap_runner(
         cmd += ["--catalog", tap_catalog]
     elif tap.supports_properties:
         cmd += ["--properties", tap_catalog]
-    lock = threading.Lock()
-    mappers = tap.get_stream_maps(filesystem)
-    _tmp_id = str(uuid.uuid4())
     # Config
-    render_config(tap, lock, settings, filesystem)
+    render_config(tap, threading.Lock(), settings, filesystem)
     # Catalog (low overhead if already rendered)
     get_and_render_catalog(tap, filesystem)
     # State (permit override from alto filesystem state)
@@ -2374,52 +2355,38 @@ def tap_runner(
     with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         env={**os.environ, **tap.environment},
         cwd=filesystem.root_dir,
     ) as tap_proc:
-        log_thread = threading.Thread(
-            target=pipe_logger,
-            args=(
-                tap_proc.stderr,
-                filesystem.log_path(f"tap-{_tmp_id}.log"),
-                lock,
-            ),
-            daemon=True,
-        )
-        log_thread.start()
-        # This queue is used to prevent
-        # the tap from hanging indefinitely on read and give us some nice
-        # awareness of the tap's liveness while mocking an iterator.
-        _stream = _QueueFileIterator(
+        singer_stream = _QueueFileIterator(
             liveness_probe=lambda: tap_proc.poll() is None,
             poll_interval=1,
-            max_wait=max_wait,
             records_only=records_only,
         )
-        # The map_worker is smart enough to just pass through the data
-        # if there are no mappers.
+        # Shift proxying of messages to a separate thread
         map_thread = threading.Thread(
             target=map_worker,
-            args=(tap_proc.stdout, _stream, mappers),
+            args=(tap_proc.stdout, singer_stream, tap.get_stream_maps(filesystem)),
             daemon=True,
         )
         map_thread.start()
-        # Yield the stream iterator
-        yield _stream
+        # Return the stream
+        yield singer_stream
         # Cleanup
-        tap_proc.terminate()
-        tap_proc.wait()
-        log_thread.join(), map_thread.join()
-        # Commit State
+        if tap_proc.returncode is not None and tap_proc.returncode != 0:
+            raise RuntimeError(
+                f"Tap exited with code {tap_proc.returncode}"
+            ) from subprocess.CalledProcessError(tap_proc.returncode, cmd)
+        tap_proc.terminate(), tap_proc.wait(), map_thread.join()
+        # Update state
         if tap.supports_state:
             if state_dict is not None:
                 # If state_dict is provided, merge the tap's state with it
                 # as this is "ephemeral" state preserved by the tap runner
-                merge(_stream._state, state_dict)
+                merge(singer_stream._state, state_dict)
             else:
                 with open(state, "w") as f:
-                    json.dump(_stream._state, f)
+                    json.dump(singer_stream._state, f)
                 update_remote_state_no_stdout(tap.name, state_key, filesystem)
 
 
@@ -2428,6 +2395,7 @@ def get_engine(env: str, root_dir: t.Optional[Path] = None) -> AltoTaskEngine:
 
     This is a convenience function for use in Python scripts. The
     engine is configured entirely from the alto configuration file.
+    This mutates the environment variable `ALTO_ENV`.
     """
     if root_dir is None:
         root_dir = Path.cwd()

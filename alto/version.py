@@ -12,4 +12,4 @@
 # copies or substantial portions of the Software.
 """Version information for alto."""
 
-__version__ = "0.2.16"
+__version__ = "0.2.17"
