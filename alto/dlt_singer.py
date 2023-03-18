@@ -102,17 +102,29 @@ def singer(
                 f"Stream '{stream}' was not found in the catalog. "
                 f"Available streams: {baseline_streams}"
             )
-    # TODO: use the catalog to determine some resource props?
+    # Create the demuxer
     tap.select = streams
     producer = SingerTapDemux(
         tap, engine, dlt.state().setdefault(f"{tap.name}-{engine.alto.current_env}", {}), *streams
     )
     producer.start()
+    # Use the catalog to determine some resource props
+    for stream in streams:
+        opts: dict = resource_options.setdefault(stream, {})
+        for entry in catalog.streams:
+            if entry.tap_stream_id == stream:
+                this = entry
+                break
+        else:
+            continue
+        method = this.forced_replication_method or this.replication_method
+        if method == "FULL_TABLE":
+            opts.setdefault("write_disposition", "replace")
+        elif method == "INCREMENTAL":
+            opts.setdefault("write_disposition", "append")
     # Create the dlt resources
     return tuple(
-        singer_stream_factory(stream, resource_options.get(stream, {}))(
-            producer.streams[stream], producer
-        )
+        singer_stream_factory(stream, resource_options[stream])(producer.streams[stream], producer)
         for stream in streams
     )
 

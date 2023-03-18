@@ -138,6 +138,7 @@ class SingerCatalogStream(DataClassDictMixin, ParserMixin["SingerCatalogStream"]
     database_name: str = None
     schema_name: str = None
     table_name: str = None
+    forced_replication_method: Optional[str] = None
 
     def root_metadata(self) -> Optional[SingerCatalogStreamMetadata]:
         for metadata in self.metadata:
@@ -176,6 +177,8 @@ class SingerCatalogStream(DataClassDictMixin, ParserMixin["SingerCatalogStream"]
             rv["schema_name"] = self.schema_name
         if self.table_name:
             rv["table_name"] = self.table_name
+        if self.forced_replication_method:
+            rv["forced_replication_method"] = self.forced_replication_method
         return rv
 
     def __eq__(self, other: object) -> bool:
