@@ -959,7 +959,11 @@ class AltoTaskEngine(DoitEngine):
                     f"Extension {extension} does not have a register function."
                 ) from e
             try:
-                ext = ext_cls(self.filesystem, self.configuration)
+                ext = ext_cls(
+                    filesystem=self.filesystem,
+                    configuration=self.configuration,
+                    run_task=self.__call__,
+                )
             except Exception as e:
                 raise RuntimeError(f"Extension {extension} failed to instantiate.") from e
             assert isinstance(ext, AltoExtension), f"{ext} is not an AltoExtension"
