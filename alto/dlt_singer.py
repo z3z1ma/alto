@@ -70,61 +70,68 @@ class SingerTapDemux(Thread):
         self.graceful_exit = True
 
 
-@dlt.source
-def singer(
-    source: str,
-    streams: t.Optional[t.List[str]] = None,
-    env: t.Optional[str] = None,
-    resource_options: t.Optional[t.Dict[str, t.Any]] = None,
-) -> t.Sequence[t.Any]:
-    """Singer source function."""
-    if resource_options is None:
-        resource_options = {}
-    if env is None:
-        env = os.getenv("ALTO_ENV", alto.constants.DEFAULT_ENVIRONMENT)
-    # Prepare engine and data structures
-    engine = alto.engine.get_engine(env)
-    (tap,) = alto.engine.make_plugins(
-        source,
-        filesystem=engine.filesystem,
-        configuration=engine.configuration,
-    )
-    catalog = alto.engine.get_and_render_catalog(tap, engine.filesystem)
-    # Use the streams from the catalog if not provided
-    baseline_streams = [stream.tap_stream_id for stream in catalog.streams]
-    if streams is None:
-        streams = baseline_streams
-    if not streams:
-        raise ValueError("No streams were found in the catalog or selected by the user.")
-    for stream in streams:
-        if stream not in baseline_streams:
-            raise ValueError(
-                f"Stream '{stream}' was not found in the catalog. "
-                f"Available streams: {baseline_streams}"
+def singer(name: str, **kwargs) -> t.Callable[..., t.Sequence[t.Any]]:
+    """Factory for creating a dlt.source function for a singer tap."""
+
+    @dlt.source(name=name, **kwargs)
+    def _singer(
+        source: str,
+        streams: t.Optional[t.List[str]] = None,
+        env: t.Optional[str] = None,
+        resource_options: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> t.Sequence[t.Any]:
+        """Singer source function."""
+        if resource_options is None:
+            resource_options = {}
+        if env is None:
+            env = os.getenv("ALTO_ENV", alto.constants.DEFAULT_ENVIRONMENT)
+        # Prepare engine and data structures
+        engine = alto.engine.get_engine(env)
+        (tap,) = alto.engine.make_plugins(
+            source,
+            filesystem=engine.filesystem,
+            configuration=engine.configuration,
+        )
+        catalog = alto.engine.get_and_render_catalog(tap, engine.filesystem)
+        # Use the streams from the catalog if not provided
+        baseline_streams = [stream.tap_stream_id for stream in catalog.streams]
+        if streams is None:
+            streams = baseline_streams
+        if not streams:
+            raise ValueError("No streams were found in the catalog or selected by the user.")
+        for stream in streams:
+            if stream not in baseline_streams:
+                raise ValueError(
+                    f"Stream '{stream}' was not found in the catalog. "
+                    f"Available streams: {baseline_streams}"
+                )
+        # Create the demuxer
+        tap.select = streams
+        producer = SingerTapDemux(tap, engine, dlt.state().setdefault(tap.name, {}), *streams)
+        producer.start()
+        # Use the catalog to determine some resource props
+        for stream in streams:
+            opts: dict = resource_options.setdefault(stream, {})
+            for entry in catalog.streams:
+                if entry.tap_stream_id == stream:
+                    this = entry
+                    break
+            else:
+                continue
+            method = this.forced_replication_method or this.replication_method
+            if method == "FULL_TABLE":
+                opts.setdefault("write_disposition", "replace")
+            elif method == "INCREMENTAL":
+                opts.setdefault("write_disposition", "append")
+        # Create the dlt resources
+        return tuple(
+            singer_stream_factory(stream, resource_options[stream])(
+                producer.streams[stream], producer
             )
-    # Create the demuxer
-    tap.select = streams
-    producer = SingerTapDemux(tap, engine, dlt.state().setdefault(tap.name, {}), *streams)
-    producer.start()
-    # Use the catalog to determine some resource props
-    for stream in streams:
-        opts: dict = resource_options.setdefault(stream, {})
-        for entry in catalog.streams:
-            if entry.tap_stream_id == stream:
-                this = entry
-                break
-        else:
-            continue
-        method = this.forced_replication_method or this.replication_method
-        if method == "FULL_TABLE":
-            opts.setdefault("write_disposition", "replace")
-        elif method == "INCREMENTAL":
-            opts.setdefault("write_disposition", "append")
-    # Create the dlt resources
-    return tuple(
-        singer_stream_factory(stream, resource_options[stream])(producer.streams[stream], producer)
-        for stream in streams
-    )
+            for stream in streams
+        )
+
+    return _singer
 
 
 def singer_stream_factory(
