@@ -113,7 +113,7 @@ class RillDeveloper(AltoExtension):
             .data
         )
 
-    def sync(self) -> t.Iterator[AltoTaskData]:
+    def sync(self) -> AltoTaskData:
         """Sync all sources with hooks."""
 
         def _run_hooks() -> None:
@@ -130,7 +130,7 @@ class RillDeveloper(AltoExtension):
             .data
         )
 
-    def tasks(self) -> t.Iterator[AltoTaskData]:
+    def tasks(self) -> t.Generator[AltoTaskData, None, None]:
         """Yields tasks."""
         yield self.initialize()
         yield self.start()

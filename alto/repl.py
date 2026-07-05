@@ -23,53 +23,38 @@ import tempfile
 import typing as t
 from functools import lru_cache
 
-if t.TYPE_CHECKING:
-    from alto.engine import AltoTaskEngine
+from alto.utils import bounded_table_rows, filesystem_info_parts
 
 __all__ = ["AltoCmd"]
+
+
+class _EngineProtocol(t.Protocol):
+    fs: t.Any
+    filesystem: t.Any
 
 
 class AltoCmd(cmd.Cmd):
     intro = "\nAlto v0.1.0   Type help or ? to list commands.\n"
     prompt = "(alto engine) "
-    use_rawinput = 1
+    use_rawinput = True
 
-    def __init__(self, engine: "AltoTaskEngine", *args, **kwargs) -> None:
+    def __init__(self, engine: _EngineProtocol, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.engine = engine
 
     def do_ls(self, arg: str):
         """List files in a directory."""
-        truncate, remainder = True, 0
+        truncate = True
         if "--all" in arg:
             arg = arg.replace("--all", "").strip()
             truncate = False
         getter = self.engine.fs.ls
         if "*" in arg:
             getter = self.engine.fs.glob
-        output = [["Type", "Size (Mb)", "Last Updated", "Name"]]
-        max_width = [len(w) for w in output[0]]
         res = getter(arg.lstrip("/"), detail=False)
-        for n, f in enumerate(res):
-            i = self.engine.fs.info(f)
-            parts = [i["type"][0], i["size"] * 1e-6, i.get("updated", ""), i["name"]]
-            if parts[0] == "d":
-                parts[1] = ""
-            else:
-                parts[1] = f"{parts[1]:.02f}"
-            output.append(parts)
-            for i, p in enumerate(parts):
-                max_width[i] = max(max_width[i], len(str(p)))
-            if truncate and n > 10:
-                output.append(["...", "...", "...", "..."])
-                remainder = len(res[n + 1 :])
-                break
-        for i, row in enumerate(output):
-            for j, p in enumerate(row):
-                output[i][j] = str(p).ljust(max_width[j] + 2)
-        print("".join(map(str, output[0])))
-        for row in output[1:]:
-            print("".join(map(str, row)))
+        rows, remainder = _listing_rows(self.engine, res, truncate)
+        for row in rows:
+            print(row)
         if truncate and remainder:
             print(f"({remainder} more files)")
 
@@ -128,3 +113,12 @@ class AltoCmd(cmd.Cmd):
     do_q = do_EOF
     do_quit = do_EOF
     do_exit = do_EOF
+
+
+def _listing_rows(engine: _EngineProtocol, files, truncate: bool):
+    return bounded_table_rows(files, lambda fname: _listing_parts(engine, fname), truncate)
+
+
+def _listing_parts(engine: _EngineProtocol, fname: str):
+    info = engine.fs.info(fname)
+    return filesystem_info_parts(info, info["name"])

@@ -12,8 +12,8 @@
 # copies or substantial portions of the Software.
 """Alto is a command line tool for running Singer taps and targets."""
 
+import alto.config
 from alto.catalog import CatalogMutationStrategy, apply_metadata, apply_selected
-from alto.config import working_directory
 from alto.constants import (
     ALTO_DB_FILE,
     ALTO_ROOT,
@@ -44,6 +44,8 @@ from alto.models import (
 )
 from alto.repl import AltoCmd
 from alto.state import ensure_state, parse_state_from_stdout, update_state
+
+working_directory = alto.config.working_directory
 
 __all__ = [
     # engine

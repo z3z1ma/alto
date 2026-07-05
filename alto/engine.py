@@ -29,7 +29,7 @@ import sys
 import threading
 import typing as t
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from copy import deepcopy
 from enum import Enum
 from hashlib import md5, sha256
@@ -40,8 +40,10 @@ import fsspec
 from doit.cmd_base import CmdAction
 from doit.cmd_base import DoitCmdBase as AltoCmdBase
 from doit.cmd_base import TaskLoader2 as DoitEngine
+from doit.cmd_run import Run
 from doit.loader import generate_tasks
 from doit.tools import config_changed
+from dynaconf.base import LazySettings
 from dynaconf.utils.boxing import DynaBox
 from fsspec.implementations.dirfs import DirFileSystem
 
@@ -75,7 +77,7 @@ from alto.utils import (
 )
 
 if t.TYPE_CHECKING:
-    from dynaconf import Dynaconf, Validator
+    from dynaconf.validator import Validator
 
 __all__ = [
     "AltoConfiguration",
@@ -88,6 +90,27 @@ RESERVOIR_VERSION_KEY = "__version__"
 """The key used to store the version of the reservoir format."""
 RESERVOIR_BUFFER_SIZE = 10_000
 """The default number of records to buffer before flushing to reservoir filesystem."""
+DynaconfConfig = t.Union[DynaBox, LazySettings]
+ReservoirIndex = t.Dict[str, t.Union[t.List[str], int]]
+
+
+class BinaryWriteStream(t.Protocol):
+    def write(self, data: bytes) -> int:
+        """Write bytes and return the count written."""
+        raise NotImplementedError
+
+
+class ReservoirRecordContainer(t.TypedDict):
+    count: int
+    schema: t.Dict[str, t.Any]
+    header: bytes
+    records: gzip.GzipFile
+
+
+class ReservoirIngestBuffers(t.NamedTuple):
+    mappers: t.List["AltoStreamMap"]
+    record_buffer: t.Dict[str, t.Dict[str, ReservoirRecordContainer]]
+    active_schemas: t.Dict[str, str]
 
 
 def find_hyphen_key(
@@ -110,7 +133,7 @@ def find_hyphen_key(
 # If the hypenated key is not found, the original dynaconf lookup is used.
 # This means non-hyphenated keys will still work as expected if they exist.
 __case_lookup = dynaconf.utils.find_the_correct_casing
-dynaconf.utils.find_the_correct_casing = lambda key, data: (
+t.cast(t.Any, dynaconf.utils).find_the_correct_casing = lambda key, data: (
     find_hyphen_key(key, data) or __case_lookup(key, data)
 )
 
@@ -134,12 +157,11 @@ class AltoCmd(str, Enum):
 class AltoConfiguration:
     """A wrapper around dynaconf that provides alto specific accessors."""
 
-    def __init__(self, inner: DynaBox) -> None:
-        """Initialize the alto config container."""
+    def __init__(self, inner: DynaconfConfig) -> None:
         self._inner = inner
 
     @property
-    def inner(self) -> DynaBox:
+    def inner(self) -> DynaconfConfig:
         """Return the underlying dynaconf config object."""
         return self._inner
 
@@ -217,12 +239,6 @@ class AltoFileSystem:
         root_dir: Path,
         config: AltoConfiguration,
     ) -> None:
-        """Initialize the path manager.
-
-        Args:
-            root_dir: The root directory of the alto project.
-            wrapper: The alto configuration wrapper object.
-        """
         self._root_dir = root_dir
         self._config = config
 
@@ -249,7 +265,7 @@ class AltoFileSystem:
         return self._sys_dir
 
     @property
-    def stg_dir(self) -> str:
+    def stg_dir(self) -> Path:
         """Return the path to the staging directory.
 
         The staging directory is where alto persists data during the execution of a task.
@@ -259,10 +275,8 @@ class AltoFileSystem:
             tmp.mkdir(parents=True, exist_ok=True)
 
             def cleanup():
-                try:
+                with suppress(FileNotFoundError):
                     shutil.rmtree(tmp)
-                except FileNotFoundError:
-                    pass
 
             # Register a cleanup function to remove the staging directory
             atexit.register(cleanup)
@@ -270,7 +284,7 @@ class AltoFileSystem:
         return self._stg_dir
 
     @property
-    def config(self) -> DynaBox:
+    def config(self) -> DynaconfConfig:
         """Return the alto configuration object."""
         return self._config.inner
 
@@ -333,17 +347,19 @@ class AltoFileSystem:
         path.parent.mkdir(parents=True, exist_ok=True)
         return str(path)
 
+    def _stored_path(
+        self,
+        fname: str,
+        key: str,
+        remote: bool,
+        local_getter: t.Callable[[str, str], str],
+    ) -> str:
+        getter = self._remote_path if remote else local_getter
+        return getter(fname, key)
+
     def executable_path(self, fname: str, remote: bool = False) -> str:
-        """Return the path to the PEX executable for a plugin.
-
-        If remote is True, the path will be in the remote storage directory.
-
-        Args:
-            fname: The name of the file.
-            remote: Whether or not the path should be in the remote storage directory.
-        """
-        getter = self._remote_path if remote else self._root_path
-        return getter(fname=fname, key=PLUGIN_DIR)
+        """Return the local or remote path to a plugin PEX executable."""
+        return self._stored_path(fname, PLUGIN_DIR, remote, self._root_path)
 
     def config_path(self, name: str, accent: t.Optional[str] = None) -> str:
         """Return the path to the config for a plugin.
@@ -376,16 +392,8 @@ class AltoFileSystem:
         )
 
     def base_catalog_path(self, name: str, remote: bool = False) -> str:
-        """Return the path to the base catalog for a plugin.
-
-        If remote is True, the path will be in the remote storage directory.
-
-        Args:
-            name: The name of the plugin.
-            remote: Whether or not the path should be in the remote storage directory.
-        """
-        getter = self._remote_path if remote else self._temp_path
-        return getter(fname=f"{name}.base.json", key=CATALOG_DIR)
+        """Return the local or remote path to a base catalog."""
+        return self._stored_path(f"{name}.base.json", CATALOG_DIR, remote, self._temp_path)
 
     def catalog_path(self, name: str) -> str:
         """Return the path to the catalog for a plugin.
@@ -396,29 +404,22 @@ class AltoFileSystem:
         return self._temp_path(fname=f"{name}.json", key=CATALOG_DIR)
 
     def log_path(self, fname: str, remote: bool = False) -> str:
-        """Return the path to the log for a filename.
-
-        If remote is True, the path will be in the remote storage directory.
-
-        Args:
-            fname: The name of the file.
-            remote: Whether or not the path should be in the remote storage directory.
-        """
-        getter = self._remote_path if remote else self._root_path
-        return getter(fname=fname, key=LOG_DIR.format(env=self.config.current_env))
+        """Return the local or remote path to a log file."""
+        return self._stored_path(
+            fname, LOG_DIR.format(env=self.config.current_env), remote, self._root_path
+        )
 
 
 class AltoPlugin:
     """A class representing a plugin in the Alto ecosystem."""
 
     def __init__(self, name: str, typ: PluginType, config: AltoConfiguration) -> None:
-        """Initialize the plugin."""
         self.name = name
         self.type = typ
         self.alto = config
         self._spec = self.alto.spec_for(name)
         # Permit dynamic select override local to the cls instance
-        self._select = None
+        self._select: t.Optional[t.List[str]] = None
         self._retain_hash_rules = True
 
     @property
@@ -444,6 +445,7 @@ class AltoPlugin:
         parent = self.spec.get("inherit_from")
         if parent:
             return self.alto.get_plugin(parent)
+        return None
 
     @property
     def cache_version(self) -> t.Optional[str]:
@@ -529,13 +531,13 @@ class AltoPlugin:
         return self.spec.get("entrypoint", self.spec.get("executable", self.name))
 
     @property
-    def environment(self) -> str:
+    def environment(self) -> t.Dict[str, str]:
         """Return env vars necessary to run our PEX executable."""
         typ = "MODULE" if "entrypoint" in self.spec else "SCRIPT"
         return {
             f"PEX_{typ}": self.entrypoint,
             "ALTO_PLUGIN": self.name,
-            **self.spec.get("environment", {}),
+            **{str(k): str(v) for k, v in self.spec.get("environment", {}).items()},
         }
 
     def config_relative_to(self, other: "AltoPlugin") -> DynaBox:
@@ -551,7 +553,10 @@ class AltoPlugin:
 
         This is used to cache the pex and reuse it across runs and machines.
         """
-        pex_hash = sha256(self.pip_url.strip().encode("utf-8"))
+        pip_url = self.pip_url
+        if pip_url is None:
+            raise KeyError(f"Plugin {self.name} is missing a pip_url.")
+        pex_hash = sha256(pip_url.strip().encode("utf-8"))
         pex_hash.update(platform.python_version().encode("utf-8"))
         pex_hash.update(platform.machine().encode("utf-8"))
         pex_hash.update(platform.system().encode("utf-8"))
@@ -564,49 +569,53 @@ class AltoPlugin:
         mappers: t.List[AltoStreamMap] = []
         if not self.type == PluginType.TAP:
             return mappers
-        # Built in PII hasher
-        hash_rules: t.List[str] = []
-        for select in self.select:
-            if select.startswith("~"):
-                hash_rules.append(select[1:])
+        hash_rules = self._hash_rules()
         if hash_rules:
             print(f"🕵️‍♀️ Found {len(hash_rules)} hashing rules for {self.name}")
             mappers.append(HashStreamMap(tap_config=self.config, select=hash_rules))
-        # Custom stream maps
-        # this is simply a path to a python file that contains a register function which
-        # returns a class that inherits from AltoStreamMap. Users can define their own
-        # stream maps and use them in their alto config file extremely easily.
         for mapper_spec in self.spec.get("stream_maps", []):
-            if isinstance(mapper_spec, str):
-                mapper_spec = {"path": mapper_spec}
-            mapper = mapper_spec["path"]
-            select = mapper_spec.get("select", ["*.*"])
-            if mapper.startswith("/"):
-                mapper_path = Path(mapper).resolve()
-            else:
-                mapper_path = Path(mapper).resolve().relative_to(filesystem.root_dir)
-            if not mapper_path.is_file():
-                raise Exception(f"Stream map {mapper} not found")
-            try:
-                stream_map_ns = load_mapper_from_path(mapper_path)
-            except Exception as e:
-                raise RuntimeError(f"Failed to load stream map {mapper}") from e
-            try:
-                stream_map_cls = stream_map_ns.register()
-            except (NameError, AttributeError) as e:
-                raise AttributeError(
-                    f"Extension {mapper} does not have a register function."
-                ) from e
-            try:
-                stream_map = stream_map_cls(tap_config=self.config, select=select)
-            except Exception as e:
-                raise RuntimeError(f"Failed to initialize stream map {mapper}") from e
-            assert isinstance(stream_map, AltoStreamMap), (
-                "Stream map must inherit from AltoStreamMap"
-            )
-            print(f"👨‍🔧 Found custom stream map {stream_map.name} for {self.name}")
+            stream_map = self._load_stream_map(mapper_spec, filesystem)
             mappers.append(stream_map)
         return mappers
+
+    def _hash_rules(self) -> t.List[str]:
+        return [select[1:] for select in self.select if select.startswith("~")]
+
+    def _load_stream_map(
+        self, mapper_spec: t.Union[str, t.Dict[str, t.Any]], filesystem: AltoFileSystem
+    ) -> "AltoStreamMap":
+        if isinstance(mapper_spec, str):
+            mapper_spec = {"path": mapper_spec}
+        mapper = mapper_spec["path"]
+        select = mapper_spec.get("select", ["*.*"])
+        mapper_path = self._stream_map_path(mapper, filesystem)
+        stream_map_cls = self._stream_map_class(mapper, mapper_path)
+        try:
+            stream_map = stream_map_cls(tap_config=self.config, select=select)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize stream map {mapper}") from e
+        assert isinstance(stream_map, AltoStreamMap), "Stream map must inherit from AltoStreamMap"
+        print(f"👨‍🔧 Found custom stream map {stream_map.name} for {self.name}")
+        return stream_map
+
+    def _stream_map_path(self, mapper: str, filesystem: AltoFileSystem) -> Path:
+        if mapper.startswith("/"):
+            mapper_path = Path(mapper).resolve()
+        else:
+            mapper_path = Path(mapper).resolve().relative_to(filesystem.root_dir)
+        if not mapper_path.is_file():
+            raise Exception(f"Stream map {mapper} not found")
+        return mapper_path
+
+    def _stream_map_class(self, mapper: str, mapper_path: Path) -> t.Type["AltoStreamMap"]:
+        try:
+            stream_map_ns = load_mapper_from_path(mapper_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load stream map {mapper}") from e
+        try:
+            return stream_map_ns.register()
+        except (NameError, AttributeError) as e:
+            raise AttributeError(f"Extension {mapper} does not have a register function.") from e
 
     def __str__(self) -> str:
         return self.name
@@ -634,7 +643,6 @@ class AltoStreamMap:
     name: str = "No-Op Stream Map"
 
     def __init__(self, tap_config: "DynaBox", select: t.List[str]) -> None:
-        """Initialize the stream map."""
         self.tap_config = tap_config
         self.select = select
         self.ignore: t.Set[str] = set()
@@ -770,11 +778,9 @@ class AltoExtension:
         configuration: AltoConfiguration,
         run_task: t.Callable[[t.List[str]], int],
     ) -> None:
-        """Initialize the extension."""
         self.filesystem = filesystem
         self.configuration = configuration
         self.run_task = run_task
-        self.init_hook()
 
     @property
     def name(self) -> str:
@@ -851,21 +857,12 @@ class AltoTaskEngine(DoitEngine):
     def __init__(
         self,
         root_dir: Path = Path.cwd(),
-        config: t.Optional[t.Union["Dynaconf", t.Dict[str, t.Any]]] = None,
+        config: t.Optional[t.Union[LazySettings, t.Dict[str, t.Any]]] = None,
     ) -> None:
-        """Initialize the alto task engine.
-
-        Args:
-            root_dir: The root directory of the project. This is where the configuration is
-                loaded from if no configuration is provided. Defaults to the current working
-                directory.
-            config: The configuration to use. If this is a dictionary, it will be written to a
-                temporary file and loaded. If this is a Dynaconf object, it will be used directly.
-                If this is None, the configuration will be loaded from the root directory.
-        """
         super().__init__()
-        from dynaconf import Dynaconf
+        Dynaconf = t.cast(t.Any, dynaconf).Dynaconf
 
+        self.alto: DynaconfConfig
         kwargs = {
             "root_path": root_dir,
             "envvar_prefix": "ALTO",
@@ -892,7 +889,7 @@ class AltoTaskEngine(DoitEngine):
                 ],
                 **kwargs,
             )
-        elif isinstance(config, Dynaconf):
+        elif isinstance(config, LazySettings):
             # Use the user-provided configuration object
             self.alto = config
         elif isinstance(config, dict):
@@ -918,8 +915,6 @@ class AltoTaskEngine(DoitEngine):
 
     def setup(self, opt_values: t.Optional[t.Dict[str, t.Any]] = None) -> None:
         """Load extensions and filesystem interface. This is called by doit."""
-        if opt_values is None:
-            opt_values = {}
         # Set the environment variables
         for k, v in self.alto.get("ENVIRONMENT", {}).items():
             os.environ[k] = str(v)
@@ -944,12 +939,13 @@ class AltoTaskEngine(DoitEngine):
                 for validator in ext_cls.get_validators():
                     # Validators can also seed configuration
                     # so we must run them before instantiating the extension
-                    validator.validate(self.alto)
+                    validator.validate(t.cast(t.Any, self.alto))
                 ext = ext_cls(
                     filesystem=self.filesystem,
                     configuration=self.configuration,
                     run_task=self.__call__,
                 )
+                ext.init_hook()
                 self.extensions.append(ext)
                 continue
             # External extensions
@@ -975,9 +971,10 @@ class AltoTaskEngine(DoitEngine):
             except Exception as e:
                 raise RuntimeError(f"Extension {extension} failed to instantiate.") from e
             assert isinstance(ext, AltoExtension), f"{ext} is not an AltoExtension"
+            ext.init_hook()
             self.extensions.append(ext)
 
-    def load_doit_config(self) -> t.Dict[str, t.Any]:
+    def load_doit_config(self) -> AltoEngineConfig:
         """Load the doit configuration. This is called by doit."""
         if bool(os.getenv("ALTO_RICH_UI")):
             # If the user has opted into the rich UI, we will try to instantiate it.
@@ -1000,9 +997,7 @@ class AltoTaskEngine(DoitEngine):
 
     def __call__(self, *args) -> int:
         """Execute a configured task by name with the alto task engine."""
-        from alto.main import AltoRun
-
-        return AltoRun(
+        return Run(
             task_loader=self,
             bin_name="alto",
             config={},
@@ -1194,12 +1189,15 @@ class AltoTaskEngine(DoitEngine):
         for tap in self.configuration.plugins(PluginType.TAP):
             # Tap -> Reservoir
             pipeline_id = uuid.uuid4()
-            target = "reservoir"
+            reservoir_target = "reservoir"
             yield (
-                AltoTask(name=target)
+                AltoTask(name=reservoir_target)
                 .set_basename(tap.name)
                 .set_actions(
-                    (get_remote_state, (tap.name, target, self.filesystem, tap.supports_state)),
+                    (
+                        get_remote_state,
+                        (tap.name, reservoir_target, self.filesystem, tap.supports_state),
+                    ),
                     (
                         tap_to_reservoir,
                         (
@@ -1214,12 +1212,14 @@ class AltoTaskEngine(DoitEngine):
                 .set_task_dep(f"{AltoCmd.BUILD}:{tap}", f"{AltoCmd.APPLY}:{tap}")
                 .set_setup(f"{AltoCmd.CONFIG}:{tap}")
                 .set_teardown(
-                    (update_remote_state_no_stdout, (tap.name, target, self.filesystem)),
-                    (upload_logs, (tap.name, target, pipeline_id, self.filesystem)),
+                    (update_remote_state_no_stdout, (tap.name, reservoir_target, self.filesystem)),
+                    (upload_logs, (tap.name, reservoir_target, pipeline_id, self.filesystem)),
                 )
-                .set_clean((compact_reservoir, (tap,)))
+                .set_clean((compact_reservoir, (tap.name, self.filesystem, self.alto.current_env)))
                 .set_uptodate(False)
-                .set_doc(f"Run the {tap} to {target} data pipeline to the reservoir from the tap")
+                .set_doc(
+                    f"Run the {tap} to {reservoir_target} data pipeline to the reservoir from the tap"
+                )
                 .set_verbosity(2)
                 .data
             )
@@ -1263,8 +1263,42 @@ class AltoTaskEngine(DoitEngine):
 # ================= #
 
 
+def _parse_singer_message(line: bytes) -> t.Optional[t.Dict[str, t.Any]]:
+    try:
+        return json.loads(line)
+    except json.JSONDecodeError:
+        return None
+
+
+def _mapped_singer_message(
+    message: t.Dict[str, t.Any], mappers: t.List[AltoStreamMap]
+) -> t.Optional[t.Dict[str, t.Any]]:
+    message_type = message.get("type")
+    if message_type == "RECORD":
+        return _apply_record_mappers(message, mappers)
+    if message_type == "SCHEMA":
+        return _apply_schema_mappers(message, mappers)
+    return None
+
+
+def _apply_record_mappers(
+    message: t.Dict[str, t.Any], mappers: t.List[AltoStreamMap]
+) -> t.Dict[str, t.Any]:
+    for mapper in mappers:
+        message = mapper.transform_record(message)
+    return message
+
+
+def _apply_schema_mappers(
+    message: t.Dict[str, t.Any], mappers: t.List[AltoStreamMap]
+) -> t.Dict[str, t.Any]:
+    for mapper in mappers:
+        message = mapper.transform_schema(message)
+    return message
+
+
 def map_worker(
-    instream: t.IO[bytes], outstream: t.IO[bytes], mappers: t.List[AltoStreamMap]
+    instream: t.IO[bytes], outstream: BinaryWriteStream, mappers: t.List[AltoStreamMap]
 ) -> None:
     """Read JSON lines from a stream and write them to another stream."""
     for line in instream:
@@ -1274,21 +1308,15 @@ def map_worker(
             # no mappers, just pass through
             outstream.write(line)
             continue
-        try:
-            message = json.loads(line)
-        except json.JSONDecodeError:
+        message = _parse_singer_message(line)
+        if message is None:
             continue
-        if message["type"] == "RECORD":
-            for mapper in mappers:
-                message = mapper.transform_record(message)
-        elif message["type"] == "SCHEMA":
-            for mapper in mappers:
-                message = mapper.transform_schema(message)
-        else:
+        mapped_message = _mapped_singer_message(message, mappers)
+        if mapped_message is None:
             outstream.write(line)
             continue
-        if message:
-            outstream.write(json.dumps(message).encode("utf-8") + b"\n")
+        if mapped_message:
+            outstream.write(json.dumps(mapped_message).encode("utf-8") + b"\n")
 
 
 # ==================== #
@@ -1310,23 +1338,15 @@ def pipe_logger(stream: t.IO[bytes], path: str, lock: threading.Lock) -> None:
 # =============== #
 
 
-def run_pipeline(
-    tap: AltoPlugin,
-    target: AltoPlugin,
-    pipeline_id: str,
-    filesystem: AltoFileSystem,
-) -> None:
-    """Execute a data pipeline."""
+def _tap_command(
+    tap: AltoPlugin, filesystem: AltoFileSystem, state_key: str
+) -> t.Tuple[t.List[str], str]:
     tap_bin, tap_config, tap_catalog = (
         filesystem.executable_path(tap.pex_name),
         filesystem.config_path(tap.name),
         filesystem.catalog_path(tap.name),
     )
-    target_bin, target_config = (
-        filesystem.executable_path(target.pex_name),
-        filesystem.config_path(target.name, tap.name),
-    )
-    state = filesystem.state_path(tap.name, target.name)
+    state = filesystem.state_path(tap.name, state_key)
     cmd = [tap_bin, "--config", tap_config]
     if os.path.isfile(state) and tap.supports_state:
         cmd += ["--state", state]
@@ -1334,6 +1354,21 @@ def run_pipeline(
         cmd += ["--catalog", tap_catalog]
     elif tap.supports_properties:
         cmd += ["--properties", tap_catalog]
+    return cmd, state
+
+
+def run_pipeline(
+    tap: AltoPlugin,
+    target: AltoPlugin,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+) -> None:
+    """Execute a data pipeline."""
+    cmd, state = _tap_command(tap, filesystem, target.name)
+    target_bin, target_config = (
+        filesystem.executable_path(target.pex_name),
+        filesystem.config_path(target.name, tap.name),
+    )
     print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
     stdout_lock = threading.Lock()
     mappers = tap.get_stream_maps(filesystem)
@@ -1355,10 +1390,12 @@ def run_pipeline(
             cwd=filesystem.root_dir,
         ) as target_proc,
     ):
+        tap_stderr = t.cast(t.IO[bytes], tap_proc.stderr)
+        target_stderr = t.cast(t.IO[bytes], target_proc.stderr)
         t1 = threading.Thread(
             target=pipe_logger,
             args=(
-                tap_proc.stderr,
+                tap_stderr,
                 filesystem.log_path(f"tap-{pipeline_id}.log"),
                 stdout_lock,
             ),
@@ -1367,18 +1404,21 @@ def run_pipeline(
         t2 = threading.Thread(
             target=pipe_logger,
             args=(
-                target_proc.stderr,
+                target_stderr,
                 filesystem.log_path(f"target-{pipeline_id}.log"),
                 stdout_lock,
             ),
             daemon=True,
         )
-        t1.start(), t2.start()
+        t1.start()
+        t2.start()
         if mappers:
+            tap_stdout = t.cast(t.IO[bytes], tap_proc.stdout)
+            target_stdin = t.cast(t.IO[bytes], target_proc.stdin)
             # Prevent the mapper worker from blocking the pipeline
             map_thread = threading.Thread(
                 target=map_worker,
-                args=(tap_proc.stdout, target_proc.stdin, mappers),
+                args=(tap_stdout, target_stdin, mappers),
                 daemon=True,
             )
             map_thread.start()
@@ -1387,7 +1427,7 @@ def run_pipeline(
         if mappers:
             print("Awaiting mapper to complete...")
             map_thread.join()
-            target_proc.stdin.close()
+            target_stdin.close()
         print("Awaiting target process to complete...")
         target_proc.wait()
         print(f"Target {target} exited with code {target_proc.returncode}")
@@ -1395,7 +1435,8 @@ def run_pipeline(
             raise subprocess.CalledProcessError(tap_proc.returncode, cmd)
         if target_proc.returncode != 0:
             raise subprocess.CalledProcessError(target_proc.returncode, cmd)
-        t1.join(), t2.join()
+        t1.join()
+        t2.join()
 
 
 # ================ #
@@ -1482,10 +1523,12 @@ def upload_logs(
         filesystem.log_path(f"{ts}--{target}--{pipeline_id}.log", remote=True),
     )
     if tap_path.exists():
-        filesystem.fs.put(str(tap_path.resolve()), tap_dest), tap_path.unlink()
+        filesystem.fs.put(str(tap_path.resolve()), tap_dest)
+        tap_path.unlink()
         print(f"Uploaded tap log for pipeline {pipeline_id} to {tap_dest}")
     if target_path.exists():
-        filesystem.fs.put(str(target_path.resolve()), target_dest), target_path.unlink()
+        filesystem.fs.put(str(target_path.resolve()), target_dest)
+        target_path.unlink()
         print(f"Uploaded target log for pipeline {pipeline_id} to {target_dest}")
 
 
@@ -1494,9 +1537,152 @@ def upload_logs(
 # ============== #
 
 
+def _reservoir_stream_paths(reservoir: ReservoirIndex, stream: str) -> t.List[str]:
+    paths = reservoir.get(stream)
+    if isinstance(paths, list):
+        return paths
+    paths = []
+    reservoir[stream] = paths
+    return paths
+
+
+def _write_stream_state(state_path: str, stream_states: t.Dict[str, t.Any]) -> None:
+    with open(state_path, "w") as state_data:
+        json.dump(stream_states, state_data)
+
+
+def _reservoir_schema_id(message: t.Dict[str, t.Any]) -> str:
+    return md5(json.dumps(message["schema"], sort_keys=True).encode("utf-8")).hexdigest()[:15]
+
+
+def _record_container(line: bytes, message: t.Dict[str, t.Any]) -> ReservoirRecordContainer:
+    records = gzip.GzipFile(fileobj=io.BytesIO(), mode="wb")
+    header = line + b"\n"
+    records.write(header)
+    return {"count": 0, "schema": message, "header": header, "records": records}
+
+
+def _handle_reservoir_state(
+    message: t.Dict[str, t.Any], stream_states: t.Dict[str, t.Any], state_path: str
+) -> None:
+    merge(message["value"], stream_states)
+    _write_stream_state(state_path, stream_states)
+
+
+def _handle_reservoir_schema(
+    line: bytes,
+    message: t.Dict[str, t.Any],
+    buffers: ReservoirIngestBuffers,
+) -> None:
+    message = _apply_schema_mappers(message, buffers.mappers)
+    stream = message["stream"]
+    schema_id = _reservoir_schema_id(message)
+    if stream not in buffers.record_buffer or schema_id not in buffers.record_buffer[stream]:
+        print(f"New stream: {stream} ({schema_id})")
+        buffers.record_buffer[stream] = {schema_id: _record_container(line, message)}
+    buffers.active_schemas[stream] = schema_id
+
+
+def _reservoir_path(
+    filesystem: AltoFileSystem, record_key: str, stream: str, schema_id: str
+) -> str:
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S%f")
+    return filesystem._remote_path(
+        f"{ts}.singer.gz",
+        key=record_key.format(stream=stream, schema_id=schema_id),
+    )
+
+
+def _flush_reservoir_container(
+    container: ReservoirRecordContainer,
+    stream: str,
+    schema_id: str,
+    reservoir: ReservoirIndex,
+    record_key: str,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+    tpe: t.Any,
+) -> t.Tuple[str, io.BytesIO]:
+    path = _reservoir_path(filesystem, record_key, stream, schema_id)
+    records = container["records"]
+    inner_buf = t.cast(io.BytesIO, records.fileobj)
+    records.close()
+    inner_buf.flush()
+    inner_buf.seek(0)
+    tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
+    _reservoir_stream_paths(reservoir, stream).append(path)
+    with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
+        f.write(f"{path}\n")
+    return path, inner_buf
+
+
+def _reset_reservoir_container(container: ReservoirRecordContainer, inner_buf: io.BytesIO) -> None:
+    inner_buf.truncate(0)
+    inner_buf.seek(0)
+    new_records = gzip.GzipFile(fileobj=inner_buf, mode="wb")
+    new_records.write(container["header"])
+    container["count"] = 0
+    container["records"] = new_records
+
+
+def _handle_reservoir_record(
+    line: bytes,
+    message: t.Dict[str, t.Any],
+    buffers: ReservoirIngestBuffers,
+    reservoir: ReservoirIndex,
+    record_key: str,
+    state_path: str,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+    stream_states: t.Dict[str, t.Any],
+    buffer_size: int,
+    tpe: t.Any,
+) -> None:
+    message = _apply_record_mappers(message, buffers.mappers)
+    stream = message["stream"]
+    schema_id = buffers.active_schemas[stream]
+    container = buffers.record_buffer[stream][schema_id]
+    container["count"] += 1
+    container["records"].write(line + b"\n")
+    if container["count"] < buffer_size:
+        return
+    print(f"Flushing {stream} ({schema_id})")
+    _, inner_buf = _flush_reservoir_container(
+        container, stream, schema_id, reservoir, record_key, pipeline_id, filesystem, tpe
+    )
+    _reset_reservoir_container(container, inner_buf)
+    _write_stream_state(state_path, stream_states)
+
+
+def _flush_remaining_reservoir_records(
+    record_buffer: t.Dict[str, t.Dict[str, ReservoirRecordContainer]],
+    active_schemas: t.Dict[str, str],
+    reservoir: ReservoirIndex,
+    record_key: str,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+    tpe: t.Any,
+) -> None:
+    print("Flushing remaining records")
+    for stream, schemas in record_buffer.items():
+        for _schema_id, container in schemas.items():
+            if container["count"] == 0:
+                continue
+            _flush_reservoir_container(
+                container,
+                stream,
+                active_schemas[stream],
+                reservoir,
+                record_key,
+                pipeline_id,
+                filesystem,
+                tpe,
+            )
+
+
 def reservoir_ingestor(
     stdout: t.IO[bytes],
-    reservoir: t.Dict[str, t.List[str]],
+    reservoir: ReservoirIndex,
     record_key: str,
     state_path: str,
     pipeline_id: str,
@@ -1513,8 +1699,9 @@ def reservoir_ingestor(
         stream_states = {}
     if mappers is None:
         mappers = []
-    record_buffer = {}
-    active_schemas = {}
+    record_buffer: t.Dict[str, t.Dict[str, ReservoirRecordContainer]] = {}
+    active_schemas: t.Dict[str, str] = {}
+    buffers = ReservoirIngestBuffers(mappers, record_buffer, active_schemas)
 
     # Start the ingestion loop
     tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
@@ -1522,104 +1709,39 @@ def reservoir_ingestor(
         try:
             message = json.loads(line.decode("utf-8"))
         except json.JSONDecodeError:
-            pass
-
-        # Handle the state message
-        if message["type"] == "STATE":
-            merge(message["value"], stream_states)
-            with open(state_path, "w") as f:
-                json.dump(stream_states, f)
             continue
-        stream = message["stream"]
 
-        # Handle the schema message
+        if message["type"] == "STATE":
+            _handle_reservoir_state(message, stream_states, state_path)
+            continue
+
         if message["type"] == "SCHEMA":
-            for mapper in mappers:
-                message = mapper.transform_schema(message)
-            schema_id = md5(
-                json.dumps(message["schema"], sort_keys=True).encode("utf-8")
-            ).hexdigest()[:15]
-            if stream not in record_buffer or schema_id not in record_buffer[stream]:
-                # New stream
-                print(f"New stream: {stream} ({schema_id})")
-                buf, header = gzip.GzipFile(fileobj=io.BytesIO(), mode="wb"), line + b"\n"
-                buf.write(header)
-                record_buffer[stream] = {
-                    schema_id: {
-                        "count": 0,
-                        "schema": message,
-                        "header": header,
-                        "records": buf,
-                    }
-                }
-            active_schemas[stream] = schema_id
+            _handle_reservoir_schema(line, message, buffers)
+            continue
 
-        # Handle the record message
-        elif message["type"] == "RECORD":
-            for mapper in mappers:
-                message = mapper.transform_record(message)
-            container = record_buffer[stream][active_schemas[stream]]
-            container["count"] += 1
-            container["records"].write(line + b"\n")
-            if container["count"] >= buffer_size:
-                # Buffer is full, flush to filesystem
-                print(f"Flushing {stream} ({active_schemas[stream]})")
-                ts = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-                path = filesystem._remote_path(
-                    f"{ts}.singer.gz",
-                    key=record_key.format(stream=stream, schema_id=active_schemas[stream]),
-                )
-                _buf: gzip.GzipFile = container["records"]
-                inner_buf: io.BytesIO = _buf.fileobj
-                _buf.close()
-                inner_buf.flush(), inner_buf.seek(0)
-                tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
-                # Reset the buffer
-                container["count"] = 0
-                inner_buf.truncate(0), inner_buf.seek(0)
-                new_buf = gzip.GzipFile(fileobj=inner_buf, mode="wb")
-                new_buf.write(container["header"])
-                container["records"] = new_buf
-                # Update the index
-                if stream not in reservoir:
-                    reservoir[stream] = []
-                reservoir[stream].append(path)
-                # Write path to pipeline log file
-                with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
-                    f.write(f"{path}\n")
-                # Write actualized state to the remote storage directory
-                with open(state_path, "w") as state_data:
-                    json.dump(stream_states, state_data)
-
-    # Flush the remaining records
-    print("Flushing remaining records")
-    for stream, schemas in record_buffer.items():
-        for schema_id, container in schemas.items():
-            if container["count"] == 0:
-                continue
-            ts = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-            path = filesystem._remote_path(
-                f"{ts}.singer.gz",
-                key=record_key.format(stream=stream, schema_id=active_schemas[stream]),
+        if message["type"] == "RECORD":
+            _handle_reservoir_record(
+                line,
+                message,
+                buffers,
+                reservoir,
+                record_key,
+                state_path,
+                pipeline_id,
+                filesystem,
+                stream_states,
+                buffer_size,
+                tpe,
             )
-            _buf: gzip.GzipFile = container["records"]
-            inner_buf: io.BytesIO = _buf.fileobj
-            _buf.close()
-            inner_buf.flush(), inner_buf.seek(0)
-            tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
-            # Update the index
-            if stream not in reservoir:
-                reservoir[stream] = []
-            reservoir[stream].append(path)
-            # Write path to pipeline log file
-            with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
-                f.write(f"{path}\n")
+
+    _flush_remaining_reservoir_records(
+        record_buffer, active_schemas, reservoir, record_key, pipeline_id, filesystem, tpe
+    )
 
     # Write actualized state to the remote storage directory
     tpe.shutdown()
     print("Writing final state")
-    with open(state_path, "w") as state_data:
-        json.dump(stream_states, state_data)
+    _write_stream_state(state_path, stream_states)
 
 
 # TODO: Add retry decorator
@@ -1655,7 +1777,7 @@ def tap_to_reservoir(
         filesystem.config_path(tap.name),
         filesystem.catalog_path(tap.name),
     )
-    stream_states = {}
+    stream_states: t.Dict[str, t.Any] = {}
     state = filesystem.state_path(tap.name, target)
     base_path = f"{target}/{env}/{tap}"
 
@@ -1673,7 +1795,7 @@ def tap_to_reservoir(
 
     # Load the index
     index_path = filesystem._remote_path("_reservoir.json", key=base_path)
-    reservoir = {}
+    reservoir: ReservoirIndex = {}
     if filesystem.fs.exists(index_path):
         reservoir = json.loads(filesystem.fs.cat(index_path).decode("utf-8"))
 
@@ -1695,11 +1817,13 @@ def tap_to_reservoir(
             env={**os.environ, **tap.environment},
             cwd=filesystem.root_dir,
         ) as tap_proc:
+            tap_stderr = t.cast(t.IO[bytes], tap_proc.stderr)
+            tap_stdout = t.cast(t.IO[bytes], tap_proc.stdout)
             # Stream stderr
             t1 = threading.Thread(
                 target=pipe_logger,
                 args=(
-                    tap_proc.stderr,
+                    tap_stderr,
                     filesystem.log_path(f"tap-{pipeline_id}.log"),
                     stdout_lock,
                 ),
@@ -1710,7 +1834,7 @@ def tap_to_reservoir(
             # the state file. Blocks until the tap process exits. The `finally` statement
             # updates the reservoir index and drops the lock file allowing the next run to proceed.
             reservoir_ingestor(
-                stdout=tap_proc.stdout,
+                stdout=tap_stdout,
                 reservoir=reservoir,
                 record_key=base_path + "/{stream}/{schema_id}",
                 state_path=state,
@@ -1720,12 +1844,248 @@ def tap_to_reservoir(
                 buffer_size=buffer_size,
                 mappers=mappers,
             )
-            tap_proc.wait(), t1.join()
+            tap_proc.wait()
+            t1.join()
     finally:
         # Load the reservoir index from the remote storage directory
         filesystem.fs.pipe(index_path, json.dumps(reservoir).encode("utf-8"))
         # Drop the lock file
         filesystem.fs.delete(lock_path)
+
+
+def _load_reservoir_stream_states(state: str) -> t.Dict[str, t.Any]:
+    if not os.path.isfile(state):
+        return {}
+    with open(state) as state_data:
+        return json.load(state_data)
+
+
+def _rebuild_reservoir_index(filesystem: AltoFileSystem, base_path: str) -> ReservoirIndex:
+    reservoir: ReservoirIndex = {RESERVOIR_VERSION_KEY: 0}
+    streams = (
+        [
+            stream_directory.split("/")[-1]
+            for stream_directory in filesystem.fs.ls(base_path, detail=False)
+            if not filesystem.fs.isfile(stream_directory)
+        ]
+        if filesystem.fs.exists(base_path)
+        else []
+    )
+    _refresh_reservoir_stream_paths(reservoir, filesystem, base_path, streams)
+    _write_reservoir_index_file(reservoir, filesystem, base_path)
+    return reservoir
+
+
+def _refresh_reservoir_stream_paths(
+    reservoir: ReservoirIndex,
+    filesystem: AltoFileSystem,
+    base_path: str,
+    streams: t.Iterable[str],
+) -> None:
+    for stream in streams:
+        reservoir[stream] = list(
+            sorted(
+                filesystem.fs.glob(
+                    filesystem._remote_path("**.singer.gz", key=f"{base_path}/{stream}")
+                )
+            )
+        )
+
+
+def _write_reservoir_index_file(
+    reservoir: ReservoirIndex, filesystem: AltoFileSystem, base_path: str
+) -> None:
+    filesystem.fs.pipe(
+        filesystem._remote_path("_reservoir.json", key=base_path),
+        json.dumps(reservoir).encode("utf-8"),
+    )
+
+
+def _load_reservoir_index(filesystem: AltoFileSystem, base_path: str) -> ReservoirIndex:
+    index_path = filesystem._remote_path("_reservoir.json", key=base_path)
+    if filesystem.fs.exists(index_path):
+        return json.loads(filesystem.fs.cat(index_path).decode("utf-8"))
+    print("Reservoir index not found, rebuilding")
+    reservoir = _rebuild_reservoir_index(filesystem, base_path)
+    print("Reservoir index rebuilt")
+    return reservoir
+
+
+def _version_from_reservoir(reservoir: ReservoirIndex) -> int:
+    version = reservoir.get(RESERVOIR_VERSION_KEY, 0)
+    return version if isinstance(version, int) else 0
+
+
+def _sync_stream_state_to_index(
+    state: str, stream_states: t.Dict[str, t.Any], reservoir: ReservoirIndex
+) -> None:
+    stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
+    reservoir_version = _version_from_reservoir(reservoir)
+    if stream_states[RESERVOIR_VERSION_KEY] == reservoir_version:
+        return
+    print("Index has changed, recreating state file")
+    for stream, path_data in reservoir.items():
+        if stream in (RESERVOIR_VERSION_KEY,) or stream not in stream_states:
+            continue
+        for path in sorted(t.cast(t.List[str], path_data)):
+            fname = path.split("/")[-1]
+            if fname > stream_states[stream]["emitted"]:
+                stream_states[stream]["emitted"] = fname
+    stream_states[RESERVOIR_VERSION_KEY] = reservoir_version
+    with open(state, "w") as state_dest:
+        json.dump(stream_states, state_dest)
+    print("Index version:", stream_states[RESERVOIR_VERSION_KEY])
+
+
+def _paths_by_schema(paths: t.List[str]) -> t.Dict[str, t.List[str]]:
+    from collections import OrderedDict
+
+    paths_by_schema: t.Dict[str, t.List[str]] = OrderedDict()
+    for path in paths:
+        schema = path.split("/")[-2]
+        paths_by_schema.setdefault(schema, []).append(path)
+    return paths_by_schema
+
+
+def _emit_reservoir_stream(
+    stream: str,
+    paths: t.List[str],
+    target_stdin: t.IO[bytes],
+    filesystem: AltoFileSystem,
+    stream_states: t.Dict[str, t.Any],
+    state: str,
+    reservoir_lock: threading.Lock,
+    tpe: t.Any,
+) -> int:
+    stream_states.setdefault(stream, {"emitted": ""})
+    work_queue = [path for path in paths if path.split("/")[-1] > stream_states[stream]["emitted"]]
+    if not work_queue:
+        return 0
+    files_processed = 0
+    for schema, paths_to_emit in _paths_by_schema(work_queue).items():
+        print(f"Loading {len(paths_to_emit)} path(s) for {stream} (schema_id: {schema})")
+        job_res = tpe.map(
+            reservoir_emitter,
+            itertools.repeat(target_stdin),
+            paths_to_emit,
+            itertools.repeat(filesystem),
+            itertools.repeat(reservoir_lock),
+        )
+        stream_states[stream]["emitted"] = max(
+            stream_states[stream]["emitted"],
+            max(path.split("/")[-1] for path in job_res),
+        )
+        with reservoir_lock, open(state, "w") as state_data:
+            json.dump(stream_states, state_data)
+        files_processed += len(paths_to_emit)
+    return files_processed
+
+
+def _emit_reservoir_index(
+    reservoir: ReservoirIndex,
+    target_stdin: t.IO[bytes],
+    filesystem: AltoFileSystem,
+    stream_states: t.Dict[str, t.Any],
+    state: str,
+    reservoir_lock: threading.Lock,
+    tpe: t.Any,
+) -> int:
+    files_processed = 0
+    for stream, path_data in reservoir.items():
+        if stream in (RESERVOIR_VERSION_KEY,):
+            continue
+        files_processed += _emit_reservoir_stream(
+            stream,
+            t.cast(t.List[str], path_data),
+            target_stdin,
+            filesystem,
+            stream_states,
+            state,
+            reservoir_lock,
+            tpe,
+        )
+    return files_processed
+
+
+def _compact_paths_by_schema(
+    paths: t.List[str], filesystem: AltoFileSystem
+) -> t.Dict[str, t.List[t.Tuple[str, int]]]:
+    from collections import OrderedDict
+
+    paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
+    for path in paths:
+        schema = path.split("/")[-2]
+        paths_by_schema.setdefault(schema, []).append((path, filesystem.fs.size(path)))
+    return paths_by_schema
+
+
+def _merge_reservoir_targets(targets: t.List[str], filesystem: AltoFileSystem) -> None:
+    from functools import reduce
+
+    filesystem.fs.pipe(
+        targets[-1],
+        reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
+    )
+    filesystem.fs.rm(targets[:-1])
+
+
+def _compact_schema_paths(
+    stream: str,
+    schema: str,
+    paths_with_size: t.List[t.Tuple[str, int]],
+    filesystem: AltoFileSystem,
+) -> bool:
+    compactable = [(path, sz) for path, sz in paths_with_size if sz < 2.5e7]
+    if len(compactable) < 2:
+        return False
+    changed = False
+    merge_queue: t.List[str] = []
+    queue_bytes = 0.0
+    while compactable:
+        path, sz = compactable.pop()
+        merge_queue.append(path)
+        queue_bytes += sz
+        if queue_bytes > 2.5e7:
+            print(f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})")
+            _merge_reservoir_targets(list(sorted(merge_queue)), filesystem)
+            merge_queue, queue_bytes = [], 0.0
+            changed = True
+    if merge_queue:
+        print(f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})")
+        _merge_reservoir_targets(list(sorted(merge_queue)), filesystem)
+        changed = True
+    return changed
+
+
+def _compact_stream_paths(stream: str, paths: t.List[str], filesystem: AltoFileSystem) -> bool:
+    print(f"Inspecting {stream} ({len(paths)} paths)")
+    if len(paths) <= 1:
+        return False
+    changed = False
+    for schema, paths_with_size in _compact_paths_by_schema(paths, filesystem).items():
+        changed = _compact_schema_paths(stream, schema, paths_with_size, filesystem) or changed
+    return changed
+
+
+def _compact_reservoir_index(reservoir: ReservoirIndex, filesystem: AltoFileSystem) -> bool:
+    changed = False
+    for stream, path_data in reservoir.items():
+        if stream in (RESERVOIR_VERSION_KEY,):
+            continue
+        changed = (
+            _compact_stream_paths(stream, t.cast(t.List[str], path_data), filesystem) or changed
+        )
+    return changed
+
+
+def _write_rebuilt_reservoir_index(
+    reservoir: ReservoirIndex, filesystem: AltoFileSystem, base_path: str
+) -> None:
+    version = _version_from_reservoir(reservoir)
+    reservoir[RESERVOIR_VERSION_KEY] = version + 1
+    streams = [k for k in reservoir.keys() if k != RESERVOIR_VERSION_KEY]
+    _refresh_reservoir_stream_paths(reservoir, filesystem, base_path, streams)
+    _write_reservoir_index_file(reservoir, filesystem, base_path)
 
 
 def reservoir_to_target(
@@ -1736,7 +2096,6 @@ def reservoir_to_target(
     env: str,
 ) -> None:
     """Execute a data pipeline from the project reservoir."""
-    from collections import OrderedDict
     from concurrent.futures import ThreadPoolExecutor
 
     # Set up
@@ -1746,64 +2105,10 @@ def reservoir_to_target(
     )
     state = filesystem.state_path(tap.name.replace("tap", "reservoir"), target.name)
 
-    # Load the stream states
-    stream_states = {}
-    if os.path.isfile(state):
-        with open(state) as state_data:
-            stream_states = json.load(state_data)
-    stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
-
-    # Load the index
     base_path = f"reservoir/{env}/{tap}"
-    index_path = filesystem._remote_path("_reservoir.json", key=base_path)
-    if not filesystem.fs.exists(index_path):
-        print("Reservoir index not found, rebuilding")
-        reservoir = {RESERVOIR_VERSION_KEY: 0}
-        streams = (
-            [
-                stream_directory.split("/")[-1]
-                for stream_directory in filesystem.fs.ls(base_path, detail=False)
-                if not filesystem.fs.isfile(stream_directory)
-            ]
-            if filesystem.fs.exists(base_path)
-            else []
-        )
-        for stream in streams:
-            reservoir[stream] = list(
-                sorted(
-                    filesystem.fs.glob(
-                        filesystem._remote_path("**.singer.gz", key=f"{base_path}/{stream}")
-                    )
-                )
-            )
-        filesystem.fs.pipe(
-            filesystem._remote_path("_reservoir.json", key=base_path),
-            json.dumps(reservoir).encode("utf-8"),
-        )
-        print("Reservoir index rebuilt")
-    else:
-        reservoir: t.Dict[str, t.List[str]] = json.loads(
-            filesystem.fs.cat(index_path).decode("utf-8")
-        )
-
-    # Recreate the state file if the index has changed (from a compaction)
-    stream_states.setdefault(RESERVOIR_VERSION_KEY, 0)
-    reservoir.setdefault(RESERVOIR_VERSION_KEY, 0)
-    if stream_states[RESERVOIR_VERSION_KEY] != reservoir[RESERVOIR_VERSION_KEY]:
-        print("Index has changed, recreating state file")
-        for stream, paths in reservoir.items():
-            # Skip stuff we never saw before
-            if stream in (RESERVOIR_VERSION_KEY,) or stream not in stream_states:
-                continue
-            # Update the state
-            for path in sorted(paths):
-                fname = path.split("/")[-1]
-                if fname > stream_states[stream]["emitted"]:
-                    stream_states[stream]["emitted"] = fname
-        stream_states[RESERVOIR_VERSION_KEY] = reservoir[RESERVOIR_VERSION_KEY]
-        with open(state, "w") as state_dest:
-            json.dump(stream_states, state_dest)
-        print("Index version:", stream_states[RESERVOIR_VERSION_KEY])
+    stream_states = _load_reservoir_stream_states(state)
+    reservoir = _load_reservoir_index(filesystem, base_path)
+    _sync_stream_state_to_index(state, stream_states, reservoir)
 
     # Start the pipeline
     print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
@@ -1817,11 +2122,13 @@ def reservoir_to_target(
         env={**os.environ, **target.environment},
         cwd=filesystem.root_dir,
     ) as target_proc:
+        target_stderr = t.cast(t.IO[bytes], target_proc.stderr)
+        target_stdin = t.cast(t.IO[bytes], target_proc.stdin)
         # Stream stderr
         th = threading.Thread(
             target=pipe_logger,
             args=(
-                target_proc.stderr,
+                target_stderr,
                 filesystem.log_path(f"target-{pipeline_id}.log"),
                 stdout_lock,
             ),
@@ -1829,52 +2136,22 @@ def reservoir_to_target(
         )
         th.start()
 
-        # Batch the reservoir paths by schema
         tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
-        files_processed = 0
-        for stream, paths in reservoir.items():
-            # Gather the paths to process
-            if stream in (RESERVOIR_VERSION_KEY,):
-                continue
-            if stream not in stream_states:
-                # Our bookmarks are alphanumerically sortable, so gt is sufficient
-                stream_states[stream] = {"emitted": ""}
-            work_queue = [
-                path for path in paths if path.split("/")[-1] > stream_states[stream]["emitted"]
-            ]
-            if not work_queue:
-                continue
-
-            # Partition the paths by schema
-            paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
-            for path in work_queue:
-                schema = path.split("/")[-2]
-                if schema not in paths_by_schema:
-                    paths_by_schema[schema] = []
-                paths_by_schema[schema].append(path)
-
-            # Emit from the paths
-            for schema, paths_to_emit in paths_by_schema.items():
-                print(f"Loading {len(paths_to_emit)} path(s) for {stream} (schema_id: {schema})")
-                job_res = tpe.map(
-                    reservoir_emitter,
-                    itertools.repeat(target_proc.stdin),
-                    [path for path in paths_to_emit],
-                    itertools.repeat(filesystem),
-                    itertools.repeat(reservoir_lock),
-                )
-                stream_states[stream]["emitted"] = max(
-                    stream_states[stream]["emitted"],
-                    max(path.split("/")[-1] for path in job_res),
-                )
-                with reservoir_lock, open(state, "w") as state_data:
-                    json.dump(stream_states, state_data)
-                files_processed += len(paths_to_emit)
+        files_processed = _emit_reservoir_index(
+            reservoir,
+            target_stdin,
+            filesystem,
+            stream_states,
+            state,
+            reservoir_lock,
+            tpe,
+        )
 
         # Close the target
         print("Closing target process")
-        target_proc.stdin.close()
-        th.join(), target_proc.wait()
+        target_stdin.close()
+        th.join()
+        target_proc.wait()
         print(f"Processed {files_processed} file(s)")
 
 
@@ -1885,9 +2162,6 @@ def compact_reservoir(tap: str, filesystem: AltoFileSystem, env: str) -> None:
     reducing the number of files in the reservoir and reducing the cost of running a
     pipeline from the reservoir.
     """
-    from collections import OrderedDict
-    from functools import reduce
-
     # Acquire lock
     base_path = f"reservoir/{env}/{tap}"
     lock_path = filesystem._remote_path("_reservoir.lock", key=base_path)
@@ -1895,88 +2169,22 @@ def compact_reservoir(tap: str, filesystem: AltoFileSystem, env: str) -> None:
         raise RuntimeError(f"Lock file {lock_path} exists, aborting")
     filesystem.fs.pipe(lock_path, "compaction in progress".encode("utf-8"))
 
-    # Load the index
     try:
-        reservoir = json.loads(
-            filesystem.fs.cat(filesystem._remote_path("_reservoir.json", key=base_path))
-        )
-    except FileNotFoundError:
-        print("Reservoir index not found, skipping compaction")
-        return
-
-    # Start the compact operation
-    changed = False
-    try:
-        for stream, paths in reservoir.items():
-            if stream in (RESERVOIR_VERSION_KEY,):
-                continue
-            print(f"Inspecting {stream} ({len(paths)} paths)")
-            if not len(paths) > 1:
-                continue
-            # Partition the paths by schema
-            paths_by_schema: t.Dict[str, t.List[t.Tuple[str, int]]] = OrderedDict()
-            path: str
-            for path in paths:
-                schema = path.split("/")[-2]
-                if schema not in paths_by_schema:
-                    paths_by_schema[schema] = []
-                paths_by_schema[schema].append((path, filesystem.fs.size(path)))
-            for schema, paths_with_size in paths_by_schema.items():
-                compactable = [(path, sz) for path, sz in paths_with_size if sz < 2.5e7]
-                if len(compactable) < 2:
-                    continue
-                merge_queue, queue_bytes = [], 0.0
-                while compactable:
-                    # Gather compaction-eligible files up to the threshold size and merge them
-                    path, sz = compactable.pop()
-                    merge_queue.append(path)
-                    queue_bytes += sz
-                    if queue_bytes > 2.5e7:
-                        print(
-                            f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})"
-                        )
-                        targets = list(sorted(merge_queue))
-                        filesystem.fs.pipe(
-                            targets[-1],
-                            reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
-                        )
-                        filesystem.fs.rm(targets[:-1])
-                        merge_queue, queue_bytes = [], 0.0
-                        changed = True
-                if merge_queue:
-                    # Merge the remaining files
-                    print(f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})")
-                    targets = list(sorted(merge_queue))
-                    (
-                        filesystem.fs.pipe(
-                            targets[-1],
-                            reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
-                        ),
-                        filesystem.fs.rm(targets[:-1]),
-                    )
-                    changed = True
-    except Exception as e:
-        # If we fail, just rebuild the index
-        print(f"Compacting failed: {e}, rebuilding index")
-        changed = True
-
-    try:
+        try:
+            reservoir: ReservoirIndex = json.loads(
+                filesystem.fs.cat(filesystem._remote_path("_reservoir.json", key=base_path))
+            )
+        except FileNotFoundError:
+            print("Reservoir index not found, skipping compaction")
+            return
+        try:
+            changed = _compact_reservoir_index(reservoir, filesystem)
+        except Exception as e:
+            print(f"Compacting failed: {e}, rebuilding index")
+            changed = True
         if changed:
             # Rebuild the index
-            reservoir[RESERVOIR_VERSION_KEY] = reservoir.get(RESERVOIR_VERSION_KEY, 0) + 1
-            streams = [k for k in reservoir.keys() if k != RESERVOIR_VERSION_KEY]
-            for stream in streams:
-                reservoir[stream] = list(
-                    sorted(
-                        filesystem.fs.glob(
-                            filesystem._remote_path("**.singer.gz", key=f"{base_path}/{stream}")
-                        )
-                    )
-                )
-            filesystem.fs.pipe(
-                filesystem._remote_path("_reservoir.json", key=base_path),
-                json.dumps(reservoir).encode("utf-8"),
-            )
+            _write_rebuilt_reservoir_index(reservoir, filesystem, base_path)
             print("Reservoir index rebuilt")
         else:
             # No changes, just print a message
@@ -2016,7 +2224,8 @@ def run_test(
             proc.wait()
             passed = proc.returncode == 0
         else:
-            for line in proc.stdout:
+            stdout = t.cast(t.IO[bytes], proc.stdout)
+            for line in stdout:
                 decoded_line = line.decode("utf-8")
                 try:
                     message = json.loads(decoded_line)
@@ -2070,17 +2279,17 @@ def maybe_get_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> bool:
         filesystem.base_catalog_path(tap.name),
         filesystem.base_catalog_path(tap.name, remote=True),
     )
+    return _ensure_cached_artifact(local, remote, filesystem)
+
+
+def _ensure_cached_artifact(local: str, remote: str, filesystem: AltoFileSystem) -> bool:
     if os.path.isfile(local):
-        # Check if the pex is already in the remote cache
         if not filesystem.fs.exists(remote):
-            # If not, upload it
             filesystem.fs.put(local, remote)
         return True
     try:
-        # If the pex is not in the local cache, download it
         filesystem.fs.get(remote, local)
     except Exception:
-        # If the pex is not in the remote cache, build it
         return False
     return True
 
@@ -2099,7 +2308,7 @@ def clean_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> None:
 
 def render_modified_catalog(
     tap: AltoPlugin, filesystem: AltoFileSystem, return_obj: bool = False
-) -> SingerCatalog:
+) -> t.Optional[SingerCatalog]:
     """Download the base catalog for a tap and apply user config to it."""
     catalog = filesystem.catalog_path(tap.name)
     shutil.copy(filesystem.base_catalog_path(tap.name), catalog)
@@ -2108,13 +2317,14 @@ def render_modified_catalog(
     rv = apply_metadata(disk_path_obj, tap.metadata)
     if return_obj:
         return rv
+    return None
 
 
 def get_and_render_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> SingerCatalog:
     """Download the base catalog generating it if it does not exist. Apply user config."""
     if not maybe_get_catalog(tap, filesystem):
         generate_catalog(tap, filesystem)
-    return render_modified_catalog(tap, filesystem, return_obj=True)
+    return t.cast(SingerCatalog, render_modified_catalog(tap, filesystem, return_obj=True))
 
 
 # ================ #
@@ -2125,7 +2335,7 @@ def get_and_render_catalog(tap: AltoPlugin, filesystem: AltoFileSystem) -> Singe
 def render_config(
     plugin: AltoPlugin,
     lock: threading.Lock,
-    settings: t.Dict[str, t.Any],
+    settings: DynaconfConfig,
     filesystem: AltoFileSystem,
     accent: t.Optional[AltoPlugin] = None,
 ) -> dict:
@@ -2169,17 +2379,18 @@ def build_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> None:
     # Build the pex (deferred import speeds up the CLI)
     import pex.bin.pex
 
+    pip_url = plugin.pip_url
+    if pip_url is None:
+        raise KeyError(f"Plugin {plugin.name} is missing a pip_url.")
     try:
-        pex.bin.pex.main(["-o", output, "--no-emit-warnings", *plugin.pip_url.split()])
+        pex.bin.pex.main(["-o", output, "--no-emit-warnings", *pip_url.split()])
     except SystemExit as e:
         # A failed pex build will exit with a non-zero code
         # Successfully built pexes will exit with either 0 or None
         if e.code is not None and e.code != 0:
             # If the pex fails to build, delete the compromised pex
-            try:
+            with suppress(FileNotFoundError):
                 os.remove(output)
-            except FileNotFoundError:
-                pass
             raise
 
     # Upload the pex to the remote cache
@@ -2192,20 +2403,10 @@ def maybe_get_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> bool:
         filesystem.executable_path(plugin.pex_name),
         filesystem.executable_path(plugin.pex_name, remote=True),
     )
-    if os.path.isfile(local):
-        # Check if the pex is already in the remote cache
-        if not filesystem.fs.exists(remote):
-            # If not, upload it
-            filesystem.fs.put(local, remote)
-        return True
-    try:
-        # If the pex is not in the local cache, download it
-        filesystem.fs.get(remote, local)
+    if _ensure_cached_artifact(local, remote, filesystem):
         os.chmod(local, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-    except Exception:
-        # If the pex is not in the remote cache, build it
-        return False
-    return True
+        return True
+    return False
 
 
 def maybe_remove_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> bool:
@@ -2234,7 +2435,7 @@ def setup_tap_target(
     target_name: str,
     filesystem: AltoFileSystem,
     configuration: AltoConfiguration,
-    settings: t.Dict[str, t.Any],
+    settings: DynaconfConfig,
 ) -> t.Tuple[AltoPlugin, AltoPlugin, t.Dict[str, dict]]:
     """Setup a tap and target for execution.
 
@@ -2271,7 +2472,7 @@ def make_plugins(
     return tuple(plugins)
 
 
-class _QueueFileIterator(io.BytesIO):
+class _QueueFileIterator:
     """A file-like object that writes to a queue.
 
     This is only intended to be used inside the `tap_runner` function. It
@@ -2288,8 +2489,7 @@ class _QueueFileIterator(io.BytesIO):
         poll_interval: int = 1,
         records_only: bool = False,
     ):
-        super().__init__()
-        self.queue = queue.Queue()
+        self.queue: queue.Queue[bytes] = queue.Queue()
         # Manage the queue
         self.poll_interval = poll_interval
         self.liveness_probe = liveness_probe
@@ -2297,13 +2497,13 @@ class _QueueFileIterator(io.BytesIO):
         # True, the output will be a tuple of (stream, record)
         self.records_only = records_only
         # Store internal state
-        self._state = {}
+        self._state: t.Dict[str, t.Any] = {}
 
-    def write(self, data) -> int:
+    def write(self, data: bytes) -> int:
         self.queue.put(data)
         return len(data)
 
-    def __iter__(self):
+    def __iter__(self) -> "_QueueFileIterator":
         return self
 
     def __next__(self) -> t.Union[t.Tuple[str, t.Optional[str], dict], None]:
@@ -2323,10 +2523,10 @@ class _QueueFileIterator(io.BytesIO):
             try:
                 msg = json.loads(data)
             except json.JSONDecodeError:
-                pass
+                return None
             else:
                 if "type" not in msg:
-                    pass
+                    return None
                 if msg["type"] == "STATE":
                     merge(msg["value"], self._state)
                 return msg["type"], msg.get("stream"), msg
@@ -2341,25 +2541,13 @@ class _QueueFileIterator(io.BytesIO):
 def tap_runner(
     tap: AltoPlugin,
     filesystem: AltoFileSystem,
-    settings: t.Dict[str, t.Any],
+    settings: DynaconfConfig,
     state_key: str,
     records_only: bool = False,
     state_dict: t.Optional[dict] = None,
 ) -> t.Generator[_QueueFileIterator, None, None]:
     """Run a tap and yield a file-like object that reads from the tap's stdout."""
-    tap_bin, tap_config, tap_catalog = (
-        filesystem.executable_path(tap.pex_name),
-        filesystem.config_path(tap.name),
-        filesystem.catalog_path(tap.name),
-    )
-    state = filesystem.state_path(tap.name, state_key)
-    cmd = [tap_bin, "--config", tap_config]
-    if os.path.isfile(state) and tap.supports_state:
-        cmd += ["--state", state]
-    if tap.supports_catalog:
-        cmd += ["--catalog", tap_catalog]
-    elif tap.supports_properties:
-        cmd += ["--properties", tap_catalog]
+    cmd, state = _tap_command(tap, filesystem, state_key)
     # Config
     render_config(tap, threading.Lock(), settings, filesystem)
     # Catalog (low overhead if already rendered)
@@ -2376,6 +2564,7 @@ def tap_runner(
         env={**os.environ, **tap.environment},
         cwd=filesystem.root_dir,
     ) as tap_proc:
+        tap_stdout = t.cast(t.IO[bytes], tap_proc.stdout)
         singer_stream = _QueueFileIterator(
             liveness_probe=lambda: tap_proc.poll() is None,
             poll_interval=1,
@@ -2384,7 +2573,7 @@ def tap_runner(
         # Shift proxying of messages to a separate thread
         map_thread = threading.Thread(
             target=map_worker,
-            args=(tap_proc.stdout, singer_stream, tap.get_stream_maps(filesystem)),
+            args=(tap_stdout, singer_stream, tap.get_stream_maps(filesystem)),
             daemon=True,
         )
         map_thread.start()
@@ -2395,7 +2584,9 @@ def tap_runner(
             raise RuntimeError(
                 f"Tap exited with code {tap_proc.returncode}"
             ) from subprocess.CalledProcessError(tap_proc.returncode, cmd)
-        tap_proc.terminate(), tap_proc.wait(), map_thread.join()
+        tap_proc.terminate()
+        tap_proc.wait()
+        map_thread.join()
         # Update state
         if tap.supports_state:
             if state_dict is not None:

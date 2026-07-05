@@ -8,7 +8,7 @@ import alto.engine
 from alto.utils import merge
 
 try:
-    import dlt  # type: ignore
+    import dlt
 except ImportError:
     raise ImportError("dlt is not installed. Please install dlt to use this module.")
 
@@ -29,7 +29,6 @@ class SingerTapDemux(Thread):
         init_state: dict,
         *streams: str,
     ) -> None:
-        """Initialize the demuxer."""
         super().__init__(daemon=True)
         self.tap = tap
         self.engine = engine
@@ -55,13 +54,13 @@ class SingerTapDemux(Thread):
                 if payload is None:
                     continue
                 typ, maybe_stream, message = payload
-                stream: str
                 if typ == "STATE":
                     stream = next(iter(self.streams.keys()))
                     self.streams[stream].put((typ, message["value"]))
                 elif typ == "RECORD":
-                    stream = maybe_stream
-                    self.streams[stream].put((typ, message["record"]))
+                    if maybe_stream is None:
+                        raise RuntimeError("Singer RECORD message is missing a stream name.")
+                    self.streams[maybe_stream].put((typ, message["record"]))
                 elif typ == "SCHEMA":
                     pass
         # Put a None on each stream to signal the end of the stream
@@ -89,24 +88,9 @@ def singer(
     def _singer() -> t.Sequence[t.Any]:
         """Singer source function."""
         # Prepare engine and data structures
-        engine = alto.engine.get_engine(env)
-        (tap,) = alto.engine.make_plugins(
-            source,
-            filesystem=engine.filesystem,
-            configuration=engine.configuration,
-        )
-        catalog = alto.engine.get_and_render_catalog(tap, engine.filesystem)
+        engine, tap, catalog = _load_tap(source, env)
         # Use the streams from the catalog if not provided
-        baseline_streams = [stream.tap_stream_id for stream in catalog.streams]
-        selected_streams = baseline_streams if streams is None else streams
-        if not selected_streams:
-            raise ValueError("No streams were found in the catalog or selected by the user.")
-        for stream in selected_streams:
-            if stream not in baseline_streams:
-                raise ValueError(
-                    f"Stream '{stream}' was not found in the catalog. "
-                    f"Available streams: {baseline_streams}"
-                )
+        selected_streams = _selected_streams(catalog, streams)
         # Create the demuxer
         tap.select = selected_streams
         producer = SingerTapDemux(
@@ -116,29 +100,64 @@ def singer(
             *selected_streams,
         )
         producer.start()
-        # Use the catalog to determine some resource props
-        for stream in selected_streams:
-            opts: dict = resolved_resource_options.setdefault(stream, {})
-            for entry in catalog.streams:
-                if entry.tap_stream_id == stream:
-                    this = entry
-                    break
-            else:
-                continue
-            method = this.forced_replication_method or this.replication_method
-            if method == "FULL_TABLE":
-                opts.setdefault("write_disposition", "replace")
-            elif method == "INCREMENTAL":
-                opts.setdefault("write_disposition", "append")
+        _set_resource_options(catalog, selected_streams, resolved_resource_options)
         # Create the dlt resources
-        return tuple(
-            singer_stream_factory(stream, resolved_resource_options[stream])(
-                producer.streams[stream], producer
-            )
-            for stream in selected_streams
-        )
+        return _resources(selected_streams, resolved_resource_options, producer)
 
     return _singer()
+
+
+def _load_tap(
+    source: str, env: str
+) -> t.Tuple[alto.engine.AltoTaskEngine, alto.engine.AltoPlugin, t.Any]:
+    engine = alto.engine.get_engine(env)
+    (tap,) = alto.engine.make_plugins(
+        source,
+        filesystem=engine.filesystem,
+        configuration=engine.configuration,
+    )
+    return engine, tap, alto.engine.get_and_render_catalog(tap, engine.filesystem)
+
+
+def _selected_streams(catalog: t.Any, streams: t.Optional[t.List[str]]) -> t.List[str]:
+    baseline_streams = [stream.tap_stream_id for stream in catalog.streams]
+    selected_streams = baseline_streams if streams is None else streams
+    if not selected_streams:
+        raise ValueError("No streams were found in the catalog or selected by the user.")
+    missing = [stream for stream in selected_streams if stream not in baseline_streams]
+    if missing:
+        raise ValueError(
+            f"Stream '{missing[0]}' was not found in the catalog. "
+            f"Available streams: {baseline_streams}"
+        )
+    return selected_streams
+
+
+def _set_resource_options(
+    catalog: t.Any, selected_streams: t.List[str], resource_options: t.Dict[str, t.Any]
+) -> None:
+    entries = {entry.tap_stream_id: entry for entry in catalog.streams}
+    for stream in selected_streams:
+        opts: dict = resource_options.setdefault(stream, {})
+        entry = entries.get(stream)
+        if entry is None:
+            continue
+        method = entry.forced_replication_method or entry.replication_method
+        if method == "FULL_TABLE":
+            opts.setdefault("write_disposition", "replace")
+        elif method == "INCREMENTAL":
+            opts.setdefault("write_disposition", "append")
+
+
+def _resources(
+    selected_streams: t.List[str],
+    resource_options: t.Dict[str, t.Any],
+    producer: SingerTapDemux,
+) -> t.Tuple[t.Any, ...]:
+    return tuple(
+        singer_stream_factory(stream, resource_options[stream])(producer.streams[stream], producer)
+        for stream in selected_streams
+    )
 
 
 def singer_stream_factory(

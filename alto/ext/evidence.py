@@ -95,7 +95,7 @@ class Evidence(AltoExtension):
             with open(self._config_file, "w", encoding="utf-8") as f:
                 json.dump(self._config_file_cached, f)
 
-    def suppress_config(self) -> None:
+    def suppress_config(self) -> AltoTaskData:
         def _suppress_config() -> None:
             if os.path.exists(self._config_file):
                 os.remove(self._config_file)
@@ -180,7 +180,7 @@ class Evidence(AltoExtension):
                 "snowflake": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/snowflake/index.cjs",
                 "sqlite": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/sqlite/index.cjs",
             }
-            output = {}
+            output: t.Dict[str, t.List[str]] = {}
             for adapter in adapters:
                 # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected - URL is selected from the fixed adapter map above.
                 with urllib.request.urlopen(urls[adapter]) as response:
@@ -211,7 +211,7 @@ class Evidence(AltoExtension):
             .data
         )
 
-    def tasks(self) -> t.Iterator[AltoTaskData]:
+    def tasks(self) -> t.Generator[AltoTaskData, None, None]:
         """Yields tasks."""
         yield self.initialize()
         yield self.build()

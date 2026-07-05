@@ -47,6 +47,7 @@ __all__ = [
     "TapConfiguration",
     "TargetConfiguration",
     "UtilityConfiguration",
+    "AltoTaskGenerator",
 ]
 
 
@@ -110,7 +111,7 @@ class ParserMixin(Generic[T]):
 class SingerCatalogStreamMetadata(DataClassDictMixin, ParserMixin["SingerCatalogStreamMetadata"]):
     breadcrumb: List[str]
     metadata: Union["SingerCatalogStreamMetadataEntry", "SingerCatalogStreamMetadataRoot"] = field(
-        default_factory=lambda: {"selected": False}
+        default_factory=lambda: cast("SingerCatalogStreamMetadataRoot", {"selected": False})
     )
 
     def __post_init__(self) -> None:
@@ -308,14 +309,22 @@ class TapConfiguration(BasePluginConfiguration):
     metadata: Dict[str, Dict[str, Any]]
 
 
-class TargetConfiguration(BasePluginConfiguration): ...
+class TargetConfiguration(BasePluginConfiguration):
+    """Target plugin configuration."""
 
 
-class UtilityConfiguration(BasePluginConfiguration): ...
+class UtilityConfiguration(BasePluginConfiguration):
+    """Utility plugin configuration."""
 
 
 PluginConfiguration = Union[TapConfiguration, TargetConfiguration, UtilityConfiguration]
-AltoAction = Union[BaseAction, Callable, str]
+AltoActionCallable = Callable[..., Any]
+AltoActionTuple = Union[
+    tuple[AltoActionCallable],
+    tuple[AltoActionCallable, tuple[Any, ...]],
+    tuple[AltoActionCallable, tuple[Any, ...], Dict[str, Any]],
+]
+AltoAction = Union[BaseAction, AltoActionCallable, str, AltoActionTuple]
 
 
 class AltoEngineConfig(TypedDict):
@@ -341,7 +350,7 @@ class AltoTaskData(TypedDict, total=False):
     setup: List[str]
     params: List[Dict[str, Any]]
     meta: Dict[str, Any]
-    custom_title: Callable
+    custom_title: Callable[..., str]
     doc: str
     verbosity: int
 
@@ -449,7 +458,7 @@ class AltoTask:
         self._data["meta"] = meta
         return self
 
-    def set_custom_title(self, custom_title: Callable) -> "AltoTask":
+    def set_custom_title(self, custom_title: Callable[..., str]) -> "AltoTask":
         """Set the custom title function for the task.
 
         This is a function that returns a string to be used as the title
@@ -483,13 +492,6 @@ class AltoTask:
         else:
             self._data["params"] = list(params)
         return self
-
-    def __dict__(self) -> AltoTaskData:
-        """Return the task data as a dictionary.
-
-        This is used by the Alto engine to create the task.
-        """
-        return self._data
 
 
 AltoTaskGenerator = Generator[AltoTaskData, None, None]

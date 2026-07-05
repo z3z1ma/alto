@@ -1,4 +1,4 @@
-Status: open
+Status: done
 Created: 2026-07-05
 Updated: 2026-07-05
 Parent: .10x/tickets/done/2026-07-05-uv-migration-quality-optimization.md
@@ -47,3 +47,6 @@ None for investigation. Implementation slices must be split before broad refacto
 ## Progress and notes
 
 - 2026-07-05: Opened from residual analyzer findings recorded in `.10x/evidence/2026-07-05-quality-hardening-verification.md` and `.10x/evidence/2026-07-05-docs-dependency-remediation-verification.md`.
+- 2026-07-05: Completed residual remediation. Final evidence in `.10x/evidence/2026-07-05-zero-quality-gates-verification.md` records zero-exit gates and metric deltas: ty 74 -> 0, mypy 93 -> 0, pydoclint residual DOC301 -> 0, CodeQL 36 -> 0 SARIF findings, jscpd source clones -> 0, the old catalog Radon hotspot E/37 -> B/7, final overall Radon max B/10 with no C-grade blocks, and coverage -> 54%.
+- 2026-07-05: Closure review recorded in `.10x/reviews/2026-07-05-residual-static-analysis-debt-review.md`; verdict pass.
+- 2026-07-05: Retrospective: no new standing project procedure is needed beyond this evidence. The reusable lesson is to verify CodeQL with SARIF result parsing rather than database-create warnings alone; that is captured in the evidence procedure.

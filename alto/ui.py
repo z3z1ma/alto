@@ -49,7 +49,6 @@ class InjectedIO:
     """A custom IO class that writes into a rich console."""
 
     def __init__(self, ui: "AltoRichUI", method="write"):
-        """Create a new InjectedIO."""
         self.ui = ui
         self.method = method
 
@@ -88,6 +87,11 @@ def monkeypatch_stream(ui: "AltoRichUI") -> None:
 
 def _task_verbosity(task: Task) -> int:
     return task.verbosity or 0
+
+
+def _task_output_visibility(task: Task, failure_verbosity: int) -> t.Tuple[bool, bool]:
+    verbosity = _task_verbosity(task)
+    return verbosity < 1 or failure_verbosity > 0, verbosity < 2 or failure_verbosity == 2
 
 
 class AltoRichUI(ConsoleReporter):
@@ -151,47 +155,33 @@ class AltoRichUI(ConsoleReporter):
             )
 
     def execute_task(self, task: Task) -> None:
-        if task.name[0] != "_":
-            try:
-                self.progress.update(self.task_ids[task.name], status="[yellow]started")
-                self.progress.start_task(self.task_ids[task.name])
-            except KeyError:
-                pass
+        if task.name[0] != "_" and task.name in self.task_ids:
+            self.progress.update(self.task_ids[task.name], status="[yellow]started")
+            self.progress.start_task(self.task_ids[task.name])
 
     def skip_uptodate(self, task: Task) -> None:
-        if task.name[0] != "_":
-            try:
-                self.progress.start_task(self.task_ids[task.name])
-                self.progress.update(
-                    self.task_ids[task.name], completed=1, status="[green dim]up-to-date"
-                )
-                self.progress.stop_task(self.task_ids[task.name])
-            except KeyError:
-                pass
+        if task.name[0] != "_" and task.name in self.task_ids:
+            self.progress.start_task(self.task_ids[task.name])
+            self.progress.update(
+                self.task_ids[task.name], completed=1, status="[green dim]up-to-date"
+            )
+            self.progress.stop_task(self.task_ids[task.name])
 
     def skip_ignore(self, task: Task) -> None:
-        if task.name[0] != "_":
-            try:
-                self.progress.update(
-                    self.task_ids[task.name], completed=1, status="[yellow dim]ignored"
-                )
-                self.progress.stop_task(self.task_ids[task.name])
-            except KeyError:
-                pass
+        if task.name[0] != "_" and task.name in self.task_ids:
+            self.progress.update(
+                self.task_ids[task.name], completed=1, status="[yellow dim]ignored"
+            )
+            self.progress.stop_task(self.task_ids[task.name])
 
     def add_success(self, task: Task) -> None:
-        if task.name[0] != "_":
-            try:
-                self.progress.update(self.task_ids[task.name], completed=1, status="[green]success")
-                self.progress.stop_task(self.task_ids[task.name])
-            except KeyError:
-                pass
+        if task.name[0] != "_" and task.name in self.task_ids:
+            self.progress.update(self.task_ids[task.name], completed=1, status="[green]success")
+            self.progress.stop_task(self.task_ids[task.name])
 
     def add_failure(self, task, fail):
-        try:
+        if task.name in self.task_ids:
             self.progress.update(self.task_ids[task.name], completed=1, status="[red bold]failed")
-        except KeyError:
-            pass
         super().add_failure(task, fail)
 
     def _write_failure(self, result, write_exception: bool = True) -> None:
@@ -199,28 +189,40 @@ class AltoRichUI(ConsoleReporter):
             self.write_stderr(result["exception"].get_msg())
             self.console.bell()
 
+    def _write_task_output(self, result) -> None:
+        task: Task = result["task"]
+        if not task.executed:
+            return
+        show_err, show_out = _task_output_visibility(task, self.failure_verbosity)
+        if not show_err and not show_out:
+            return
+        self.write("#" * 40 + "\n")
+        if show_err:
+            self._write_stderr_output(result, task)
+        if show_out:
+            self._write_stdout_output(task)
+
+    def _write_stderr_output(self, result, task: Task) -> None:
+        self._write_failure(result, write_exception=self.failure_verbosity)
+        err = "".join([a.err for a in task.actions if a.err])
+        self.write_stderr("{} <stderr>:\n{}\n".format(task.name, err))
+
+    def _write_stdout_output(self, task: Task) -> None:
+        out = "".join([a.out for a in task.actions if a.out])
+        self.write_stdout("{} <stdout>:\n{}\n".format(task.name, out))
+
+    def _write_runtime_errors(self) -> None:
+        if not self.runtime_errors:
+            return
+        self.write_stderr("#" * 40 + "\n")
+        self.write_stderr("Execution aborted.\n")
+        self.write_stderr("\n".join(self.runtime_errors))
+        self.write_stderr("\n")
+
     def complete_run(self) -> None:
         for result in self.failures:
-            task: Task = result["task"]
-            if not task.executed:
-                continue
-            verbosity = _task_verbosity(task)
-            show_err = verbosity < 1 or self.failure_verbosity > 0
-            show_out = verbosity < 2 or self.failure_verbosity == 2
-            if show_err or show_out:
-                self.write("#" * 40 + "\n")
-            if show_err:
-                self._write_failure(result, write_exception=self.failure_verbosity)
-                err = "".join([a.err for a in task.actions if a.err])
-                self.write_stderr("{} <stderr>:\n{}\n".format(task.name, err))
-            if show_out:
-                out = "".join([a.out for a in task.actions if a.out])
-                self.write_stdout("{} <stdout>:\n{}\n".format(task.name, out))
-        if self.runtime_errors:
-            self.write_stderr("#" * 40 + "\n")
-            self.write_stderr("Execution aborted.\n")
-            self.write_stderr("\n".join(self.runtime_errors))
-            self.write_stderr("\n")
+            self._write_task_output(result)
+        self._write_runtime_errors()
         self.write(f"Total runtime: [green]{time.time() - self.time:.2f}[/green] seconds")
         self.progress.stop()
 

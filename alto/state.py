@@ -45,13 +45,14 @@ def ensure_state(state_path: Union[Path, str], indent: Optional[int] = 2) -> Non
 def parse_state_from_stdout(stdout: Union[Path, TextIO, BinaryIO]) -> Dict[str, Any]:
     """Parses the state from the target's stdout. Target stdout is expected to be a stream of
     JSON objects, each of which is merged into the state. The state is returned as a dict."""
-    state = {}
-    if isinstance(stdout, TextIO):
-        stdout_iter = stdout
-    elif isinstance(stdout, BinaryIO):
-        stdout_iter = stdout.read().decode("utf-8").splitlines()
-    else:
+    state: Dict[str, Any] = {}
+    if isinstance(stdout, Path):
         stdout_iter = stdout.read_text().splitlines()
+    else:
+        raw_output = stdout.read()
+        if isinstance(raw_output, bytes):
+            raw_output = raw_output.decode("utf-8")
+        stdout_iter = raw_output.splitlines()
     for output in stdout_iter:
         try:
             merge(source=json.loads(output), destination=state)

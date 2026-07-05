@@ -32,6 +32,12 @@ class SerdeFormat(str, Enum):
     TOML = "toml"
 
 
+FileSerializer = t.Callable[[t.Any, t.IO[t.Any]], None]
+StringSerializer = t.Callable[[t.Any], str]
+FileDeserializer = t.Callable[[t.IO[t.Any]], t.Any]
+StringDeserializer = t.Callable[[str], t.Any]
+
+
 def __yaml_dumps(data: t.Any) -> str:
     """Dump data to YAML."""
     with io.StringIO() as stream:
@@ -45,16 +51,12 @@ def __yaml_loads(data: str) -> t.Any:
         return dynaconf.vendor.ruamel.yaml.round_trip_load(stream)
 
 
-_serializers: t.Dict[
-    SerdeFormat, t.Tuple[t.Callable[[t.Any, t.IO], None], t.Callable[[str], str]]
-] = {
+_serializers: t.Dict[SerdeFormat, t.Tuple[FileSerializer, StringSerializer]] = {
     SerdeFormat.JSON: (json.dump, json.dumps),
     SerdeFormat.YAML: (dynaconf.vendor.ruamel.yaml.round_trip_dump, __yaml_dumps),
     SerdeFormat.TOML: (dynaconf.vendor.toml.dump, dynaconf.vendor.toml.dumps),
 }
-_deserializers: t.Dict[
-    SerdeFormat, t.Tuple[t.Callable[[t.IO], t.Any], t.Callable[[str], t.Any]]
-] = {
+_deserializers: t.Dict[SerdeFormat, t.Tuple[FileDeserializer, StringDeserializer]] = {
     SerdeFormat.JSON: (json.load, json.loads),
     SerdeFormat.YAML: (dynaconf.vendor.ruamel.yaml.round_trip_load, __yaml_loads),
     SerdeFormat.TOML: (dynaconf.vendor.toml.load, dynaconf.vendor.toml.loads),
@@ -67,18 +69,17 @@ def serialize(
     """Serialize data to a given format."""
     try:
         if isinstance(destination, str):
-            dumper = _serializers[fmt][0]
-            with open(destination, "w") as stream:
-                dumper(data, stream)
+            file_dumper = _serializers[fmt][0]
+            with open(destination, "w") as file_obj:
+                file_dumper(data, file_obj)
             return None
-        elif isinstance(destination, (t.IO, io.StringIO, io.BytesIO, io.RawIOBase, io.IOBase)):
-            dumper = _serializers[fmt][0]
-            stream = t.cast(t.IO, destination)
-            dumper(data, stream)
+        elif isinstance(destination, io.IOBase):
+            file_dumper = _serializers[fmt][0]
+            file_dumper(data, destination)
             return None
         elif destination is None:
-            dumper = _serializers[fmt][1]
-            return dumper(data)
+            string_dumper = _serializers[fmt][1]
+            return string_dumper(data)
         else:
             raise TypeError(f"Unsupported type for destination: {type(destination)}")
     except KeyError:
@@ -91,15 +92,15 @@ def deserialize(
     """Deserialize data from a given format."""
     try:
         if isinstance(destination, str):
-            loader = _deserializers[fmt][0]
-            with open(destination, "r") as stream:
-                return loader(stream)
-        elif isinstance(destination, t.IO):
-            loader = _deserializers[fmt][0]
-            return loader(destination)
+            file_loader = _deserializers[fmt][0]
+            with open(destination, "r") as file_obj:
+                return file_loader(file_obj)
+        elif isinstance(destination, io.IOBase):
+            file_loader = _deserializers[fmt][0]
+            return file_loader(destination)
         elif destination is None:
-            loader = _deserializers[fmt][1]
-            return loader(data)
+            string_loader = _deserializers[fmt][1]
+            return string_loader(data)
         else:
             raise TypeError(f"Unsupported type for destination: {type(destination)}")
     except KeyError:
@@ -108,7 +109,7 @@ def deserialize(
 
 def get_serializer(
     fmt: SerdeFormat,
-) -> t.Tuple[t.Callable[[t.Any, t.IO], None], t.Callable[[str], str]]:
+) -> t.Tuple[FileSerializer, StringSerializer]:
     """Get a serializer by fmt.
 
     The serializer returns a tuple of a function that takes data and a
@@ -120,7 +121,7 @@ def get_serializer(
 
 def get_deserializer(
     fmt: SerdeFormat,
-) -> t.Tuple[t.Callable[[t.IO], t.Any], t.Callable[[str], t.Any]]:
+) -> t.Tuple[FileDeserializer, StringDeserializer]:
     """Get a deserializer by fmt.
 
     The deserializer returns a tuple of a function that takes a file-like

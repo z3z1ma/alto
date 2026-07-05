@@ -43,25 +43,32 @@ def _remove_breadcrumb_from_schema(
 ) -> None:
     parent: t.List[str] = []
     schema_ptr = copy.copy(schema)
+    breadcrumb = list(entry.breadcrumb)
     try:
-        while len(entry.breadcrumb) > 0:
-            prop = entry.breadcrumb.pop(0)
-            if len(entry.breadcrumb) == 0:
+        while breadcrumb:
+            prop = breadcrumb.pop(0)
+            if not breadcrumb:
                 schema.pop(prop, None)
-                if not schema and len(parent) > 2:
-                    inner = schema_ptr
-                    for path in parent[:-2]:
-                        inner = inner[path]
-                    inner.pop(parent[-2], None)
+                _remove_empty_schema_parent(schema, schema_ptr, parent)
                 break
-            else:
-                child = schema.get(prop)
-                if not isinstance(child, dict):
-                    break
-                schema = child
+            child = schema.get(prop)
+            if not isinstance(child, dict):
+                break
+            schema = child
             parent.append(prop)
     except (KeyError, IndexError):
-        pass
+        return
+
+
+def _remove_empty_schema_parent(
+    schema: t.Dict[str, t.Any], schema_ptr: t.Dict[str, t.Any], parent: t.List[str]
+) -> None:
+    if schema or len(parent) <= 2:
+        return
+    inner = schema_ptr
+    for path in parent[:-2]:
+        inner = inner[path]
+    inner.pop(parent[-2], None)
 
 
 def _select_attribute(attribute: SingerCatalogStreamMetadata) -> bool:
@@ -81,27 +88,18 @@ def _select_attribute(attribute: SingerCatalogStreamMetadata) -> bool:
     return not propagated
 
 
-def apply_selected(
-    target_catalog: t.Union[Path, str, t.Dict[str, t.Any], SingerCatalog],
-    selections: t.List[str],
-    write: bool = True,
-    strategy: CatalogMutationStrategy = CatalogMutationStrategy.PRUNE,
-) -> SingerCatalog:
-    """Applies the selected streams and attributes to the target catalog in two passes:
+SelectionPattern = t.Tuple[str, str, bool]
+CatalogSource = t.Union[Path, str, t.Dict[str, t.Any], SingerCatalog]
 
-    - Pass-1 - apply attribute level selections / negations in sequence
-    - Pass-2 - apply stream selections / deletions based on attribute selections
-    """
 
-    # If no selections are provided, select all streams
-    if not selections:
-        selections = ["*.*"]
-
-    # All inverted selections take the stance all streams are selected by default
-    # and then negated by the selection patterns
+def _normalize_selections(selections: t.List[str]) -> t.List[str]:
+    selections = selections or ["*.*"]
     if all(selection.startswith(("!", "~")) for selection in selections):
         selections.insert(0, "*.*")
+    return selections
 
+
+def _selection_patterns(selections: t.List[str]) -> t.List[SelectionPattern]:
     patterns = [
         (stream.lstrip("!"), ".".join(breadcrumb), stream.startswith("!"))
         for stream, breadcrumb in (
@@ -113,81 +111,147 @@ def apply_selected(
             if not selection.startswith("~")
         )
     ]
-
-    # Parse the catalog
-    if isinstance(target_catalog, Path):
-        catalog = SingerCatalog.parse_file(target_catalog)
-    elif isinstance(target_catalog, str):
-        catalog = SingerCatalog.parse_str(target_catalog)
-    elif isinstance(target_catalog, dict):
-        catalog = SingerCatalog.parse_json(target_catalog)
-    else:
-        catalog = target_catalog
-
-    # All inverted selections take the stance all streams are selected by default
-    # and then negated by the selection patterns
     if all(inverted for _, _, inverted in patterns):
         patterns.insert(0, ("*", "*", False))
+    return patterns
+
+
+def _catalog_from_source(target_catalog: CatalogSource) -> SingerCatalog:
+    if isinstance(target_catalog, Path):
+        return SingerCatalog.parse_file(target_catalog)
+    if isinstance(target_catalog, str):
+        return SingerCatalog.parse_str(target_catalog)
+    if isinstance(target_catalog, dict):
+        return SingerCatalog.parse_json(t.cast(t.Dict[str, t.Any], target_catalog))
+    return target_catalog
+
+
+def _root_metadata_index(stream: t.Any) -> t.Optional[int]:
+    return next((i for i, entry in enumerate(stream.metadata) if entry.is_root), None)
+
+
+def _ensure_root_metadata(stream: t.Any) -> SingerCatalogStreamMetadata:
+    root_ix = _root_metadata_index(stream)
+    if root_ix is None:
+        root = SingerCatalogStreamMetadata(breadcrumb=[], metadata={})
+        stream.metadata.append(root)
+        return root
+    root = stream.metadata[root_ix]
+    root.metadata.pop("selected", None)
+    return root
+
+
+def _apply_stream_patterns(stream: t.Any, patterns: t.List[SelectionPattern]) -> None:
+    _ensure_root_metadata(stream)
+    stream_id = stream.tap_stream_id
+    for stream_glob, breadcrumb_glob, invert in patterns:
+        if not fnmatch.fnmatch(stream_id, stream_glob):
+            continue
+        for attribute in stream.metadata:
+            if _attribute_matches(attribute, breadcrumb_glob):
+                attribute.metadata["selected"] = True ^ invert
+
+
+def _attribute_matches(attribute: SingerCatalogStreamMetadata, breadcrumb_glob: str) -> bool:
+    return fnmatch.fnmatch(
+        ".".join(attribute.get("breadcrumb", ["properties"])[1:]),
+        breadcrumb_glob,
+    )
+
+
+def _apply_attribute_selection(stream: t.Any, strategy: CatalogMutationStrategy) -> bool:
+    if not any(_select_attribute(attr) for attr in stream.metadata):
+        return False
+    stream.selected = True
+    stream.metadata[_root_metadata_index(stream) or 0].metadata["selected"] = True
+    _handle_unselected_attributes(stream, strategy)
+    return True
+
+
+def _handle_unselected_attributes(stream: t.Any, strategy: CatalogMutationStrategy) -> None:
+    attr_to_remove: t.List[int] = []
+    for j, entry in enumerate(stream.metadata):
+        if entry.metadata.get("selected") is None:
+            entry.metadata["selected"] = True
+        elif not entry.metadata["selected"]:
+            attr_to_remove.append(j)
+    for j in reversed(attr_to_remove):
+        _handle_unselected_attribute(stream, j, strategy)
+
+
+def _handle_unselected_attribute(
+    stream: t.Any, index: int, strategy: CatalogMutationStrategy
+) -> None:
+    if strategy == CatalogMutationStrategy.PRUNE:
+        _remove_breadcrumb_from_schema(stream.schema, stream.metadata.pop(index))
+    elif strategy == CatalogMutationStrategy.DESELECT:
+        stream.metadata[index].metadata["selected"] = False
+
+
+def _handle_unselected_stream(
+    catalog: SingerCatalog, index: int, strategy: CatalogMutationStrategy
+) -> None:
+    if strategy == CatalogMutationStrategy.PRUNE:
+        catalog.streams.pop(index)
+    elif strategy == CatalogMutationStrategy.DESELECT:
+        catalog.streams[index].selected = False
+
+
+def apply_selected(
+    target_catalog: CatalogSource,
+    selections: t.List[str],
+    write: bool = True,
+    strategy: CatalogMutationStrategy = CatalogMutationStrategy.PRUNE,
+) -> SingerCatalog:
+    """Applies the selected streams and attributes to the target catalog in two passes:
+
+    - Pass-1 - apply attribute level selections / negations in sequence
+    - Pass-2 - apply stream selections / deletions based on attribute selections
+    """
+
+    patterns = _selection_patterns(_normalize_selections(selections))
+    catalog = _catalog_from_source(target_catalog)
 
     # Pass-1
     for stream in catalog.streams:
-        stream_id = stream.tap_stream_id
-        root_ix = next((i for i, entry in enumerate(stream.metadata) if entry.is_root), None)
-        if root_ix is not None:
-            stream.metadata[root_ix].metadata.pop("selected", None)
-        else:
-            stream.metadata.append(SingerCatalogStreamMetadata(breadcrumb=[], metadata={}))
-        for stream_glob, breadcrumb_glob, invert in patterns:
-            if not fnmatch.fnmatch(stream_id, stream_glob):
-                continue
-            for attribute in stream.metadata:
-                if fnmatch.fnmatch(
-                    ".".join(attribute.get("breadcrumb", ["properties"])[1:]),
-                    breadcrumb_glob,
-                ):
-                    attribute.metadata["selected"] = True ^ invert
+        _apply_stream_patterns(stream, patterns)
 
     # Pass-2
     streams_to_remove: t.List[int] = []
     for i, stream in enumerate(catalog.streams):
-        # Mark stream for removal if no attributes are selected
-        if not any(_select_attribute(attr) for attr in stream.metadata):
+        if not _apply_attribute_selection(stream, strategy):
             streams_to_remove.append(i)
-            continue
-
-        stream.selected = True
-        stream.metadata[
-            next((i for i, entry in enumerate(stream.metadata) if entry.is_root), 0)
-        ].metadata["selected"] = True
-
-        attr_to_remove: t.List[int] = []
-        for j, entry in enumerate(stream.metadata):
-            # Select ambiguous attributes
-            if entry.metadata.get("selected") is None:
-                entry.metadata["selected"] = True
-            # Mark attributes for removal
-            elif not entry.metadata["selected"]:
-                attr_to_remove.append(j)
-
-        # Remove attributes in reverse order to avoid index shifting
-        for j in reversed(attr_to_remove):
-            if strategy == CatalogMutationStrategy.PRUNE:
-                # Remove the property from the schema erring on the side of runtime safety
-                _remove_breadcrumb_from_schema(stream.schema, stream.metadata.pop(j))
-            elif strategy == CatalogMutationStrategy.DESELECT:
-                stream.metadata[j].metadata["selected"] = False
 
     # Remove streams in reverse order to avoid index shifting
     for i in reversed(streams_to_remove):
-        if strategy == CatalogMutationStrategy.PRUNE:
-            catalog.streams.pop(i)
-        elif strategy == CatalogMutationStrategy.DESELECT:
-            catalog.streams[i].selected = False
+        _handle_unselected_stream(catalog, i, strategy)
 
     if write and isinstance(target_catalog, Path):
         target_catalog.write_text(json.dumps(catalog.to_dict(), indent=2))
 
     return catalog
+
+
+def _metadata_catalog_from_source(
+    target_catalog: t.Union[Path, str, SingerCatalog],
+) -> SingerCatalog:
+    if isinstance(target_catalog, Path):
+        return SingerCatalog.parse_file(target_catalog)
+    if isinstance(target_catalog, str):
+        return SingerCatalog.parse_str(target_catalog)
+    return target_catalog
+
+
+def _apply_metadata_payload(stream: t.Any, payload: t.Dict[str, t.Any]) -> None:
+    root_metadata = t.cast(
+        t.Dict[str, t.Any],
+        stream.metadata[_root_metadata_index(stream) or 0].metadata,
+    )
+    root_metadata.update(payload)
+    if "replication-method" in payload:
+        stream.replication_method = payload["replication-method"]
+    if "replication-key" in payload:
+        stream.replication_key = payload["replication-key"]
 
 
 def apply_metadata(
@@ -200,12 +264,7 @@ def apply_metadata(
     if not metadata:
         metadata = {}
 
-    if isinstance(target_catalog, Path):
-        catalog = SingerCatalog.parse_file(target_catalog)
-    elif isinstance(target_catalog, str):
-        catalog = SingerCatalog.parse_str(target_catalog)
-    else:
-        catalog: SingerCatalog = target_catalog
+    catalog = _metadata_catalog_from_source(target_catalog)
 
     for criteria, payload in metadata.items():
         # Ensure users cannot mess with selection which is handled by
@@ -216,21 +275,7 @@ def apply_metadata(
             # Skip streams that do not match the criteria
             if not fnmatch.fnmatch(stream.tap_stream_id, criteria):
                 continue
-
-            # Apply the metadata to the root of the stream
-            root_metadata = t.cast(
-                t.Dict[str, t.Any],
-                stream.metadata[
-                    next((i for i, entry in enumerate(stream.metadata) if entry.is_root), 0)
-                ].metadata,
-            )
-            root_metadata.update(payload)
-
-            # Bubble up the metadata to the parent stream for legacy compatibility
-            if "replication-method" in payload:
-                stream.replication_method = payload["replication-method"]
-            if "replication-key" in payload:
-                stream.replication_key = payload["replication-key"]
+            _apply_metadata_payload(stream, payload)
 
     if write and isinstance(target_catalog, Path):
         target_catalog.write_text(json.dumps(catalog.to_dict(), indent=2))

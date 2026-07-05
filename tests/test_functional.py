@@ -32,13 +32,17 @@ def _make_tmp_dir():
 
 
 class TestRunAlto(unittest.TestCase):
+    def _init_project(self):
+        path = _make_tmp_dir()
+        self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
+        self.assertTrue(os.path.exists(os.path.join(path, "alto.toml")))
+        self.assertTrue(os.path.exists(os.path.join(path, "alto.local.toml")))
+        return path
+
     def test_run_init(self):
         """Test running alto init"""
         try:
-            path = _make_tmp_dir()
-            self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
-            self.assertTrue(os.path.exists(os.path.join(path, "alto.toml")))
-            self.assertTrue(os.path.exists(os.path.join(path, "alto.local.toml")))
+            path = self._init_project()
             self.assertTrue(os.path.exists(os.path.join(path, "series.json")))
             self.assertTrue(os.path.exists(os.path.join(path, "carbon_pipeline_dlt.py")))
         finally:
@@ -47,8 +51,7 @@ class TestRunAlto(unittest.TestCase):
     def test_run_list(self):
         """Test running alto list"""
         try:
-            path = _make_tmp_dir()
-            self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
+            path = self._init_project()
             self.assertEqual(main(["list", "-r", path]), 0)
         finally:
             shutil.rmtree(path)
@@ -56,10 +59,7 @@ class TestRunAlto(unittest.TestCase):
     def test_run_pipeline(self):
         """Test running an alto pipeline end to end"""
         try:
-            path = _make_tmp_dir()
-            self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
-            self.assertTrue(os.path.exists(os.path.join(path, "alto.toml")))
-            self.assertTrue(os.path.exists(os.path.join(path, "alto.local.toml")))
+            path = self._init_project()
             self.assertEqual(main(["tap-carbon-intensity:target-jsonl", "-r", path]), 0)
         finally:
             shutil.rmtree(path)
