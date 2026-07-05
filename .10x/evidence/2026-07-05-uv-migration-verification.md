@@ -1,7 +1,7 @@
 Status: recorded
 Created: 2026-07-05
 Updated: 2026-07-05
-Relates-To: .10x/tickets/2026-07-05-uv-migration-quality-optimization.md
+Relates-To: .10x/tickets/done/2026-07-05-uv-migration-quality-optimization.md
 
 # UV Migration Verification
 

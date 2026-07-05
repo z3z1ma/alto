@@ -1,4 +1,4 @@
-Status: active
+Status: done
 Created: 2026-07-05
 Updated: 2026-07-05
 
@@ -43,3 +43,4 @@ None. The user explicitly approved implementation, dependency metadata changes, 
 - 2026-07-05: Functional tests exposed `alto init` writing sample assets to the process cwd instead of the requested project root; fixed path handling and added regression assertions.
 - 2026-07-05: Quality scans found vulnerable Black dev dependencies, missing optional dependency metadata, mutable GitHub Action refs, SHA-1 cache hashing, permissive PEX permissions, and small dead-code candidates; applying a focused hardening slice.
 - 2026-07-05: Verified and recorded the Python/package hardening slice in `.10x/evidence/2026-07-05-quality-hardening-verification.md`; docs dependency lockfile vulnerabilities remain for a separate slice.
+- 2026-07-05: Upgraded docs from Docusaurus 2.3.1 to 3.10.1, removed `docs/yarn.lock`, regenerated the npm lockfile with narrow transitive security overrides, and recorded verification in `.10x/evidence/2026-07-05-docs-dependency-remediation-verification.md`.

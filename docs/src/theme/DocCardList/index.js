@@ -1,13 +1,13 @@
 import React from 'react';
 import clsx from 'clsx';
 import {
-  useCurrentSidebarCategory,
+  useCurrentSidebarSiblings,
   filterDocCardListItems,
-} from '@docusaurus/theme-common';
+} from '@docusaurus/plugin-content-docs/client';
 import DocCard from '@theme/DocCard';
 function DocCardListForCurrentSidebarCategory({className}) {
-  const category = useCurrentSidebarCategory();
-  return <DocCardList items={category.items} className={className} />;
+  const items = useCurrentSidebarSiblings();
+  return <DocCardList items={items} className={className} />;
 }
 export default function DocCardList(props) {
   const {items, className} = props;
