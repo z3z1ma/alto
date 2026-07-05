@@ -9,7 +9,7 @@ Get started by **creating a new alto project**.
 
 ### What you'll need
 
-- [Python 3.8+](https://www.python.org/downloads/)
+- [Python 3.10+](https://www.python.org/downloads/)
 - [pipx](https://pipxproject.github.io/pipx/installation/) (optional, you can use `pip` instead)
 
 ## Generate a new project

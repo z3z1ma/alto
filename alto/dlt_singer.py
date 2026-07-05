@@ -33,7 +33,7 @@ class SingerTapDemux(Thread):
         super().__init__(daemon=True)
         self.tap = tap
         self.engine = engine
-        self.streams = {stream: Queue() for stream in streams}
+        self.streams: dict[str, Queue] = {stream: Queue() for stream in streams}
         self.init_state = init_state
         # Lifecycle flags
         self.setup_complete = False
@@ -70,21 +70,24 @@ class SingerTapDemux(Thread):
         self.graceful_exit = True
 
 
-def singer(name: str, **kwargs) -> t.Callable[..., t.Sequence[t.Any]]:
-    """Factory for creating a dlt.source function for a singer tap."""
+def singer(
+    source: str,
+    streams: t.Optional[t.List[str]] = None,
+    env: t.Optional[str] = None,
+    resource_options: t.Optional[t.Dict[str, t.Any]] = None,
+    name: t.Optional[str] = None,
+    **kwargs,
+) -> t.Any:
+    """Create a dlt source for a singer tap."""
+    resolved_resource_options: dict[str, t.Any] = (
+        {} if resource_options is None else resource_options
+    )
+    if env is None:
+        env = os.getenv("ALTO_ENV", alto.constants.DEFAULT_ENVIRONMENT)
 
-    @dlt.source(name=name, **kwargs)
-    def _singer(
-        source: str,
-        streams: t.Optional[t.List[str]] = None,
-        env: t.Optional[str] = None,
-        resource_options: t.Optional[t.Dict[str, t.Any]] = None,
-    ) -> t.Sequence[t.Any]:
+    @dlt.source(name=name or source, **kwargs)
+    def _singer() -> t.Sequence[t.Any]:
         """Singer source function."""
-        if resource_options is None:
-            resource_options = {}
-        if env is None:
-            env = os.getenv("ALTO_ENV", alto.constants.DEFAULT_ENVIRONMENT)
         # Prepare engine and data structures
         engine = alto.engine.get_engine(env)
         (tap,) = alto.engine.make_plugins(
@@ -95,23 +98,27 @@ def singer(name: str, **kwargs) -> t.Callable[..., t.Sequence[t.Any]]:
         catalog = alto.engine.get_and_render_catalog(tap, engine.filesystem)
         # Use the streams from the catalog if not provided
         baseline_streams = [stream.tap_stream_id for stream in catalog.streams]
-        if streams is None:
-            streams = baseline_streams
-        if not streams:
+        selected_streams = baseline_streams if streams is None else streams
+        if not selected_streams:
             raise ValueError("No streams were found in the catalog or selected by the user.")
-        for stream in streams:
+        for stream in selected_streams:
             if stream not in baseline_streams:
                 raise ValueError(
                     f"Stream '{stream}' was not found in the catalog. "
                     f"Available streams: {baseline_streams}"
                 )
         # Create the demuxer
-        tap.select = streams
-        producer = SingerTapDemux(tap, engine, dlt.state().setdefault(tap.name, {}), *streams)
+        tap.select = selected_streams
+        producer = SingerTapDemux(
+            tap,
+            engine,
+            t.cast(t.Any, dlt).state().setdefault(tap.name, {}),
+            *selected_streams,
+        )
         producer.start()
         # Use the catalog to determine some resource props
-        for stream in streams:
-            opts: dict = resource_options.setdefault(stream, {})
+        for stream in selected_streams:
+            opts: dict = resolved_resource_options.setdefault(stream, {})
             for entry in catalog.streams:
                 if entry.tap_stream_id == stream:
                     this = entry
@@ -125,23 +132,23 @@ def singer(name: str, **kwargs) -> t.Callable[..., t.Sequence[t.Any]]:
                 opts.setdefault("write_disposition", "append")
         # Create the dlt resources
         return tuple(
-            singer_stream_factory(stream, resource_options[stream])(
+            singer_stream_factory(stream, resolved_resource_options[stream])(
                 producer.streams[stream], producer
             )
-            for stream in streams
+            for stream in selected_streams
         )
 
-    return _singer
+    return _singer()
 
 
 def singer_stream_factory(
     stream: str, resource_options: t.Dict[str, t.Any]
-) -> t.Callable[[Queue], t.Iterator[t.Any]]:
+) -> t.Callable[[Queue, SingerTapDemux], t.Iterator[t.Any]]:
     """Factory for creating a dlt.resource function for each stream."""
 
     @dlt.resource(name=stream, **resource_options)
     def _singer_stream(_queue: Queue, producer: SingerTapDemux) -> t.Iterator[t.Any]:
-        state_dict = dlt.state().setdefault(producer.tap.name, {})
+        state_dict = t.cast(t.Any, dlt).state().setdefault(producer.tap.name, {})
         poll_interval = 1
         while producer.is_alive() or not _queue.empty():
             try:

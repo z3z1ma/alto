@@ -7,14 +7,14 @@
 
 [![Tests](https://github.com/z3z1ma/alto/workflows/Alto%20Tests/badge.svg)][tests]
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
-[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
+[![Ruff](https://img.shields.io/badge/code%20style-ruff-46a6ff.svg)][ruff]
 
 [pypi_]: https://pypi.org/project/singer-alto/
 [status]: https://pypi.org/project/singer-alto/
 [python version]: https://pypi.org/project/singer-alto
 [tests]: https://github.com/z3z1ma/alto/actions?workflow=Alto%20Tests
 [pre-commit]: https://github.com/pre-commit/pre-commit
-[black]: https://github.com/psf/black
+[ruff]: https://github.com/astral-sh/ruff
 
 ## Documentation
 

@@ -74,7 +74,7 @@ class AltoCmd(cmd.Cmd):
             print(f"({remainder} more files)")
 
     @lru_cache
-    def complete_ls(self, text: str, line: str, begidx: int, endidx: int) -> t.List[str]:
+    def complete_ls(self, text: str, line: str, _begidx: int, _endidx: int) -> t.List[str]:
         """List files in a directory."""
         path = line.split(maxsplit=1)[-1].replace("--all", "").strip()
         if self.engine.fs.isdir(path) and not path.endswith("/"):

@@ -17,7 +17,7 @@ import os
 import shutil
 import typing as t
 
-from dynaconf import Validator
+from dynaconf.validator import Validator
 
 from alto.engine import AltoExtension
 from alto.models import AltoTask, AltoTaskData
@@ -172,13 +172,18 @@ class Evidence(AltoExtension):
                 "snowflake",
                 "sqlite",
             )
+            urls = {
+                "bigquery": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/bigquery/index.cjs",
+                "duckdb": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/duckdb/index.cjs",
+                "mysql": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/mysql/index.cjs",
+                "postgres": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/postgres/index.cjs",
+                "snowflake": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/snowflake/index.cjs",
+                "sqlite": "https://raw.githubusercontent.com/evidence-dev/evidence/main/packages/sqlite/index.cjs",
+            }
             output = {}
             for adapter in adapters:
-                url = (
-                    "https://raw.githubusercontent.com/"
-                    f"evidence-dev/evidence/main/packages/{adapter}/index.cjs"
-                )
-                with urllib.request.urlopen(url) as response:
+                # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected - URL is selected from the fixed adapter map above.
+                with urllib.request.urlopen(urls[adapter]) as response:
                     content = response.read().decode("utf-8")
                 matches = re.findall(
                     rf'process.env\["{adapter.upper()}_([A-Z_]+)"\]',

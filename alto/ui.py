@@ -35,13 +35,14 @@ try:
     from rich.progress import (
         Progress,
         SpinnerColumn,
-        TaskID,
         TaskProgressColumn,
         TextColumn,
         TimeElapsedColumn,
     )
-except ImportError:
-    TaskID = t.Any
+except ImportError as exc:
+    RICH_IMPORT_ERROR: t.Optional[ImportError] = exc
+else:
+    RICH_IMPORT_ERROR = None
 
 
 class InjectedIO:
@@ -79,18 +80,24 @@ class InjectedIO:
 
 def monkeypatch_stream(ui: "AltoRichUI") -> None:
     """Monkeypatch doit to use our custom IO."""
-    doit.task.Stream._get_out_err = lambda _, verbosity: (
+    t.cast(t.Any, doit.task.Stream)._get_out_err = lambda _, verbosity: (
         InjectedIO(ui=ui, method="write_stdout"),
         InjectedIO(ui=ui, method="write_stderr"),
     )
 
 
+def _task_verbosity(task: Task) -> int:
+    return task.verbosity or 0
+
+
 class AltoRichUI(ConsoleReporter):
     desc = "Alto Rich UI"
-    task_ids: t.Dict[str, TaskID] = {}
+    task_ids: t.Dict[str, t.Any] = {}
 
     def __init__(self, outstream, options):
         _ = outstream
+        if RICH_IMPORT_ERROR is not None:
+            raise RICH_IMPORT_ERROR
         self.console = Console()
         self.progress = Progress(
             SpinnerColumn(),
@@ -129,6 +136,7 @@ class AltoRichUI(ConsoleReporter):
         pass
 
     def initialize(self, tasks: t.List[Task], selected_tasks: t.List[str]) -> None:
+        _ = tasks, selected_tasks
         self.write("Running [bold]Alto[/bold] version: [green]0.1.0[/green]")
         self.time = time.time()
 
@@ -196,8 +204,9 @@ class AltoRichUI(ConsoleReporter):
             task: Task = result["task"]
             if not task.executed:
                 continue
-            show_err = task.verbosity < 1 or self.failure_verbosity > 0
-            show_out = task.verbosity < 2 or self.failure_verbosity == 2
+            verbosity = _task_verbosity(task)
+            show_err = verbosity < 1 or self.failure_verbosity > 0
+            show_out = verbosity < 2 or self.failure_verbosity == 2
             if show_err or show_out:
                 self.write("#" * 40 + "\n")
             if show_err:

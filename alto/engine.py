@@ -23,6 +23,7 @@ import os
 import platform
 import queue
 import shutil
+import stat
 import subprocess
 import sys
 import threading
@@ -31,7 +32,7 @@ import uuid
 from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
-from hashlib import md5, sha1
+from hashlib import md5, sha256
 from pathlib import Path
 
 import dynaconf.utils
@@ -550,7 +551,7 @@ class AltoPlugin:
 
         This is used to cache the pex and reuse it across runs and machines.
         """
-        pex_hash = sha1(self.pip_url.strip().encode("utf-8"))
+        pex_hash = sha256(self.pip_url.strip().encode("utf-8"))
         pex_hash.update(platform.python_version().encode("utf-8"))
         pex_hash.update(platform.machine().encode("utf-8"))
         pex_hash.update(platform.system().encode("utf-8"))
@@ -1336,22 +1337,24 @@ def run_pipeline(
     print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
     stdout_lock = threading.Lock()
     mappers = tap.get_stream_maps(filesystem)
-    with subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env={**os.environ, **tap.environment},
-        cwd=filesystem.root_dir,
-    ) as tap_proc, open(
-        filesystem.log_path(f"state-{pipeline_id}.log"), "w"
-    ) as state_log, subprocess.Popen(
-        [target_bin, "--config", target_config],
-        stdin=tap_proc.stdout if not mappers else subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdout=state_log,
-        env={**os.environ, **target.environment},
-        cwd=filesystem.root_dir,
-    ) as target_proc:
+    with (
+        subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env={**os.environ, **tap.environment},
+            cwd=filesystem.root_dir,
+        ) as tap_proc,
+        open(filesystem.log_path(f"state-{pipeline_id}.log"), "w") as state_log,
+        subprocess.Popen(
+            [target_bin, "--config", target_config],
+            stdin=tap_proc.stdout if not mappers else subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdout=state_log,
+            env={**os.environ, **target.environment},
+            cwd=filesystem.root_dir,
+        ) as target_proc,
+    ):
         t1 = threading.Thread(
             target=pipe_logger,
             args=(
@@ -2198,7 +2201,7 @@ def maybe_get_pex(plugin: AltoPlugin, filesystem: AltoFileSystem) -> bool:
     try:
         # If the pex is not in the local cache, download it
         filesystem.fs.get(remote, local)
-        os.chmod(local, 0o755)
+        os.chmod(local, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
     except Exception:
         # If the pex is not in the remote cache, build it
         return False

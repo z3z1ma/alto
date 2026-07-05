@@ -95,13 +95,12 @@ class AltoInit(Command):
             local_template_path = Path(__file__).parent.joinpath(
                 "incl", "alto.local.template.{ext}"
             )
-            with open(config_path.with_suffix("." + format_), "w") as conf, open(
-                local_path.with_suffix("." + format_), "w"
-            ) as local, open(
-                config_template_path.with_suffix("." + format_), "r"
-            ) as conf_template, open(
-                local_template_path.with_suffix("." + format_), "r"
-            ) as local_template:
+            with (
+                open(config_path.with_suffix("." + format_), "w") as conf,
+                open(local_path.with_suffix("." + format_), "w") as local,
+                open(config_template_path.with_suffix("." + format_), "r") as conf_template,
+                open(local_template_path.with_suffix("." + format_), "r") as local_template,
+            ):
                 conf.write(conf_template.read().replace("{project}", project_name))
                 local.write(local_template.read())
             env_path = alto.config.working_directory / ".env"
@@ -323,6 +322,7 @@ class AltoList(List):
             return None
         line_data = {"name": task.name, "doc": task.doc}
         if status:
+            assert self.dep_manager is not None
             if self.dep_manager.status_is_ignore(task):
                 task_status = "ignore"
             else:

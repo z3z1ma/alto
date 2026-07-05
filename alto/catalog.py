@@ -41,7 +41,7 @@ class CatalogMutationStrategy(str, Enum):
 def _remove_breadcrumb_from_schema(
     schema: t.Dict[str, t.Any], entry: SingerCatalogStreamMetadata
 ) -> None:
-    parent = []
+    parent: t.List[str] = []
     schema_ptr = copy.copy(schema)
     try:
         while len(entry.breadcrumb) > 0:
@@ -55,9 +55,10 @@ def _remove_breadcrumb_from_schema(
                     inner.pop(parent[-2], None)
                 break
             else:
-                schema = schema.get(prop)
-                if not schema:
+                child = schema.get(prop)
+                if not isinstance(child, dict):
                     break
+                schema = child
             parent.append(prop)
     except (KeyError, IndexError):
         pass
@@ -81,7 +82,7 @@ def _select_attribute(attribute: SingerCatalogStreamMetadata) -> bool:
 
 
 def apply_selected(
-    target_catalog: t.Union[Path, str, SingerCatalog],
+    target_catalog: t.Union[Path, str, t.Dict[str, t.Any], SingerCatalog],
     selections: t.List[str],
     write: bool = True,
     strategy: CatalogMutationStrategy = CatalogMutationStrategy.PRUNE,
@@ -118,10 +119,10 @@ def apply_selected(
         catalog = SingerCatalog.parse_file(target_catalog)
     elif isinstance(target_catalog, str):
         catalog = SingerCatalog.parse_str(target_catalog)
-    elif isinstance(target_catalog, t.dict):
+    elif isinstance(target_catalog, dict):
         catalog = SingerCatalog.parse_json(target_catalog)
     else:
-        catalog: SingerCatalog = target_catalog
+        catalog = target_catalog
 
     # All inverted selections take the stance all streams are selected by default
     # and then negated by the selection patterns
@@ -217,9 +218,13 @@ def apply_metadata(
                 continue
 
             # Apply the metadata to the root of the stream
-            stream.metadata[
-                next((i for i, entry in enumerate(stream.metadata) if entry.is_root), 0)
-            ].metadata.update(payload)
+            root_metadata = t.cast(
+                t.Dict[str, t.Any],
+                stream.metadata[
+                    next((i for i, entry in enumerate(stream.metadata) if entry.is_root), 0)
+                ].metadata,
+            )
+            root_metadata.update(payload)
 
             # Bubble up the metadata to the parent stream for legacy compatibility
             if "replication-method" in payload:

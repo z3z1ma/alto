@@ -1,4 +1,4 @@
-import dlt  # type: ignore
+import dlt
 
 from alto.dlt_singer import singer
 

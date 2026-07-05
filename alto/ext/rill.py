@@ -20,7 +20,7 @@ import typing as t
 from pathlib import Path
 
 from doit.tools import LongRunning
-from dynaconf import Validator
+from dynaconf.validator import Validator
 
 from alto.engine import AltoExtension
 from alto.models import AltoTask, AltoTaskData

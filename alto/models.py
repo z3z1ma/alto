@@ -27,6 +27,7 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    cast,
 )
 
 from doit.action import BaseAction
@@ -98,7 +99,7 @@ T = TypeVar("T", bound="ParserMixin")
 class ParserMixin(Generic[T]):
     @classmethod
     def parse_json(cls, data: Dict[str, Any]) -> T:
-        return cls(**data)
+        return cast(T, cls(**data))
 
     @classmethod
     def parse_str(cls, data: str) -> T:
@@ -135,10 +136,10 @@ class SingerCatalogStream(DataClassDictMixin, ParserMixin["SingerCatalogStream"]
     replication_key: Optional[str] = None
     replication_method: str = "FULL_TABLE"
     selected: bool = False
-    stream: str = None
-    database_name: str = None
-    schema_name: str = None
-    table_name: str = None
+    stream: Optional[str] = None
+    database_name: Optional[str] = None
+    schema_name: Optional[str] = None
+    table_name: Optional[str] = None
     forced_replication_method: Optional[str] = None
 
     def root_metadata(self) -> Optional[SingerCatalogStreamMetadata]:
@@ -336,8 +337,9 @@ class AltoTaskData(TypedDict, total=False):
     targets: List[Union[str, Path]]
     task_dep: List[str]
     file_dep: List[Union[str, Path]]
-    uptodate: List[Union[bool, None]]
+    uptodate: List[Any]
     setup: List[str]
+    params: List[Dict[str, Any]]
     meta: Dict[str, Any]
     custom_title: Callable
     doc: str
@@ -368,7 +370,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("actions", []).extend(actions)
         else:
-            self._data["actions"] = actions
+            self._data["actions"] = list(actions)
         return self
 
     def set_clean(self, *actions: AltoAction, extend: bool = True) -> "AltoTask":
@@ -376,7 +378,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("clean", []).extend(actions)
         else:
-            self._data["clean"] = actions
+            self._data["clean"] = list(actions)
         return self
 
     def set_teardown(self, *actions: AltoAction, extend: bool = True) -> "AltoTask":
@@ -384,7 +386,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("teardown", []).extend(actions)
         else:
-            self._data["teardown"] = actions
+            self._data["teardown"] = list(actions)
         return self
 
     def set_targets(self, *targets: Union[str, Path], extend: bool = True) -> "AltoTask":
@@ -392,7 +394,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("targets", []).extend(targets)
         else:
-            self._data["targets"] = targets
+            self._data["targets"] = list(targets)
         return self
 
     def set_task_dep(self, *tasks: str, extend: bool = True) -> "AltoTask":
@@ -403,7 +405,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("task_dep", []).extend(tasks)
         else:
-            self._data["task_dep"] = tasks
+            self._data["task_dep"] = list(tasks)
         return self
 
     def set_file_dep(self, *files: Union[str, Path], extend: bool = True) -> "AltoTask":
@@ -414,12 +416,10 @@ class AltoTask:
         if extend:
             self._data.setdefault("file_dep", []).extend(files)
         else:
-            self._data["file_dep"] = files
+            self._data["file_dep"] = list(files)
         return self
 
-    def set_uptodate(
-        self, *uptodate: Callable[..., Union[bool, None]], extend: bool = True
-    ) -> "AltoTask":
+    def set_uptodate(self, *uptodate: Any, extend: bool = True) -> "AltoTask":
         """Set the uptodate function for the task.
 
         This is a function that determines if the task is up to date.
@@ -427,7 +427,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("uptodate", []).extend(uptodate)
         else:
-            self._data["uptodate"] = uptodate
+            self._data["uptodate"] = list(uptodate)
         return self
 
     def set_setup(self, *tasks: str, extend: bool = True) -> "AltoTask":
@@ -438,7 +438,7 @@ class AltoTask:
         if extend:
             self._data.setdefault("setup", []).extend(tasks)
         else:
-            self._data["setup"] = tasks
+            self._data["setup"] = list(tasks)
         return self
 
     def set_meta(self, meta: Dict[str, Any]) -> "AltoTask":
@@ -473,15 +473,15 @@ class AltoTask:
         self._data["verbosity"] = verbosity
         return self
 
-    def set_params(self, *params: str, extend: bool = True) -> "AltoTask":
-        """Set the setup tasks for the task.
+    def set_params(self, *params: Dict[str, Any], extend: bool = True) -> "AltoTask":
+        """Set doit parameter definitions for the task.
 
-        These are the tasks that must be run before this task.
+        These dictionaries are passed through to doit as task parameters.
         """
         if extend:
             self._data.setdefault("params", []).extend(params)
         else:
-            self._data["params"] = params
+            self._data["params"] = list(params)
         return self
 
     def __dict__(self) -> AltoTaskData:

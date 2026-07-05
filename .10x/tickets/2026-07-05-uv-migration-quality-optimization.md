@@ -41,3 +41,5 @@ None. The user explicitly approved implementation, dependency metadata changes, 
 - 2026-07-05: Migrated `pyproject.toml` to PEP 621 metadata with Hatchling, removed Poetry workflow commands, removed `poetry.lock`, and generated `uv.lock`.
 - 2026-07-05: Initial uv test run exposed Dynaconf 3.3 compatibility failure in `find_hyphen_key`; fixed the lookup to support both mappings and key iterables.
 - 2026-07-05: Functional tests exposed `alto init` writing sample assets to the process cwd instead of the requested project root; fixed path handling and added regression assertions.
+- 2026-07-05: Quality scans found vulnerable Black dev dependencies, missing optional dependency metadata, mutable GitHub Action refs, SHA-1 cache hashing, permissive PEX permissions, and small dead-code candidates; applying a focused hardening slice.
+- 2026-07-05: Verified and recorded the Python/package hardening slice in `.10x/evidence/2026-07-05-quality-hardening-verification.md`; docs dependency lockfile vulnerabilities remain for a separate slice.

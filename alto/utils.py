@@ -20,13 +20,13 @@ if t.TYPE_CHECKING:
     from alto.engine import AltoExtension, AltoStreamMap
 
 T = t.TypeVar("T")
+T_co = t.TypeVar("T_co", covariant=True)
 
 
-class Registrar(t.Protocol, t.Generic[T]):
+class Registrar(t.Protocol, t.Generic[T_co]):
     """Protocol for extension modules."""
 
-    def register() -> t.Type[T]:
-        """Register the extension."""
+    register: t.Callable[[], t.Type[T_co]]
 
 
 def load_extension_from_spec(spec: str) -> Registrar["AltoExtension"]:
@@ -47,6 +47,8 @@ def load_mapper_from_path(ext: Path) -> Registrar["AltoStreamMap"]:
 def _load_from_spec(module: str) -> Registrar[T]:
     """Load an extension from a spec."""
     spec = importlib.util.find_spec(module)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load extension module {module!r}.")
     ext_namespace = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ext_namespace)
     return t.cast(Registrar[T], ext_namespace)
@@ -55,6 +57,8 @@ def _load_from_spec(module: str) -> Registrar[T]:
 def _load_from_path(ext: Path) -> Registrar[T]:
     """Load an extension from a path."""
     spec = importlib.util.spec_from_file_location(ext.stem, ext)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load extension from {ext}.")
     ext_namespace = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ext_namespace)
     return t.cast(Registrar[T], ext_namespace)
@@ -74,7 +78,7 @@ def merge(source: dict, destination: dict) -> dict:
     return destination
 
 
-def message_type(raw: bytes) -> bool:
+def message_type(raw: bytes) -> int:
     """Get the message type.
 
     Newline delimited JSON messages can be parsed without unmarshalling into Python objects
