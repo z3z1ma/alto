@@ -294,7 +294,9 @@ class AltoFs(Command):
         if not engine.fs.exists(src):
             LOGGER.info(f"❌ Source file {src} does not exist")
             return 1
-        os.makedirs(os.path.dirname(dest), exist_ok=True, mode=0o755)
+        dest_dir = os.path.dirname(dest)
+        if dest_dir:
+            os.makedirs(dest_dir, exist_ok=True, mode=0o755)
         LOGGER.info(f"☁️ Downloading {src} to {dest}...")
         engine.fs.get(src, dest)
         return 0

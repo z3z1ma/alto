@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: Release
@@ -13,7 +16,7 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@3542bca2639a428e1796aaa6a2ffef0c0f575566 # v3
@@ -25,18 +28,32 @@ jobs:
           python -m pip install --upgrade pip uv==0.11.25
           uv --version
 
-      - name: Check if there is a parent commit
-        id: check-parent-commit
-        run: |
-          echo "sha=$(git rev-parse --verify --quiet HEAD^)" >> "$GITHUB_OUTPUT"
-
-      - name: Detect and tag new version
+      - name: Detect release version
         id: check-version
-        if: steps.check-parent-commit.outputs.sha
-        uses: salsify/action-detect-and-tag-new-version@b1778166f13188a9d478e2d1198f993011ba9864 # v2.0.3
-        with:
-          version-command: |
-            uv version --short
+        run: |
+          version="$(uv version --short)"
+          tag="v${version}"
+          head_commit="$(git rev-parse HEAD)"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+          git fetch --force --tags origin
+          if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+            tag_commit="$(git rev-list -n 1 "${tag}")"
+            if [ "${tag_commit}" = "${head_commit}" ]; then
+              echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+              echo "Release tag ${tag} already points at HEAD."
+            else
+              echo "tag=" >> "$GITHUB_OUTPUT"
+              echo "Version ${version} was already released at ${tag_commit}; publishing a developmental build."
+            fi
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "${tag}"
+            git push origin "refs/tags/${tag}"
+            echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            echo "Created release tag ${tag}."
+          fi
 
       - name: Bump version for developmental release
         if: "! steps.check-version.outputs.tag"
@@ -51,18 +68,20 @@ jobs:
 
       - name: Publish package on PyPI
         if: steps.check-version.outputs.tag
-        uses: pypa/gh-action-pypi-publish@48b317d84d5f59668bb13be49d1697e36b3ad009 # v1.8.3
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
+          attestations: false
 
       - name: Publish package on TestPyPI
         if: "! steps.check-version.outputs.tag"
-        uses: pypa/gh-action-pypi-publish@48b317d84d5f59668bb13be49d1697e36b3ad009 # v1.8.3
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           user: __token__
           password: ${{ secrets.TEST_PYPI_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
+          repository-url: https://test.pypi.org/legacy/
+          attestations: false
 
       - name: Publish the release notes
         uses: release-drafter/release-drafter@569eb7ee3a85817ab916c8f8ff03a5bd96c9c83e # v5.23.0

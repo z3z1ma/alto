@@ -1,9 +1,13 @@
 """Focused unit tests for core helpers."""
 
 import copy
+import gzip
 import io
+import importlib
 import json
+import os
 import runpy
+import subprocess
 import tempfile
 import typing as t
 import unittest
@@ -15,7 +19,7 @@ import alto.config
 import alto.engine as engine
 import alto.tools as tools
 from alto.catalog import CatalogMutationStrategy, apply_metadata, apply_selected
-from alto.main import AltoInit, _get_root_scrub_args, _padded_rows, _task_icon
+from alto.main import AltoFs, AltoInit, _get_root_scrub_args, _padded_rows, _task_icon
 from alto.models import SingerCatalog
 from alto.providers.serde import SerdeFormat, deserialize, serialize
 from alto.repl import AltoCmd
@@ -23,6 +27,97 @@ from alto.state import parse_state_from_stdout
 from alto.state import ensure_state, update_state
 from alto.ui import AltoRichUI, _task_output_visibility
 from alto.utils import merge, message_type
+
+
+def _json_line(payload: dict[str, t.Any]) -> bytes:
+    return json.dumps(payload).encode("utf-8") + b"\n"
+
+
+def _simple_singer_schema_and_record() -> tuple[dict[str, t.Any], dict[str, t.Any]]:
+    return (
+        {
+            "type": "SCHEMA",
+            "stream": "users",
+            "schema": {"type": "object", "properties": {"id": {"type": "integer"}}},
+        },
+        {"type": "RECORD", "stream": "users", "record": {"id": 1}},
+    )
+
+
+class _MemoryRemoteFs:
+    def __init__(self, fail_suffix: str | None = None) -> None:
+        self.fail_suffix = fail_suffix
+        self.files: dict[str, bytes] = {}
+        self.deleted: list[str] = []
+        self.get_calls: list[tuple[str, str]] = []
+
+    def pipe(self, path: str, data: bytes) -> None:
+        if self.fail_suffix and path.endswith(self.fail_suffix):
+            raise OSError("upload failed")
+        self.files[path] = data
+
+    def cat(self, path: str) -> bytes:
+        return self.files[path]
+
+    def exists(self, path: str) -> bool:
+        return path in self.files
+
+    def delete(self, path: str) -> None:
+        self.deleted.append(path)
+        self.files.pop(path, None)
+
+    def get(self, src: str, dest: str) -> None:
+        self.get_calls.append((src, dest))
+        Path(dest).write_bytes(self.files[src])
+
+
+class _ReservoirFilesystem:
+    def __init__(self, root_dir: Path, remote_fs: _MemoryRemoteFs | None = None) -> None:
+        self.root_dir = str(root_dir)
+        self.fs = remote_fs or _MemoryRemoteFs()
+
+    def _remote_path(self, name: str, key: str = "") -> str:
+        return f"{key}/{name}" if key else name
+
+    def log_path(self, name: str, remote: bool = False) -> str:
+        _ = remote
+        return str(Path(self.root_dir) / name)
+
+    def executable_path(self, name: str) -> str:
+        return str(Path(self.root_dir) / name)
+
+    def config_path(self, *parts: str) -> str:
+        path = Path(self.root_dir) / f"{'--'.join(parts)}.json"
+        path.write_text("{}")
+        return str(path)
+
+    def catalog_path(self, name: str) -> str:
+        path = Path(self.root_dir) / f"{name}-catalog.json"
+        path.write_text("{}")
+        return str(path)
+
+    def state_path(self, tap: str, target: str, remote: bool = False) -> str:
+        if remote:
+            return self._remote_path(f"{tap}-{target}.json", key="states")
+        return str(Path(self.root_dir) / f"{tap}-{target}.json")
+
+
+class _Plugin:
+    supports_state = False
+    supports_catalog = False
+    supports_properties = False
+    environment: dict[str, str] = {}
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.pex_name = name
+
+    def get_stream_maps(self, filesystem: _ReservoirFilesystem) -> list[engine.AltoStreamMap]:
+        _ = filesystem
+        return []
+
+    def __str__(self) -> str:
+        return self.name
 
 
 def _catalog_data():
@@ -264,7 +359,12 @@ class TestCliAndEngineHelpers(unittest.TestCase):
         self.assertTrue(hasattr(tools, "run_once"))
 
     def test_module_entrypoint_exits_with_main_status(self):
-        with patch("alto.main.main", return_value=7), self.assertRaises(SystemExit) as ctx:
+        main_module = importlib.import_module("alto.main")
+
+        with (
+            patch.object(main_module, "main", return_value=7),
+            self.assertRaises(SystemExit) as ctx,
+        ):
             runpy.run_module("alto.__main__", run_name="__main__")
 
         self.assertEqual(ctx.exception.code, 7)
@@ -317,6 +417,165 @@ class TestCliAndEngineHelpers(unittest.TestCase):
             True,
         )
         self.assertIsNone(engine._mapped_singer_message({"type": "STATE"}, [mapper]))
+
+    def test_reservoir_ingestor_keeps_mapped_payloads_and_schema_buffers(self):
+        class Mapper(engine.AltoStreamMap):
+            def transform_schema(self, schema):
+                schema = copy.deepcopy(schema)
+                schema["schema"]["properties"]["email"]["format"] = "hash"
+                return schema
+
+            def transform_record(self, record):
+                record = copy.deepcopy(record)
+                record["record"]["email"] = f"hashed:{record['record']['email']}"
+                return record
+
+        schema_v1 = {
+            "type": "SCHEMA",
+            "stream": "users",
+            "schema": {"type": "object", "properties": {"email": {"type": "string"}}},
+        }
+        schema_v2 = {
+            "type": "SCHEMA",
+            "stream": "users",
+            "schema": {
+                "type": "object",
+                "properties": {"email": {"type": "string"}, "id": {"type": "integer"}},
+            },
+        }
+        records = [
+            schema_v1,
+            {"type": "RECORD", "stream": "users", "record": {"email": "a"}},
+            schema_v2,
+            {"type": "RECORD", "stream": "users", "record": {"email": "b", "id": 2}},
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            filesystem = _ReservoirFilesystem(Path(tmp))
+            reservoir: engine.ReservoirIndex = {}
+            engine.reservoir_ingestor(
+                io.BytesIO(b"".join(_json_line(record) for record in records)),
+                reservoir,
+                "reservoir/{stream}/{schema_id}",
+                str(Path(tmp) / "state.json"),
+                "pipeline",
+                t.cast(t.Any, filesystem),
+                buffer_size=10,
+                mappers=[Mapper(t.cast(t.Any, {}), ["users.*"])],
+            )
+
+        paths = t.cast(list[str], reservoir["users"])
+        self.assertEqual(len(paths), 2)
+        self.assertNotEqual(paths[0].split("/")[-2], paths[1].split("/")[-2])
+        payloads = [
+            [json.loads(line) for line in gzip.decompress(filesystem.fs.files[path]).splitlines()]
+            for path in paths
+        ]
+
+        self.assertEqual(
+            [payload[1]["record"]["email"] for payload in payloads], ["hashed:a", "hashed:b"]
+        )
+        self.assertTrue(
+            all(
+                payload[0]["schema"]["properties"]["email"]["format"] == "hash"
+                for payload in payloads
+            )
+        )
+
+    def test_reservoir_ingestor_propagates_upload_failures_without_indexing(self):
+        schema, record = _simple_singer_schema_and_record()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            filesystem = _ReservoirFilesystem(Path(tmp), _MemoryRemoteFs(fail_suffix=".singer.gz"))
+            reservoir: engine.ReservoirIndex = {}
+            with self.assertRaises(OSError):
+                engine.reservoir_ingestor(
+                    io.BytesIO(_json_line(schema) + _json_line(record)),
+                    reservoir,
+                    "reservoir/{stream}/{schema_id}",
+                    str(Path(tmp) / "state.json"),
+                    "pipeline",
+                    t.cast(t.Any, filesystem),
+                    buffer_size=10,
+                )
+
+        self.assertNotIn("users", reservoir)
+
+    def test_tap_to_reservoir_raises_for_failed_tap_and_drops_lock(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tap_script = root / "tap-demo"
+            tap_script.write_text(
+                "#!/bin/sh\n"
+                'printf \'%s\\n\' \'{"type":"SCHEMA","stream":"users",'
+                '"schema":{"type":"object","properties":{"id":{"type":"integer"}}}}\'\n'
+                'printf \'%s\\n\' \'{"type":"RECORD","stream":"users","record":{"id":1}}\'\n'
+                "exit 9\n"
+            )
+            tap_script.chmod(0o755)
+            filesystem = _ReservoirFilesystem(root)
+
+            with self.assertRaises(subprocess.CalledProcessError) as ctx:
+                engine.tap_to_reservoir(
+                    t.cast(t.Any, _Plugin("tap-demo")),
+                    "pipeline",
+                    t.cast(t.Any, filesystem),
+                    "DEVELOPMENT",
+                    buffer_size=10,
+                )
+
+        self.assertEqual(ctx.exception.returncode, 9)
+        self.assertIn("reservoir/DEVELOPMENT/tap-demo/_reservoir.lock", filesystem.fs.deleted)
+        self.assertNotIn("reservoir/DEVELOPMENT/tap-demo/_reservoir.json", filesystem.fs.files)
+
+    def test_reservoir_to_target_raises_for_failed_target(self):
+        schema, record = _simple_singer_schema_and_record()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target_script = root / "target-jsonl"
+            target_script.write_text(
+                "#!/bin/sh\ncat >/dev/null\necho 'target failed' >&2\nexit 5\n"
+            )
+            target_script.chmod(0o755)
+            filesystem = _ReservoirFilesystem(root)
+            reservoir_path = "reservoir/DEVELOPMENT/tap-demo/users/schema/file.singer.gz"
+            index_path = "reservoir/DEVELOPMENT/tap-demo/_reservoir.json"
+            filesystem.fs.files[reservoir_path] = gzip.compress(
+                _json_line(schema) + _json_line(record)
+            )
+            filesystem.fs.files[index_path] = json.dumps(
+                {"__version__": 0, "users": [reservoir_path]}
+            ).encode("utf-8")
+
+            with self.assertRaises(subprocess.CalledProcessError) as ctx:
+                engine.reservoir_to_target(
+                    t.cast(t.Any, _Plugin("tap-demo")),
+                    t.cast(t.Any, _Plugin("target-jsonl")),
+                    "pipeline",
+                    t.cast(t.Any, filesystem),
+                    "DEVELOPMENT",
+                )
+
+        self.assertEqual(ctx.exception.returncode, 5)
+
+    def test_fs_pull_allows_current_directory_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            remote_fs = _MemoryRemoteFs()
+            remote_fs.files["remote/source.txt"] = b"data"
+            engine_obj = SimpleNamespace(
+                filesystem=SimpleNamespace(_remote_path=lambda path: f"remote/{path}"),
+                fs=remote_fs,
+            )
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                result = AltoFs()._pull(engine_obj, {}, ["pull", "source.txt", "file.txt"])
+            finally:
+                os.chdir(original_cwd)
+
+            self.assertEqual(result, 0)
+            self.assertEqual(Path(tmp, "file.txt").read_bytes(), b"data")
 
 
 if __name__ == "__main__":

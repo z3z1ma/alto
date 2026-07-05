@@ -113,6 +113,12 @@ class ReservoirIngestBuffers(t.NamedTuple):
     active_schemas: t.Dict[str, str]
 
 
+class ReservoirUpload(t.NamedTuple):
+    stream: str
+    path: str
+    future: t.Any
+
+
 def find_hyphen_key(
     key: str, data: t.Union[t.Mapping[str, t.Any], t.Iterable[str]]
 ) -> t.Optional[str]:
@@ -1555,6 +1561,10 @@ def _reservoir_schema_id(message: t.Dict[str, t.Any]) -> str:
     return md5(json.dumps(message["schema"], sort_keys=True).encode("utf-8")).hexdigest()[:15]
 
 
+def _singer_message_line(message: t.Dict[str, t.Any]) -> bytes:
+    return json.dumps(message).encode("utf-8")
+
+
 def _record_container(line: bytes, message: t.Dict[str, t.Any]) -> ReservoirRecordContainer:
     records = gzip.GzipFile(fileobj=io.BytesIO(), mode="wb")
     header = line + b"\n"
@@ -1575,11 +1585,13 @@ def _handle_reservoir_schema(
     buffers: ReservoirIngestBuffers,
 ) -> None:
     message = _apply_schema_mappers(message, buffers.mappers)
+    line = _singer_message_line(message)
     stream = message["stream"]
     schema_id = _reservoir_schema_id(message)
-    if stream not in buffers.record_buffer or schema_id not in buffers.record_buffer[stream]:
+    stream_buffer = buffers.record_buffer.setdefault(stream, {})
+    if schema_id not in stream_buffer:
         print(f"New stream: {stream} ({schema_id})")
-        buffers.record_buffer[stream] = {schema_id: _record_container(line, message)}
+        stream_buffer[schema_id] = _record_container(line, message)
     buffers.active_schemas[stream] = schema_id
 
 
@@ -1602,18 +1614,31 @@ def _flush_reservoir_container(
     pipeline_id: str,
     filesystem: AltoFileSystem,
     tpe: t.Any,
-) -> t.Tuple[str, io.BytesIO]:
+) -> t.Tuple[str, io.BytesIO, ReservoirUpload]:
     path = _reservoir_path(filesystem, record_key, stream, schema_id)
     records = container["records"]
     inner_buf = t.cast(io.BytesIO, records.fileobj)
     records.close()
     inner_buf.flush()
     inner_buf.seek(0)
-    tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
-    _reservoir_stream_paths(reservoir, stream).append(path)
-    with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
-        f.write(f"{path}\n")
-    return path, inner_buf
+    upload = ReservoirUpload(
+        stream, path, tpe.submit(filesystem.fs.pipe, path, inner_buf.getvalue())
+    )
+    return path, inner_buf, upload
+
+
+def _finalize_reservoir_uploads(
+    uploads: t.List[ReservoirUpload],
+    reservoir: ReservoirIndex,
+    pipeline_id: str,
+    filesystem: AltoFileSystem,
+) -> None:
+    for upload in uploads:
+        upload.future.result()
+    for upload in uploads:
+        _reservoir_stream_paths(reservoir, upload.stream).append(upload.path)
+        with open(filesystem.log_path(f"target-{pipeline_id}.log"), "a") as f:
+            f.write(f"{upload.path}\n")
 
 
 def _reset_reservoir_container(container: ReservoirRecordContainer, inner_buf: io.BytesIO) -> None:
@@ -1637,8 +1662,10 @@ def _handle_reservoir_record(
     stream_states: t.Dict[str, t.Any],
     buffer_size: int,
     tpe: t.Any,
+    uploads: t.List[ReservoirUpload],
 ) -> None:
     message = _apply_record_mappers(message, buffers.mappers)
+    line = _singer_message_line(message)
     stream = message["stream"]
     schema_id = buffers.active_schemas[stream]
     container = buffers.record_buffer[stream][schema_id]
@@ -1647,37 +1674,39 @@ def _handle_reservoir_record(
     if container["count"] < buffer_size:
         return
     print(f"Flushing {stream} ({schema_id})")
-    _, inner_buf = _flush_reservoir_container(
+    _, inner_buf, upload = _flush_reservoir_container(
         container, stream, schema_id, reservoir, record_key, pipeline_id, filesystem, tpe
     )
+    uploads.append(upload)
     _reset_reservoir_container(container, inner_buf)
     _write_stream_state(state_path, stream_states)
 
 
 def _flush_remaining_reservoir_records(
     record_buffer: t.Dict[str, t.Dict[str, ReservoirRecordContainer]],
-    active_schemas: t.Dict[str, str],
     reservoir: ReservoirIndex,
     record_key: str,
     pipeline_id: str,
     filesystem: AltoFileSystem,
     tpe: t.Any,
+    uploads: t.List[ReservoirUpload],
 ) -> None:
     print("Flushing remaining records")
     for stream, schemas in record_buffer.items():
-        for _schema_id, container in schemas.items():
+        for schema_id, container in schemas.items():
             if container["count"] == 0:
                 continue
-            _flush_reservoir_container(
+            _, _, upload = _flush_reservoir_container(
                 container,
                 stream,
-                active_schemas[stream],
+                schema_id,
                 reservoir,
                 record_key,
                 pipeline_id,
                 filesystem,
                 tpe,
             )
+            uploads.append(upload)
 
 
 def reservoir_ingestor(
@@ -1702,44 +1731,46 @@ def reservoir_ingestor(
     record_buffer: t.Dict[str, t.Dict[str, ReservoirRecordContainer]] = {}
     active_schemas: t.Dict[str, str] = {}
     buffers = ReservoirIngestBuffers(mappers, record_buffer, active_schemas)
+    uploads: t.List[ReservoirUpload] = []
 
     # Start the ingestion loop
-    tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
-    for line in stdout:
-        try:
-            message = json.loads(line.decode("utf-8"))
-        except json.JSONDecodeError:
-            continue
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as tpe:
+        for line in stdout:
+            try:
+                message = json.loads(line.decode("utf-8"))
+            except json.JSONDecodeError:
+                continue
 
-        if message["type"] == "STATE":
-            _handle_reservoir_state(message, stream_states, state_path)
-            continue
+            if message["type"] == "STATE":
+                _handle_reservoir_state(message, stream_states, state_path)
+                continue
 
-        if message["type"] == "SCHEMA":
-            _handle_reservoir_schema(line, message, buffers)
-            continue
+            if message["type"] == "SCHEMA":
+                _handle_reservoir_schema(line, message, buffers)
+                continue
 
-        if message["type"] == "RECORD":
-            _handle_reservoir_record(
-                line,
-                message,
-                buffers,
-                reservoir,
-                record_key,
-                state_path,
-                pipeline_id,
-                filesystem,
-                stream_states,
-                buffer_size,
-                tpe,
-            )
+            if message["type"] == "RECORD":
+                _handle_reservoir_record(
+                    line,
+                    message,
+                    buffers,
+                    reservoir,
+                    record_key,
+                    state_path,
+                    pipeline_id,
+                    filesystem,
+                    stream_states,
+                    buffer_size,
+                    tpe,
+                    uploads,
+                )
 
-    _flush_remaining_reservoir_records(
-        record_buffer, active_schemas, reservoir, record_key, pipeline_id, filesystem, tpe
-    )
+        _flush_remaining_reservoir_records(
+            record_buffer, reservoir, record_key, pipeline_id, filesystem, tpe, uploads
+        )
+        _finalize_reservoir_uploads(uploads, reservoir, pipeline_id, filesystem)
 
     # Write actualized state to the remote storage directory
-    tpe.shutdown()
     print("Writing final state")
     _write_stream_state(state_path, stream_states)
 
@@ -1805,6 +1836,7 @@ def tap_to_reservoir(
         raise RuntimeError(f"Lock file {lock_path} exists, aborting")
     filesystem.fs.pipe(lock_path, f"{pipeline_id}".encode("utf-8"))
 
+    success = False
     try:
         # Start the pipeline
         print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
@@ -1831,24 +1863,29 @@ def tap_to_reservoir(
             )
             t1.start()
             # Stream the tap output to the reservoir mutating the reservoir index and
-            # the state file. Blocks until the tap process exits. The `finally` statement
-            # updates the reservoir index and drops the lock file allowing the next run to proceed.
-            reservoir_ingestor(
-                stdout=tap_stdout,
-                reservoir=reservoir,
-                record_key=base_path + "/{stream}/{schema_id}",
-                state_path=state,
-                pipeline_id=pipeline_id,
-                filesystem=filesystem,
-                stream_states=stream_states,
-                buffer_size=buffer_size,
-                mappers=mappers,
-            )
-            tap_proc.wait()
-            t1.join()
+            # the state file. Blocks until the tap process exits.
+            try:
+                reservoir_ingestor(
+                    stdout=tap_stdout,
+                    reservoir=reservoir,
+                    record_key=base_path + "/{stream}/{schema_id}",
+                    state_path=state,
+                    pipeline_id=pipeline_id,
+                    filesystem=filesystem,
+                    stream_states=stream_states,
+                    buffer_size=buffer_size,
+                    mappers=mappers,
+                )
+            finally:
+                tap_proc.wait()
+                t1.join()
+            if tap_proc.returncode != 0:
+                raise subprocess.CalledProcessError(tap_proc.returncode, cmd)
+            success = True
     finally:
-        # Load the reservoir index from the remote storage directory
-        filesystem.fs.pipe(index_path, json.dumps(reservoir).encode("utf-8"))
+        if success:
+            # Load the reservoir index from the remote storage directory
+            filesystem.fs.pipe(index_path, json.dumps(reservoir).encode("utf-8"))
         # Drop the lock file
         filesystem.fs.delete(lock_path)
 
@@ -2114,9 +2151,10 @@ def reservoir_to_target(
     print(f"Running pipeline {pipeline_id} ({tap} -> {target})")
     stdout_lock = threading.Lock()
     reservoir_lock = threading.Lock()
+    target_cmd = [target_bin, "--config", target_config]
     with subprocess.Popen(
-        [target_bin, "--config", target_config],
-        stdout=subprocess.PIPE,
+        target_cmd,
+        stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         stdin=subprocess.PIPE,
         env={**os.environ, **target.environment},
@@ -2136,22 +2174,26 @@ def reservoir_to_target(
         )
         th.start()
 
-        tpe = ThreadPoolExecutor(max_workers=os.cpu_count())
-        files_processed = _emit_reservoir_index(
-            reservoir,
-            target_stdin,
-            filesystem,
-            stream_states,
-            state,
-            reservoir_lock,
-            tpe,
-        )
+        try:
+            with ThreadPoolExecutor(max_workers=os.cpu_count()) as tpe:
+                files_processed = _emit_reservoir_index(
+                    reservoir,
+                    target_stdin,
+                    filesystem,
+                    stream_states,
+                    state,
+                    reservoir_lock,
+                    tpe,
+                )
+        finally:
+            print("Closing target process")
+            with suppress(BrokenPipeError):
+                target_stdin.close()
+            target_proc.wait()
+            th.join()
 
-        # Close the target
-        print("Closing target process")
-        target_stdin.close()
-        th.join()
-        target_proc.wait()
+        if target_proc.returncode != 0:
+            raise subprocess.CalledProcessError(target_proc.returncode, target_cmd)
         print(f"Processed {files_processed} file(s)")
 
 

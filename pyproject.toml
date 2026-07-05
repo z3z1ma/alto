@@ -53,6 +53,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["alto"]
 
+[tool.hatch.build.targets.sdist]
+only-include = ["alto", "README.md", "LICENSE", "CHANGELOG.md", "pyproject.toml"]
+
 [tool.uv] # nosemgrep: package_managers.uv.uv-missing-dependency-cooldown.uv-missing-dependency-cooldown - cooldowns resolved known-vulnerable transitive versions during uv audit on 2026-07-05.
 package = true
 
