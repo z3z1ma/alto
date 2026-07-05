@@ -18,6 +18,7 @@ sys.stderr. The format is just the message, with no timestamp or anything else.
 
 In the future, this module may be expanded to allow for more complex logging.
 """
+
 import logging
 import sys
 

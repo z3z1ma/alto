@@ -15,6 +15,7 @@
 This module provides a command line interface for interacting with an Alto
 engine. It is intended to be used for debugging and development purposes.
 """
+
 import cmd
 import os
 import subprocess

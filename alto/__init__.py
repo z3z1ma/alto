@@ -11,6 +11,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """Alto is a command line tool for running Singer taps and targets."""
+
 from alto.catalog import CatalogMutationStrategy, apply_metadata, apply_selected
 from alto.config import working_directory
 from alto.constants import (

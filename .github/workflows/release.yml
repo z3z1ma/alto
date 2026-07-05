@@ -20,15 +20,10 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Upgrade pip
+      - name: Install uv
         run: |
-          pip install --constraint=.github/workflows/constraints.txt pip
-          pip --version
-
-      - name: Install Poetry
-        run: |
-          pip install --constraint=.github/workflows/constraints.txt poetry
-          poetry --version
+          python -m pip install --upgrade pip uv
+          uv --version
 
       - name: Check if there is a parent commit
         id: check-parent-commit
@@ -41,18 +36,18 @@ jobs:
         uses: salsify/action-detect-and-tag-new-version@v2.0.3
         with:
           version-command: |
-            bash -o pipefail -c "poetry version | awk '{ print \$2 }'"
+            uv version --short
 
       - name: Bump version for developmental release
         if: "! steps.check-version.outputs.tag"
         run: |
-          poetry version patch &&
-          version=$(poetry version | awk '{ print $2 }') &&
-          poetry version $version.dev.$(date +%s)
+          uv version --bump patch --frozen &&
+          version=$(uv version --short) &&
+          uv version "$version.dev.$(date +%s)" --frozen
 
       - name: Build package
         run: |
-          poetry build --ansi
+          uv build
 
       - name: Publish package on PyPI
         if: steps.check-version.outputs.tag

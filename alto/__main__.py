@@ -11,6 +11,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """This is the module entry point for the alto command line tool."""
+
 import sys
 
 from alto.main import main

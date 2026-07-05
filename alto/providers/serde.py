@@ -6,6 +6,7 @@ keeps us a layer away from the underlying libraries, which allows us
 to swap them out if we need to. Currently, we piggyback on the
 serialization libraries that are already vendored by Dynaconf.
 """
+
 import io
 import json
 import typing as t

@@ -11,6 +11,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """Models to represent data structures used throughout alto."""
+
 import json
 from dataclasses import dataclass, field
 from enum import Enum
@@ -306,12 +307,10 @@ class TapConfiguration(BasePluginConfiguration):
     metadata: Dict[str, Dict[str, Any]]
 
 
-class TargetConfiguration(BasePluginConfiguration):
-    ...
+class TargetConfiguration(BasePluginConfiguration): ...
 
 
-class UtilityConfiguration(BasePluginConfiguration):
-    ...
+class UtilityConfiguration(BasePluginConfiguration): ...
 
 
 PluginConfiguration = Union[TapConfiguration, TargetConfiguration, UtilityConfiguration]

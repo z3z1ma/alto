@@ -11,6 +11,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """Primary alto engine."""
+
 import atexit
 import datetime
 import fnmatch
@@ -88,11 +89,14 @@ RESERVOIR_BUFFER_SIZE = 10_000
 """The default number of records to buffer before flushing to reservoir filesystem."""
 
 
-def find_hyphen_key(key: str, data: t.Dict[str, t.Any]) -> t.Optional[str]:
-    """Find a key in a dict that matches the given key, allowing for hyphens."""
-    if key in data:
-        return key
-    for k in data.keys():
+def find_hyphen_key(
+    key: str, data: t.Union[t.Mapping[str, t.Any], t.Iterable[str]]
+) -> t.Optional[str]:
+    """Find a key that matches the given key, allowing for hyphens."""
+    keys = t.cast(t.Mapping[str, t.Any], data).keys() if hasattr(data, "keys") else data
+    for k in keys:
+        if k == key:
+            return k
         if k.replace("-", "_") == key:
             return k
     return None
@@ -105,9 +109,9 @@ def find_hyphen_key(key: str, data: t.Dict[str, t.Any]) -> t.Optional[str]:
 # If the hypenated key is not found, the original dynaconf lookup is used.
 # This means non-hyphenated keys will still work as expected if they exist.
 __case_lookup = dynaconf.utils.find_the_correct_casing
-dynaconf.utils.find_the_correct_casing = lambda key, data: find_hyphen_key(
-    key, data
-) or __case_lookup(key, data)
+dynaconf.utils.find_the_correct_casing = lambda key, data: (
+    find_hyphen_key(key, data) or __case_lookup(key, data)
+)
 
 
 class AltoCmd(str, Enum):
@@ -535,7 +539,10 @@ class AltoPlugin:
 
     def config_relative_to(self, other: "AltoPlugin") -> DynaBox:
         """Return the config for the plugin."""
-        return self.config + other.spec.get(self.name, DynaBox())
+        config = dict(self.config)
+        relative = other.spec.get(self.name, DynaBox())
+        relative_config = dict(relative)
+        return DynaBox(merge(relative_config, config))
 
     @property
     def pex_name(self) -> str:
@@ -593,9 +600,9 @@ class AltoPlugin:
                 stream_map = stream_map_cls(tap_config=self.config, select=select)
             except Exception as e:
                 raise RuntimeError(f"Failed to initialize stream map {mapper}") from e
-            assert isinstance(
-                stream_map, AltoStreamMap
-            ), "Stream map must inherit from AltoStreamMap"
+            assert isinstance(stream_map, AltoStreamMap), (
+                "Stream map must inherit from AltoStreamMap"
+            )
             print(f"👨‍🔧 Found custom stream map {stream_map.name} for {self.name}")
             mappers.append(stream_map)
         return mappers
@@ -1937,10 +1944,13 @@ def compact_reservoir(tap: str, filesystem: AltoFileSystem, env: str) -> None:
                     # Merge the remaining files
                     print(f"Merging {len(merge_queue)} file(s) for {stream} (schema_id: {schema})")
                     targets = list(sorted(merge_queue))
-                    filesystem.fs.pipe(
-                        targets[-1],
-                        reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
-                    ), filesystem.fs.rm(targets[:-1])
+                    (
+                        filesystem.fs.pipe(
+                            targets[-1],
+                            reduce(lambda acc, n: acc + n, filesystem.fs.cat(targets).values()),
+                        ),
+                        filesystem.fs.rm(targets[:-1]),
+                    )
                     changed = True
     except Exception as e:
         # If we fail, just rebuild the index

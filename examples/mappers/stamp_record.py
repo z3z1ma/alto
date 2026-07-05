@@ -2,6 +2,7 @@
 
 This mapper stamps the current date and time to the record.
 """
+
 from datetime import datetime
 
 from alto.engine import AltoStreamMap

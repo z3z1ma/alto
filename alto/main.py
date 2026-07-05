@@ -12,6 +12,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """Main entry point for the CLI."""
+
 import os
 import sys
 import typing as t
@@ -103,21 +104,23 @@ class AltoInit(Command):
             ) as local_template:
                 conf.write(conf_template.read().replace("{project}", project_name))
                 local.write(local_template.read())
-            if not os.path.isfile(".env"):
-                with open(".env", "w") as env:
+            env_path = alto.config.working_directory / ".env"
+            if not env_path.is_file():
+                with open(env_path, "w") as env:
                     env.write("MY_SECRET=1\n")
-            if not os.path.isfile(".gitignore"):
-                with open(".gitignore", "w") as gitignore:
+            gitignore_path = alto.config.working_directory / ".gitignore"
+            if not gitignore_path.is_file():
+                with open(gitignore_path, "w") as gitignore:
                     gitignore.write(".env\n\n")
                     gitignore.write(".alto/\n")
                     gitignore.write(".alto.json\n")
                     gitignore.write("alto.local.*\n")
                     gitignore.write("alto.secrets.*\n")
             bls_asset = Path(__file__).parent.joinpath("incl", "bls-series.json")
-            with open("series.json", "w") as f:
+            with open(alto.config.working_directory / "series.json", "w") as f:
                 f.write(bls_asset.read_text() + "\n")
             dlt_asset = Path(__file__).parent.joinpath("incl", "dlt_example.py")
-            with open("carbon_pipeline_dlt.py", "w") as f:
+            with open(alto.config.working_directory / "carbon_pipeline_dlt.py", "w") as f:
                 f.write(dlt_asset.read_text() + "\n")
             LOGGER.info("✅ Done!")
         except Exception as e:

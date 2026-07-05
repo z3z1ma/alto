@@ -14,6 +14,7 @@
 
 This assists extension authors in not having to import doit directly.
 """
+
 from doit.tools import (
     CmdAction,
     Interactive,

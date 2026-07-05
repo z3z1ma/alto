@@ -11,6 +11,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 """Functional tests for alto"""
+
 import os
 import shutil
 import unittest
@@ -38,6 +39,8 @@ class TestRunAlto(unittest.TestCase):
             self.assertEqual(main(["init", "--no-prompt", "-r", path]), 0)
             self.assertTrue(os.path.exists(os.path.join(path, "alto.toml")))
             self.assertTrue(os.path.exists(os.path.join(path, "alto.local.toml")))
+            self.assertTrue(os.path.exists(os.path.join(path, "series.json")))
+            self.assertTrue(os.path.exists(os.path.join(path, "carbon_pipeline_dlt.py")))
         finally:
             shutil.rmtree(path)
 
