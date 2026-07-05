@@ -1,7 +1,7 @@
 Status: recorded
 Created: 2026-07-05
 Updated: 2026-07-05
-Relates-To: .10x/tickets/2026-07-05-ci-production-readiness.md
+Relates-To: .10x/tickets/done/2026-07-05-ci-production-readiness.md
 
 # CI production readiness verification
 
@@ -71,4 +71,4 @@ This supports the claim that the known GitHub Actions failures were root-caused 
 
 ## Limits
 
-Remote CI still needs to run on the pushed commit before the GitHub Actions status can be considered green. Local release verification cannot prove PyPI/TestPyPI secret validity, only package metadata validity, workflow syntax, and publish-action compatibility.
+Local release verification cannot prove PyPI/TestPyPI secret validity before a workflow run starts, only package metadata validity, workflow syntax, and publish-action compatibility. The pushed workflow later completed successfully on GitHub Actions.

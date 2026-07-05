@@ -1,4 +1,4 @@
-Status: active
+Status: done
 Created: 2026-07-05
 Updated: 2026-07-05
 Parent: None
@@ -46,3 +46,4 @@ None. The user explicitly approved implementation, review, commits, and pushes.
 - 2026-07-05: Reconciled subagent review findings. Fixed reservoir mapped-payload persistence, schema-buffer preservation, upload future validation, nonzero tap and target process handling, current-directory `alto fs pull`, sdist file selection, release workflow permissions, and robust release tag detection.
 - 2026-07-05: Added regression coverage for the reservoir and filesystem bugs. Test count increased from 23 to 28 and coverage increased from the prior recorded 54% to 61%.
 - 2026-07-05: Local verification evidence recorded in `.10x/evidence/2026-07-05-ci-production-readiness-verification.md`; closure review recorded in `.10x/reviews/2026-07-05-ci-production-readiness-review.md`.
+- 2026-07-05: Committed and pushed `b5e4b1b` to `main`. Remote GitHub Actions completed successfully for Alto Tests run `28736151191`, Release run `28736151212`, Labeler run `28736151188`, and Dependency Graph run `28736151918`.

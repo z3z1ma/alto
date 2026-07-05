@@ -1,7 +1,7 @@
 Status: recorded
 Created: 2026-07-05
 Updated: 2026-07-05
-Target: .10x/tickets/2026-07-05-ci-production-readiness.md
+Target: .10x/tickets/done/2026-07-05-ci-production-readiness.md
 Verdict: pass
 
 # CI production readiness review
